@@ -157,7 +157,7 @@ export default function HyeneScores() {
   };
 
   return (
-    <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden">
+    <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden safe-top">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         * { 
@@ -171,6 +171,12 @@ export default function HyeneScores() {
         }
         input[type="number"] {
           -moz-appearance: textfield;
+        }
+        body {
+          background-color: #000000;
+        }
+        .safe-top {
+          padding-top: env(safe-area-inset-top);
         }
       `}</style>
 
@@ -284,18 +290,18 @@ export default function HyeneScores() {
               {/* Selectors */}
               <div className="px-4 py-3 border-b border-gray-800 flex-shrink-0 relative">
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 grid grid-cols-4 gap-2">
+                  <div className="flex-1 grid grid-cols-4 gap-3">
                     {championships.map(champ => (
                       <button
                         key={champ.id}
                         onClick={() => setSelectedChampionship(champ.id)}
-                        className={`flex items-center justify-center py-3 rounded-lg transition-all min-h-[48px] ${
+                        className={`flex items-center justify-center py-3 rounded-lg transition-all min-h-[52px] ${
                           selectedChampionship === champ.id
                             ? 'bg-cyan-500/30 border-2 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.3)]'
                             : 'bg-black/50 border border-gray-800 hover:border-cyan-500/30 opacity-60 hover:opacity-100'
                         }`}
                       >
-                        <span className="text-2xl">{champ.icon}</span>
+                        <span className="text-3xl">{champ.icon}</span>
                       </button>
                     ))}
                   </div>
@@ -336,14 +342,14 @@ export default function HyeneScores() {
                         <div className="flex-1 min-w-0 relative">
                           <button
                             onClick={() => toggleDropdown(match.id, 'home')}
-                            className={`w-full bg-black/50 rounded-md px-2 py-2 flex items-center justify-between group hover:border-cyan-500/30 cursor-pointer min-h-[44px] transition-all duration-300 ${
+                            className={`w-full bg-black/50 rounded-md px-3 py-3 flex items-center justify-between group hover:border-cyan-500/30 cursor-pointer min-h-[48px] transition-all duration-300 ${
                               match.homeScore !== null && match.awayScore !== null
                                 ? 'border-2 border-emerald-500 shadow-[inset_0_0_8px_rgba(16,185,129,0.15)]'
                                 : 'border border-gray-800'
                             }`}
                           >
-                            <span className="text-white text-xs font-medium truncate">{match.homeTeam || 'Équipe'}</span>
-                            <svg className="w-4 h-4 text-gray-500 group-hover:text-cyan-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <span className="text-white text-sm font-semibold truncate">{match.homeTeam || 'Équipe'}</span>
+                            <svg className="w-4 h-4 text-gray-500 group-hover:text-cyan-400 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
                           </button>
@@ -408,14 +414,14 @@ export default function HyeneScores() {
                         <div className="flex-1 min-w-0 relative">
                           <button
                             onClick={() => toggleDropdown(match.id, 'away')}
-                            className={`w-full bg-black/50 rounded-md px-2 py-2 flex items-center justify-between group hover:border-cyan-500/30 cursor-pointer min-h-[44px] transition-all duration-300 ${
+                            className={`w-full bg-black/50 rounded-md px-3 py-3 flex items-center justify-between group hover:border-cyan-500/30 cursor-pointer min-h-[48px] transition-all duration-300 ${
                               match.homeScore !== null && match.awayScore !== null
                                 ? 'border-2 border-emerald-500 shadow-[inset_0_0_8px_rgba(16,185,129,0.15)]'
                                 : 'border border-gray-800'
                             }`}
                           >
-                            <span className="text-white text-xs font-medium truncate">{match.awayTeam || 'Équipe'}</span>
-                            <svg className="w-4 h-4 text-gray-500 group-hover:text-cyan-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <span className="text-white text-sm font-semibold truncate">{match.awayTeam || 'Équipe'}</span>
+                            <svg className="w-4 h-4 text-gray-500 group-hover:text-cyan-400 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
                           </button>
@@ -464,6 +470,30 @@ export default function HyeneScores() {
           <div className="flex-1 px-4 pb-3 overflow-hidden">
             <div className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-xl h-full flex flex-col overflow-hidden">
               
+              {/* Selectors */}
+              <div className="px-4 py-3 border-b border-gray-800 flex gap-2 flex-shrink-0">
+                <div className="flex-1 grid grid-cols-4 gap-2">
+                  {championships.map(champ => (
+                    <button
+                      key={champ.id}
+                      onClick={() => setSelectedChampionship(champ.id)}
+                      className={`flex items-center justify-center py-3 rounded-lg transition-all min-h-[48px] ${
+                        selectedChampionship === champ.id
+                          ? 'bg-cyan-500/30 border-2 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.3)]'
+                          : 'bg-black/50 border border-gray-800 hover:border-cyan-500/30 opacity-60 hover:opacity-100'
+                      }`}
+                    >
+                      <span className="text-2xl">{champ.icon}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="w-28">
+                  <div className="bg-black/50 border border-gray-800 rounded-lg px-2 py-3 min-h-[48px] flex items-center justify-center">
+                    <span className="text-xs text-white font-semibold">Saison {selectedSeason}</span>
+                  </div>
+                </div>
+              </div>
+
               {/* Table Header */}
               <div className="grid grid-cols-12 gap-1 px-4 py-2 bg-gray-900/50 border-b border-gray-800 flex-shrink-0">
                 <div className="col-span-3 text-gray-500 text-xs font-semibold tracking-widest text-center">SAISON</div>
