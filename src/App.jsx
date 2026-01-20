@@ -494,7 +494,7 @@ export default function HyeneScores() {
                     <div key={match.id} className="bg-black/30 border border-gray-800 rounded-lg p-3">
                       <div className="flex items-center gap-2">
                         {/* Home Team */}
-                        <div className="flex-1 min-w-0 relative">
+                        <div className="flex-[2] min-w-0 relative">
                           <button
                             onClick={() => toggleDropdown(match.id, 'home')}
                             className={`w-full bg-black/50 rounded-md px-3 py-3 flex items-center justify-between group hover:border-cyan-500/30 cursor-pointer min-h-[48px] transition-all duration-300 ${
@@ -533,7 +533,7 @@ export default function HyeneScores() {
                         </div>
 
                         {/* Scores */}
-                        <div className="flex items-center gap-1 flex-shrink-0">
+                        <div className="flex items-center gap-1 flex-shrink-0 w-24">
                           <input
                             type="number"
                             value={match.homeScore !== null ? match.homeScore : ''}
@@ -566,7 +566,7 @@ export default function HyeneScores() {
                         </div>
 
                         {/* Away Team */}
-                        <div className="flex-1 min-w-0 relative">
+                        <div className="flex-[2] min-w-0 relative">
                           <button
                             onClick={() => toggleDropdown(match.id, 'away')}
                             className={`w-full bg-black/50 rounded-md px-3 py-3 flex items-center justify-between group hover:border-cyan-500/30 cursor-pointer min-h-[48px] transition-all duration-300 ${
