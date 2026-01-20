@@ -7,6 +7,7 @@ export default function HyeneScores() {
   const [selectedChampionship, setSelectedChampionship] = useState('hyenes');
   const [selectedSeason, setSelectedSeason] = useState('9');
   const [isSeasonOpen, setIsSeasonOpen] = useState(false);
+  const [isChampOpen, setIsChampOpen] = useState(false);
 
   const championships = [
     { id: 'hyenes', icon: '🏆', name: 'Ligue des Hyènes' },
