@@ -341,7 +341,7 @@ export default function HyeneScores() {
         </div>
       )}
 
-      {/* MATCH - NOUVELLE VERSION V3 */}
+      {/* MATCH */}
       {selectedTab === 'match' && (
         <div className="h-full flex flex-col">
           <div className="px-4 pt-4 pb-2 flex-shrink-0">
@@ -352,7 +352,7 @@ export default function HyeneScores() {
 
           <div className="flex-1 px-4 pb-3 overflow-hidden">
             <div className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-xl h-full flex flex-col overflow-hidden">
-
+              
               {/* Selectors */}
               <div className="px-3 py-2 border-b border-gray-800 flex-shrink-0 relative">
                 <div className="flex items-stretch gap-2">
@@ -438,49 +438,56 @@ export default function HyeneScores() {
                     )}
                   </div>
 
-                  {/* Journée Dropdown */}
-                  <div className="flex-1 relative">
-                    <button
-                      onClick={() => setIsJourneeOpen(!isJourneeOpen)}
-                      className={`w-full h-full bg-black/50 border rounded-lg px-3 py-2.5 text-white text-sm font-medium cursor-pointer transition-colors flex items-center justify-between ${
-                        isJourneeOpen ? 'border-cyan-500/50' : 'border-gray-800 hover:border-cyan-500/30'
-                      }`}
-                    >
-                      <span>Journée {selectedJournee}</span>
-                      <svg className={`w-4 h-4 text-gray-500 transition-transform ${isJourneeOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
+                </div>
+              </div>
 
-                    {isJourneeOpen && (
-                      <>
-                        <div className="fixed inset-0 z-40" onClick={() => setIsJourneeOpen(false)}></div>
-                        <div className="absolute right-0 top-full mt-1 bg-gray-900 border border-cyan-500/30 rounded-lg shadow-2xl z-50 w-32 max-h-64 overflow-y-auto">
-                          {journees.map(journee => (
-                            <button
-                              key={journee}
-                              onClick={() => {
-                                setSelectedJournee(journee);
-                                setIsJourneeOpen(false);
-                              }}
-                              className={`w-full px-3 py-2.5 text-sm font-medium text-left transition-colors ${
-                                selectedJournee === journee
-                                  ? 'bg-cyan-500/20 text-cyan-400'
-                                  : 'text-white hover:bg-gray-800'
-                              }`}
-                            >
-                              Journée {journee}
-                            </button>
-                          ))}
-                        </div>
-                      </>
-                    )}
+              {/* Navigation Journée */}
+              <div className="px-3 py-2 border-b border-gray-800 flex-shrink-0">
+                <div className="flex items-center justify-center gap-4">
+                  <button
+                    onClick={() => {
+                      const currentIdx = journees.indexOf(selectedJournee);
+                      if (currentIdx > 0) setSelectedJournee(journees[currentIdx - 1]);
+                    }}
+                    className="w-10 h-10 flex items-center justify-center text-cyan-400 hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    disabled={selectedJournee === '1'}
+                  >
+                    <span className="text-xl font-bold">◀</span>
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <span className="text-white text-sm font-medium">Journée</span>
+                    <span className="text-cyan-400 text-lg font-bold">{selectedJournee}</span>
+                    <span className="text-gray-500 text-sm">/</span>
+                    <span className="text-gray-400 text-sm">{journees.length}</span>
                   </div>
+                  <button
+                    onClick={() => {
+                      const currentIdx = journees.indexOf(selectedJournee);
+                      if (currentIdx < journees.length - 1) setSelectedJournee(journees[currentIdx + 1]);
+                    }}
+                    className="w-10 h-10 flex items-center justify-center text-cyan-400 hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    disabled={selectedJournee === journees[journees.length - 1]}
+                  >
+                    <span className="text-xl font-bold">▶</span>
+                  </button>
                 </div>
               </div>
 
               {/* Matches List */}
               <div className="flex-1 overflow-y-auto px-4 py-3">
+                {/* Header */}
+                <div className="grid grid-cols-12 gap-2 px-2 py-2 mb-2">
+                  <div className="col-span-5 text-center text-gray-500 text-xs font-semibold tracking-widest">
+                    DOMICILE
+                  </div>
+                  <div className="col-span-2 text-center text-gray-500 text-xs font-semibold tracking-widest">
+                    SCORE
+                  </div>
+                  <div className="col-span-5 text-center text-gray-500 text-xs font-semibold tracking-widest">
+                    EXTÉRIEUR
+                  </div>
+                </div>
+
                 <div className="space-y-3">
                   {matches.map(match => (
                     <div key={match.id} className="bg-black/30 border border-gray-800 rounded-lg p-3">
@@ -495,7 +502,7 @@ export default function HyeneScores() {
                                 : 'border border-gray-800'
                             }`}
                           >
-                            <span className="text-white text-xs font-semibold truncate">{match.homeTeam || 'Équipe'}</span>
+                            <span className="text-white text-xs font-semibold truncate">{match.homeTeam || '────────'}</span>
                             <svg className="w-4 h-4 text-gray-500 group-hover:text-cyan-400 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
@@ -567,7 +574,7 @@ export default function HyeneScores() {
                                 : 'border border-gray-800'
                             }`}
                           >
-                            <span className="text-white text-xs font-semibold truncate">{match.awayTeam || 'Équipe'}</span>
+                            <span className="text-white text-xs font-semibold truncate">{match.awayTeam || '────────'}</span>
                             <svg className="w-4 h-4 text-gray-500 group-hover:text-cyan-400 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
@@ -599,6 +606,54 @@ export default function HyeneScores() {
                     </div>
                   ))}
                 </div>
+
+                {/* Section Exempt */}
+                <div className="mt-4 pt-4 border-t border-gray-800">
+                  <div className="bg-black/30 border border-gray-800 rounded-lg p-4">
+                    <div className="flex items-center justify-center gap-3">
+                      <span className="text-gray-400 text-sm font-medium">Exempt :</span>
+                      <div className="relative w-48">
+                        <button
+                          onClick={() => setIsTeamDropdownOpen(!isTeamDropdownOpen)}
+                          className="w-full bg-black/50 border border-gray-800 hover:border-cyan-500/30 rounded-md px-4 py-2.5 text-white text-sm font-medium cursor-pointer transition-colors flex items-center justify-between"
+                        >
+                          <span className="truncate">{exemptTeam || 'Aucune'}</span>
+                          <svg className="w-4 h-4 text-gray-500 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        {isTeamDropdownOpen && (
+                          <>
+                            <div className="fixed inset-0 z-40" onClick={() => setIsTeamDropdownOpen(false)}></div>
+                            <div className="absolute left-0 right-0 top-full mt-1 bg-gray-900 border border-cyan-500/30 rounded-lg shadow-2xl z-50 max-h-64 overflow-y-auto">
+                              <button
+                                onClick={() => {
+                                  setExemptTeam('');
+                                  setIsTeamDropdownOpen(false);
+                                }}
+                                className="w-full px-3 py-2 text-sm font-medium text-left transition-colors text-white hover:bg-gray-800"
+                              >
+                                Aucune
+                              </button>
+                              {getAvailableTeamsForExempt().map(team => (
+                                <button
+                                  key={team}
+                                  onClick={() => {
+                                    setExemptTeam(team);
+                                    setIsTeamDropdownOpen(false);
+                                  }}
+                                  className="w-full px-3 py-2 text-sm font-medium text-left transition-colors text-white hover:bg-gray-800"
+                                >
+                                  {team}
+                                </button>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -608,35 +663,98 @@ export default function HyeneScores() {
       {/* PALMARES */}
       {selectedTab === 'palmares' && (
         <div className="h-full flex flex-col">
-          <div className="px-4 pt-4 pb-3 flex-shrink-0">
-            <div className="bg-gradient-to-br from-gray-900 to-black border-2 border-cyan-500/50 rounded-xl p-4 text-center">
+          <div className="px-4 pt-4 pb-2 flex-shrink-0">
+            <div className="bg-gradient-to-br from-gray-900 to-black border-2 border-cyan-500/50 rounded-xl p-3 text-center">
               <h1 className="text-cyan-400 text-2xl font-bold tracking-widest">PALMARÈS</h1>
             </div>
           </div>
 
           <div className="flex-1 px-4 pb-3 overflow-hidden">
             <div className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-xl h-full flex flex-col overflow-hidden">
-
+              
               {/* Selectors */}
-              <div className="px-4 py-3 border-b border-gray-800 flex gap-2 flex-shrink-0">
-                <div className="flex-1 grid grid-cols-4 gap-2">
-                  {championships.filter(c => c.id !== 'hyenes').map(champ => (
+              <div className="px-3 py-2 border-b border-gray-800 flex-shrink-0 relative">
+                <div className="flex items-stretch gap-2">
+                  {/* Championship Dropdown */}
+                  <div className="flex-1 relative">
                     <button
-                      key={champ.id}
-                      onClick={() => setSelectedChampionship(champ.id)}
-                      className={`flex items-center justify-center py-3 rounded-lg transition-all min-h-[48px] ${
-                        selectedChampionship === champ.id
-                          ? 'bg-cyan-500/30 border-2 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.3)]'
-                          : 'bg-black/50 border border-gray-800 hover:border-cyan-500/30 opacity-60 hover:opacity-100'
+                      onClick={() => setIsChampOpen(!isChampOpen)}
+                      className={`w-full h-full bg-black/50 border rounded-lg px-3 py-2.5 text-white text-sm font-medium cursor-pointer transition-colors flex items-center justify-between ${
+                        isChampOpen ? 'border-cyan-500/50' : 'border-gray-800 hover:border-cyan-500/30'
                       }`}
                     >
-                      <span className="text-2xl">{champ.icon}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{championships.find(c => c.id === selectedChampionship)?.icon}</span>
+                        <span className="truncate">{championships.find(c => c.id === selectedChampionship)?.name}</span>
+                      </div>
+                      <svg className={`w-4 h-4 text-gray-500 transition-transform flex-shrink-0 ${isChampOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
                     </button>
-                  ))}
-                </div>
-                <div className="w-28">
-                  <div className="bg-black/50 border border-gray-800 rounded-lg px-2 py-3 min-h-[48px] flex items-center justify-center">
-                    <span className="text-xs text-white font-semibold">Saison {selectedSeason}</span>
+
+                    {isChampOpen && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setIsChampOpen(false)}></div>
+                        <div className="absolute left-0 right-0 top-full mt-1 bg-gray-900 border border-cyan-500/30 rounded-lg shadow-2xl z-50 max-h-64 overflow-y-auto">
+                          {championships.map(champ => (
+                            <button
+                              key={champ.id}
+                              onClick={() => {
+                                setSelectedChampionship(champ.id);
+                                setIsChampOpen(false);
+                              }}
+                              className={`w-full px-3 py-2.5 text-sm font-medium text-left transition-colors flex items-center gap-2 ${
+                                selectedChampionship === champ.id
+                                  ? 'bg-cyan-500/20 text-cyan-400'
+                                  : 'text-white hover:bg-gray-800'
+                              }`}
+                            >
+                              <span className="text-xl">{champ.icon}</span>
+                              <span>{champ.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Season Dropdown */}
+                  <div className="w-28 relative">
+                    <button
+                      onClick={() => setIsSeasonOpen(!isSeasonOpen)}
+                      className={`w-full h-full bg-black/50 border rounded-lg px-3 py-2.5 text-white text-sm font-medium cursor-pointer transition-colors flex items-center justify-between ${
+                        isSeasonOpen ? 'border-cyan-500/50' : 'border-gray-800 hover:border-cyan-500/30'
+                      }`}
+                    >
+                      <span>Saison {selectedSeason}</span>
+                      <svg className={`w-4 h-4 text-gray-500 transition-transform ${isSeasonOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+
+                    {isSeasonOpen && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setIsSeasonOpen(false)}></div>
+                        <div className="absolute right-0 top-full mt-1 bg-gray-900 border border-cyan-500/30 rounded-lg shadow-2xl z-50 w-28 max-h-64 overflow-y-auto">
+                          {seasons.map(season => (
+                            <button
+                              key={season}
+                              onClick={() => {
+                                setSelectedSeason(season);
+                                setIsSeasonOpen(false);
+                              }}
+                              className={`w-full px-3 py-2.5 text-sm font-medium text-left transition-colors ${
+                                selectedSeason === season
+                                  ? 'bg-cyan-500/20 text-cyan-400'
+                                  : 'text-white hover:bg-gray-800'
+                              }`}
+                            >
+                              Saison {season}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -684,7 +802,7 @@ export default function HyeneScores() {
 
           <div className="flex-1 px-4 pb-3 overflow-hidden">
             <div className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-xl h-full flex flex-col overflow-hidden">
-
+              
               {/* Table Header */}
               <div className="px-2 py-2 bg-gray-900/50 border-b border-gray-800 flex-shrink-0">
                 <div className="grid grid-cols-12 gap-0.5 items-center">
@@ -761,7 +879,7 @@ export default function HyeneScores() {
 
           <div className="flex-1 px-4 pb-20 overflow-y-auto">
             <div className="space-y-4">
-
+              
               {/* Sauvegarde */}
               <div className="bg-gradient-to-br from-gray-900 to-black border-2 border-cyan-500/50 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-4">
@@ -849,7 +967,7 @@ export default function HyeneScores() {
       {/* Bottom Navigation */}
       <div className="bg-black/95 backdrop-blur-md border-t border-gray-800 px-4 py-2 flex-shrink-0 fixed bottom-0 left-0 right-0 z-50">
         <div className="flex justify-around items-center max-w-screen-xl mx-auto">
-          <button
+          <button 
             onClick={() => setSelectedTab('classement')}
             className={`flex flex-col items-center gap-0.5 transition-colors min-w-[60px] py-1 ${
               selectedTab === 'classement' ? 'text-cyan-400' : 'text-gray-500 hover:text-gray-400'
@@ -858,7 +976,7 @@ export default function HyeneScores() {
             <div className="text-3xl">🏆</div>
             <span className="text-xs font-semibold">Classement</span>
           </button>
-          <button
+          <button 
             onClick={() => setSelectedTab('match')}
             className={`flex flex-col items-center gap-0.5 transition-colors min-w-[60px] py-1 ${
               selectedTab === 'match' ? 'text-cyan-400' : 'text-gray-500 hover:text-gray-400'
@@ -867,7 +985,7 @@ export default function HyeneScores() {
             <div className="text-3xl">📅</div>
             <span className="text-xs font-semibold">Match</span>
           </button>
-          <button
+          <button 
             onClick={() => setSelectedTab('palmares')}
             className={`flex flex-col items-center gap-0.5 transition-colors min-w-[60px] py-1 ${
               selectedTab === 'palmares' ? 'text-cyan-400' : 'text-gray-500 hover:text-gray-400'
@@ -876,7 +994,7 @@ export default function HyeneScores() {
             <div className="text-3xl">🎯</div>
             <span className="text-xs font-semibold">Palmarès</span>
           </button>
-          <button
+          <button 
             onClick={() => setSelectedTab('pantheon')}
             className={`flex flex-col items-center gap-0.5 transition-colors min-w-[60px] py-1 ${
               selectedTab === 'pantheon' ? 'text-cyan-400' : 'text-gray-500 hover:text-gray-400'
@@ -885,7 +1003,7 @@ export default function HyeneScores() {
             <div className="text-3xl">🏅</div>
             <span className="text-xs font-semibold">Panthéon</span>
           </button>
-          <button
+          <button 
             onClick={() => setSelectedTab('stats')}
             className={`flex flex-col items-center gap-0.5 transition-colors min-w-[60px] py-1 ${
               selectedTab === 'stats' ? 'text-cyan-400' : 'text-gray-500 hover:text-gray-400'
@@ -894,7 +1012,7 @@ export default function HyeneScores() {
             <div className="text-3xl">📊</div>
             <span className="text-xs font-semibold">Stats</span>
           </button>
-          <button
+          <button 
             onClick={() => setSelectedTab('reglages')}
             className={`flex flex-col items-center gap-0.5 transition-colors min-w-[60px] py-1 ${
               selectedTab === 'reglages' ? 'text-cyan-400' : 'text-gray-500 hover:text-gray-400'
