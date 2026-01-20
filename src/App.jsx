@@ -291,7 +291,7 @@ export default function HyeneScores() {
                   <span className="text-cyan-400 text-xs font-bold">73.6%</span>
                 </div>
                 <div className="bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-gradient-to-r from-cyan-500 to-cyan-400 h-full rounded-full" style={{ width: '73.6%' }}></div>
+                  <div className="bg-gradient-to-r from-cyan-500 via-teal-400 to-green-400 h-full rounded-full" style={{ width: '73.6%' }}></div>
                 </div>
               </div>
 
