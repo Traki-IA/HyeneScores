@@ -199,7 +199,7 @@ export default function HyeneScores() {
             </div>
           </div>
 
-          <div className="flex-1 px-4 pb-20 overflow-hidden">
+          <div className="flex-1 px-4 pb-24 overflow-hidden">
             <div className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-xl h-full flex flex-col overflow-hidden">
 
               {/* Selectors */}
@@ -291,7 +291,7 @@ export default function HyeneScores() {
                   <span className="text-cyan-400 text-xs font-bold">73.6%</span>
                 </div>
                 <div className="bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-gradient-to-r from-cyan-500 to-cyan-400 h-full rounded-full" style={{ width: '73.6%' }}></div>
+                  <div className="bg-gradient-to-r from-cyan-500 via-teal-400 to-green-400 h-full rounded-full" style={{ width: '73.6%' }}></div>
                 </div>
               </div>
 
@@ -350,7 +350,7 @@ export default function HyeneScores() {
             </div>
           </div>
 
-          <div className="flex-1 px-4 pb-20 overflow-hidden">
+          <div className="flex-1 px-4 pb-24 overflow-hidden">
             <div className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-xl h-full flex flex-col overflow-hidden">
 
               {/* Selectors */}
@@ -670,7 +670,7 @@ export default function HyeneScores() {
             </div>
           </div>
 
-          <div className="flex-1 px-4 pb-20 overflow-hidden">
+          <div className="flex-1 px-4 pb-24 overflow-hidden">
             <div className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-xl h-full flex flex-col overflow-hidden">
 
               {/* Selectors */}
@@ -795,13 +795,13 @@ export default function HyeneScores() {
       {/* PANTHEON */}
       {selectedTab === 'pantheon' && (
         <div className="h-full flex flex-col">
-          <div className="px-4 pt-4 pb-3 flex-shrink-0">
-            <div className="bg-gradient-to-br from-gray-900 to-black border-2 border-cyan-500/50 rounded-xl p-4 text-center">
+          <div className="px-4 pt-4 pb-2 flex-shrink-0">
+            <div className="bg-gradient-to-br from-gray-900 to-black border-2 border-cyan-500/50 rounded-xl p-3 text-center">
               <h1 className="text-cyan-400 text-2xl font-bold tracking-widest">PANTHÉON</h1>
             </div>
           </div>
 
-          <div className="flex-1 px-4 pb-20 overflow-hidden">
+          <div className="flex-1 px-4 pb-24 overflow-hidden">
             <div className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-xl h-full flex flex-col overflow-hidden">
 
               {/* Table Header */}
