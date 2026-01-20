@@ -608,8 +608,8 @@ export default function HyeneScores() {
       {/* PALMARES */}
       {selectedTab === 'palmares' && (
         <div className="h-full flex flex-col">
-          <div className="px-4 pt-4 pb-3 flex-shrink-0">
-            <div className="bg-gradient-to-br from-gray-900 to-black border-2 border-cyan-500/50 rounded-xl p-4 text-center">
+          <div className="px-4 pt-4 pb-2 flex-shrink-0">
+            <div className="bg-gradient-to-br from-gray-900 to-black border-2 border-cyan-500/50 rounded-xl p-3 text-center">
               <h1 className="text-cyan-400 text-2xl font-bold tracking-widest">PALMARÈS</h1>
             </div>
           </div>
