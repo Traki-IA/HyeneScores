@@ -400,7 +400,7 @@ export default function HyeneScores() {
                   </div>
 
                   {/* Season Dropdown */}
-                  <div className="flex-1 relative">
+                  <div className="w-32 relative">
                     <button
                       onClick={() => setIsSeasonOpen(!isSeasonOpen)}
                       className={`w-full h-full bg-black/50 border rounded-lg px-3 py-2.5 text-white text-sm font-medium cursor-pointer transition-colors flex items-center justify-between ${
@@ -720,7 +720,7 @@ export default function HyeneScores() {
                   </div>
 
                   {/* Season Dropdown */}
-                  <div className="w-28 relative">
+                  <div className="w-32 relative">
                     <button
                       onClick={() => setIsSeasonOpen(!isSeasonOpen)}
                       className={`w-full h-full bg-black/50 border rounded-lg px-3 py-2.5 text-white text-sm font-medium cursor-pointer transition-colors flex items-center justify-between ${
@@ -736,7 +736,7 @@ export default function HyeneScores() {
                     {isSeasonOpen && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setIsSeasonOpen(false)}></div>
-                        <div className="absolute right-0 top-full mt-1 bg-gray-900 border border-cyan-500/30 rounded-lg shadow-2xl z-50 w-28 max-h-64 overflow-y-auto">
+                        <div className="absolute right-0 top-full mt-1 bg-gray-900 border border-cyan-500/30 rounded-lg shadow-2xl z-50 w-32 max-h-64 overflow-y-auto">
                           {seasons.map(season => (
                             <button
                               key={season}
