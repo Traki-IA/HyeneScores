@@ -352,3 +352,559 @@ export default function HyeneScores() {
 
           <div className="flex-1 px-4 pb-3 overflow-hidden">
             <div className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-xl h-full flex flex-col overflow-hidden">
+
+              {/* Selectors */}
+              <div className="px-3 py-2 border-b border-gray-800 flex-shrink-0 relative">
+                <div className="flex items-stretch gap-2">
+                  {/* Championship Dropdown */}
+                  <div className="flex-1 relative">
+                    <button
+                      onClick={() => setIsChampOpen(!isChampOpen)}
+                      className={`w-full h-full bg-black/50 border rounded-lg px-3 py-2.5 text-white text-sm font-medium cursor-pointer transition-colors flex items-center justify-between ${
+                        isChampOpen ? 'border-cyan-500/50' : 'border-gray-800 hover:border-cyan-500/30'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{championships.find(c => c.id === selectedChampionship)?.icon}</span>
+                        <span className="truncate">{championships.find(c => c.id === selectedChampionship)?.name}</span>
+                      </div>
+                      <svg className={`w-4 h-4 text-gray-500 transition-transform flex-shrink-0 ${isChampOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+
+                    {isChampOpen && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setIsChampOpen(false)}></div>
+                        <div className="absolute left-0 right-0 top-full mt-1 bg-gray-900 border border-cyan-500/30 rounded-lg shadow-2xl z-50 max-h-64 overflow-y-auto">
+                          {championships.filter(c => c.id !== 'hyenes').map(champ => (
+                            <button
+                              key={champ.id}
+                              onClick={() => {
+                                setSelectedChampionship(champ.id);
+                                setIsChampOpen(false);
+                              }}
+                              className={`w-full px-3 py-2.5 text-sm font-medium text-left transition-colors flex items-center gap-2 ${
+                                selectedChampionship === champ.id
+                                  ? 'bg-cyan-500/20 text-cyan-400'
+                                  : 'text-white hover:bg-gray-800'
+                              }`}
+                            >
+                              <span className="text-xl">{champ.icon}</span>
+                              <span>{champ.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Season Dropdown */}
+                  <div className="flex-1 relative">
+                    <button
+                      onClick={() => setIsSeasonOpen(!isSeasonOpen)}
+                      className={`w-full h-full bg-black/50 border rounded-lg px-3 py-2.5 text-white text-sm font-medium cursor-pointer transition-colors flex items-center justify-between ${
+                        isSeasonOpen ? 'border-cyan-500/50' : 'border-gray-800 hover:border-cyan-500/30'
+                      }`}
+                    >
+                      <span>Saison {selectedSeason}</span>
+                      <svg className={`w-4 h-4 text-gray-500 transition-transform ${isSeasonOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+
+                    {isSeasonOpen && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setIsSeasonOpen(false)}></div>
+                        <div className="absolute left-0 right-0 top-full mt-1 bg-gray-900 border border-cyan-500/30 rounded-lg shadow-2xl z-50 max-h-64 overflow-y-auto">
+                          {seasons.map(season => (
+                            <button
+                              key={season}
+                              onClick={() => {
+                                setSelectedSeason(season);
+                                setIsSeasonOpen(false);
+                              }}
+                              className={`w-full px-3 py-2.5 text-sm font-medium text-left transition-colors ${
+                                selectedSeason === season
+                                  ? 'bg-cyan-500/20 text-cyan-400'
+                                  : 'text-white hover:bg-gray-800'
+                              }`}
+                            >
+                              Saison {season}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Journée Dropdown */}
+                  <div className="flex-1 relative">
+                    <button
+                      onClick={() => setIsJourneeOpen(!isJourneeOpen)}
+                      className={`w-full h-full bg-black/50 border rounded-lg px-3 py-2.5 text-white text-sm font-medium cursor-pointer transition-colors flex items-center justify-between ${
+                        isJourneeOpen ? 'border-cyan-500/50' : 'border-gray-800 hover:border-cyan-500/30'
+                      }`}
+                    >
+                      <span>Journée {selectedJournee}</span>
+                      <svg className={`w-4 h-4 text-gray-500 transition-transform ${isJourneeOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+
+                    {isJourneeOpen && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setIsJourneeOpen(false)}></div>
+                        <div className="absolute right-0 top-full mt-1 bg-gray-900 border border-cyan-500/30 rounded-lg shadow-2xl z-50 w-32 max-h-64 overflow-y-auto">
+                          {journees.map(journee => (
+                            <button
+                              key={journee}
+                              onClick={() => {
+                                setSelectedJournee(journee);
+                                setIsJourneeOpen(false);
+                              }}
+                              className={`w-full px-3 py-2.5 text-sm font-medium text-left transition-colors ${
+                                selectedJournee === journee
+                                  ? 'bg-cyan-500/20 text-cyan-400'
+                                  : 'text-white hover:bg-gray-800'
+                              }`}
+                            >
+                              Journée {journee}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Matches List */}
+              <div className="flex-1 overflow-y-auto px-4 py-3">
+                <div className="space-y-3">
+                  {matches.map(match => (
+                    <div key={match.id} className="bg-black/30 border border-gray-800 rounded-lg p-3">
+                      <div className="flex items-center gap-2">
+                        {/* Home Team */}
+                        <div className="flex-1 min-w-0 relative">
+                          <button
+                            onClick={() => toggleDropdown(match.id, 'home')}
+                            className={`w-full bg-black/50 rounded-md px-3 py-3 flex items-center justify-between group hover:border-cyan-500/30 cursor-pointer min-h-[48px] transition-all duration-300 ${
+                              match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
+                                ? 'border-2 border-emerald-500 shadow-[inset_0_0_8px_rgba(16,185,129,0.15)]'
+                                : 'border border-gray-800'
+                            }`}
+                          >
+                            <span className="text-white text-xs font-semibold truncate">{match.homeTeam || 'Équipe'}</span>
+                            <svg className="w-4 h-4 text-gray-500 group-hover:text-cyan-400 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                          {openDropdown?.matchId === match.id && openDropdown?.type === 'home' && (
+                            <>
+                              <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)}></div>
+                              <div className="absolute left-0 right-0 top-full mt-1 bg-gray-900 border border-cyan-500/30 rounded-lg shadow-2xl z-50 max-h-64 overflow-y-auto">
+                                <button
+                                  onClick={() => handleTeamSelect(match.id, 'home', '')}
+                                  className="w-full px-3 py-2 text-xs font-medium text-left transition-colors min-h-[40px] flex items-center text-white hover:bg-gray-800"
+                                >
+                                  Aucune équipe
+                                </button>
+                                {getAvailableTeams(match.id, 'home').map(team => (
+                                  <button
+                                    key={team}
+                                    onClick={() => handleTeamSelect(match.id, 'home', team)}
+                                    className="w-full px-3 py-2 text-xs font-medium text-left transition-colors min-h-[40px] flex items-center text-white hover:bg-gray-800"
+                                  >
+                                    {team}
+                                  </button>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Scores */}
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <input
+                            type="number"
+                            value={match.homeScore !== null ? match.homeScore : ''}
+                            onChange={(e) => {
+                              const value = e.target.value === '' ? null : parseInt(e.target.value);
+                              setMatches(matches.map(m => m.id === match.id ? { ...m, homeScore: value } : m));
+                            }}
+                            placeholder="-"
+                            className={`bg-black/50 rounded-md w-10 h-11 text-center text-cyan-400 text-lg font-bold outline-none transition-all duration-300 ${
+                              match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
+                                ? 'border-2 border-emerald-500 shadow-[inset_0_0_10px_rgba(16,185,129,0.2)]'
+                                : 'border border-gray-800 hover:border-cyan-500/50'
+                            }`}
+                          />
+                          <span className="text-gray-600 font-bold text-sm">:</span>
+                          <input
+                            type="number"
+                            value={match.awayScore !== null ? match.awayScore : ''}
+                            onChange={(e) => {
+                              const value = e.target.value === '' ? null : parseInt(e.target.value);
+                              setMatches(matches.map(m => m.id === match.id ? { ...m, awayScore: value } : m));
+                            }}
+                            placeholder="-"
+                            className={`bg-black/50 rounded-md w-10 h-11 text-center text-cyan-400 text-lg font-bold outline-none transition-all duration-300 ${
+                              match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
+                                ? 'border-2 border-emerald-500 shadow-[inset_0_0_10px_rgba(16,185,129,0.2)]'
+                                : 'border border-gray-800 hover:border-cyan-500/50'
+                            }`}
+                          />
+                        </div>
+
+                        {/* Away Team */}
+                        <div className="flex-1 min-w-0 relative">
+                          <button
+                            onClick={() => toggleDropdown(match.id, 'away')}
+                            className={`w-full bg-black/50 rounded-md px-3 py-3 flex items-center justify-between group hover:border-cyan-500/30 cursor-pointer min-h-[48px] transition-all duration-300 ${
+                              match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
+                                ? 'border-2 border-emerald-500 shadow-[inset_0_0_8px_rgba(16,185,129,0.15)]'
+                                : 'border border-gray-800'
+                            }`}
+                          >
+                            <span className="text-white text-xs font-semibold truncate">{match.awayTeam || 'Équipe'}</span>
+                            <svg className="w-4 h-4 text-gray-500 group-hover:text-cyan-400 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                          {openDropdown?.matchId === match.id && openDropdown?.type === 'away' && (
+                            <>
+                              <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)}></div>
+                              <div className="absolute left-0 right-0 top-full mt-1 bg-gray-900 border border-cyan-500/30 rounded-lg shadow-2xl z-50 max-h-64 overflow-y-auto">
+                                <button
+                                  onClick={() => handleTeamSelect(match.id, 'away', '')}
+                                  className="w-full px-3 py-2 text-xs font-medium text-left transition-colors min-h-[40px] flex items-center text-white hover:bg-gray-800"
+                                >
+                                  Aucune équipe
+                                </button>
+                                {getAvailableTeams(match.id, 'away').map(team => (
+                                  <button
+                                    key={team}
+                                    onClick={() => handleTeamSelect(match.id, 'away', team)}
+                                    className="w-full px-3 py-2 text-xs font-medium text-left transition-colors min-h-[40px] flex items-center text-white hover:bg-gray-800"
+                                  >
+                                    {team}
+                                  </button>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PALMARES */}
+      {selectedTab === 'palmares' && (
+        <div className="h-full flex flex-col">
+          <div className="px-4 pt-4 pb-3 flex-shrink-0">
+            <div className="bg-gradient-to-br from-gray-900 to-black border-2 border-cyan-500/50 rounded-xl p-4 text-center">
+              <h1 className="text-cyan-400 text-2xl font-bold tracking-widest">PALMARÈS</h1>
+            </div>
+          </div>
+
+          <div className="flex-1 px-4 pb-3 overflow-hidden">
+            <div className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-xl h-full flex flex-col overflow-hidden">
+
+              {/* Selectors */}
+              <div className="px-4 py-3 border-b border-gray-800 flex gap-2 flex-shrink-0">
+                <div className="flex-1 grid grid-cols-4 gap-2">
+                  {championships.filter(c => c.id !== 'hyenes').map(champ => (
+                    <button
+                      key={champ.id}
+                      onClick={() => setSelectedChampionship(champ.id)}
+                      className={`flex items-center justify-center py-3 rounded-lg transition-all min-h-[48px] ${
+                        selectedChampionship === champ.id
+                          ? 'bg-cyan-500/30 border-2 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.3)]'
+                          : 'bg-black/50 border border-gray-800 hover:border-cyan-500/30 opacity-60 hover:opacity-100'
+                      }`}
+                    >
+                      <span className="text-2xl">{champ.icon}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="w-28">
+                  <div className="bg-black/50 border border-gray-800 rounded-lg px-2 py-3 min-h-[48px] flex items-center justify-center">
+                    <span className="text-xs text-white font-semibold">Saison {selectedSeason}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Table Header */}
+              <div className="grid grid-cols-12 gap-1 px-4 py-2 bg-gray-900/50 border-b border-gray-800 flex-shrink-0">
+                <div className="col-span-3 text-gray-500 text-xs font-semibold tracking-widest text-center">SAISON</div>
+                <div className="col-span-6 text-gray-500 text-xs font-semibold tracking-widest text-center">CHAMPION</div>
+                <div className="col-span-3 text-gray-500 text-xs font-semibold tracking-widest text-center">POINTS</div>
+              </div>
+
+              {/* Champions List */}
+              <div className="flex-1 overflow-y-auto">
+                {champions.map(champion => (
+                  <div
+                    key={champion.season}
+                    className="grid grid-cols-12 gap-1 px-4 py-2 border-b border-gray-800 hover:bg-gray-900/30 transition-colors items-center h-[48px]"
+                  >
+                    <div className="col-span-3 flex justify-center">
+                      <span className="text-cyan-400 text-lg font-bold drop-shadow-[0_0_10px_rgba(34,211,238,0.6)]">{champion.season}</span>
+                    </div>
+                    <div className="col-span-6 text-center">
+                      <span className="text-white text-sm font-semibold tracking-wide truncate">{champion.team}</span>
+                    </div>
+                    <div className="col-span-3 text-center">
+                      <span className="text-green-500 text-base font-bold">{champion.points}</span>
+                      <span className="text-gray-500 text-xs ml-1">pts</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PANTHEON */}
+      {selectedTab === 'pantheon' && (
+        <div className="h-full flex flex-col">
+          <div className="px-4 pt-4 pb-3 flex-shrink-0">
+            <div className="bg-gradient-to-br from-gray-900 to-black border-2 border-cyan-500/50 rounded-xl p-4 text-center">
+              <h1 className="text-cyan-400 text-2xl font-bold tracking-widest">PANTHÉON</h1>
+            </div>
+          </div>
+
+          <div className="flex-1 px-4 pb-3 overflow-hidden">
+            <div className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-xl h-full flex flex-col overflow-hidden">
+
+              {/* Table Header */}
+              <div className="px-2 py-2 bg-gray-900/50 border-b border-gray-800 flex-shrink-0">
+                <div className="grid grid-cols-12 gap-0.5 items-center">
+                  <div className="col-span-1 flex justify-center text-gray-500 text-xs font-semibold tracking-widest">#</div>
+                  <div className="col-span-4 flex items-center text-left pl-1 text-gray-500 text-xs font-semibold tracking-widest">ÉQUIPE</div>
+                  <div className="col-span-1 flex justify-center text-gray-500 text-xs font-semibold tracking-widest">
+                    <div className="text-lg">🏆</div>
+                  </div>
+                  <div className="col-span-1 flex justify-center text-gray-500 text-xs font-semibold tracking-widest">
+                    <div className="text-lg">🇫🇷</div>
+                  </div>
+                  <div className="col-span-1 flex justify-center text-gray-500 text-xs font-semibold tracking-widest">
+                    <div className="text-lg">🇪🇸</div>
+                  </div>
+                  <div className="col-span-1 flex justify-center text-gray-500 text-xs font-semibold tracking-widest">
+                    <div className="text-lg">🇮🇹</div>
+                  </div>
+                  <div className="col-span-1 flex justify-center text-gray-500 text-xs font-semibold tracking-widest">
+                    <div className="text-lg">🏴󠁧󠁢󠁥󠁮󠁧󠁿</div>
+                  </div>
+                  <div className="col-span-2 flex justify-center text-gray-500 text-xs font-semibold tracking-widest">TOTAL</div>
+                </div>
+              </div>
+
+              {/* Teams List */}
+              <div className="flex-1 overflow-y-auto">
+                {pantheonTeams.map(team => (
+                  <div
+                    key={team.rank}
+                    className="px-2 py-2 border-b border-gray-800 hover:bg-gray-900/30 transition-colors h-[48px]"
+                  >
+                    <div className="grid grid-cols-12 gap-0.5 items-center w-full h-full">
+                      <div className="col-span-1 flex items-center justify-center font-bold text-sm text-cyan-400">
+                        {team.rank < 10 ? `0${team.rank}` : team.rank}
+                      </div>
+                      <div className="col-span-4 flex items-center text-left pl-1">
+                        <span className="text-white text-sm font-bold tracking-tight truncate">{team.name}</span>
+                      </div>
+                      <div className="col-span-1 flex items-center justify-center">
+                        <span className="text-white text-xs font-medium">{team.trophies}</span>
+                      </div>
+                      <div className="col-span-1 flex items-center justify-center">
+                        <span className="text-white text-xs font-medium">{team.france}</span>
+                      </div>
+                      <div className="col-span-1 flex items-center justify-center">
+                        <span className="text-white text-xs font-medium">{team.spain}</span>
+                      </div>
+                      <div className="col-span-1 flex items-center justify-center">
+                        <span className="text-white text-xs font-medium">{team.italy}</span>
+                      </div>
+                      <div className="col-span-1 flex items-center justify-center">
+                        <span className="text-white text-xs font-medium">{team.england}</span>
+                      </div>
+                      <div className="col-span-2 flex items-center justify-center">
+                        <span className="text-green-500 text-lg font-bold drop-shadow-[0_0_10px_rgba(34,197,94,0.6)]">{team.total}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* REGLAGES */}
+      {selectedTab === 'reglages' && (
+        <div className="h-full flex flex-col">
+          <div className="px-4 pt-4 pb-3 flex-shrink-0">
+            <div className="bg-gradient-to-br from-gray-900 to-black border-2 border-cyan-500/50 rounded-xl p-4 text-center">
+              <h1 className="text-cyan-400 text-2xl font-bold tracking-widest">RÉGLAGES</h1>
+            </div>
+          </div>
+
+          <div className="flex-1 px-4 pb-20 overflow-y-auto">
+            <div className="space-y-4">
+
+              {/* Sauvegarde */}
+              <div className="bg-gradient-to-br from-gray-900 to-black border-2 border-cyan-500/50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-2xl">💾</span>
+                  <h2 className="text-cyan-400 text-lg font-bold tracking-wide">SAUVEGARDE</h2>
+                </div>
+                <div className="space-y-3">
+                  <button
+                    onClick={handleExportJSON}
+                    className="w-full bg-black/50 border border-gray-800 hover:border-cyan-500/50 rounded-lg px-4 py-3 text-white text-sm font-medium transition-all flex items-center justify-between"
+                  >
+                    <span>Exporter toutes les données (JSON)</span>
+                    <span className="text-xl">📥</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Système */}
+              <div className="bg-gradient-to-br from-gray-900 to-black border-2 border-red-500/50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-2xl">⚠️</span>
+                  <h2 className="text-red-400 text-lg font-bold tracking-wide">SYSTÈME</h2>
+                </div>
+                <button
+                  onClick={() => setShowResetModal(true)}
+                  className="w-full bg-red-900/20 border border-red-500/50 hover:border-red-500 rounded-lg px-4 py-3 text-red-400 text-sm font-bold transition-all flex items-center justify-between"
+                >
+                  <span>Réinitialiser toutes les données</span>
+                  <span className="text-xl">🗑️</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Modal Reset */}
+          {showResetModal && (
+            <>
+              <div className="fixed inset-0 bg-black/80 z-50" onClick={() => setShowResetModal(false)}></div>
+              <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
+                <div className="bg-gradient-to-br from-gray-900 to-black border-2 border-red-500 rounded-xl p-6 max-w-md w-full">
+                  <div className="text-center mb-6">
+                    <div className="text-6xl mb-4">⚠️</div>
+                    <h3 className="text-red-400 text-xl font-bold mb-2">ATTENTION</h3>
+                    <p className="text-gray-400 text-sm">Cette action est irréversible.</p>
+                  </div>
+                  <div className="mb-6">
+                    <input
+                      type="text"
+                      value={resetConfirmation}
+                      onChange={(e) => setResetConfirmation(e.target.value)}
+                      placeholder="Tapez SUPPRIMER"
+                      className="w-full bg-black/50 border border-red-500/50 rounded-lg px-4 py-3 text-white text-sm outline-none"
+                    />
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => { setShowResetModal(false); setResetConfirmation(''); }}
+                      className="flex-1 bg-gray-800 rounded-lg px-4 py-3 text-white text-sm font-medium"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      onClick={handleReset}
+                      className="flex-1 bg-red-900/50 border border-red-500 rounded-lg px-4 py-3 text-red-400 text-sm font-bold"
+                    >
+                      Confirmer
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* STATS (Placeholder) */}
+      {selectedTab === 'stats' && (
+        <div className="h-full flex flex-col items-center justify-center">
+          <div className="text-6xl mb-4">📊</div>
+          <h2 className="text-cyan-400 text-2xl font-bold">STATISTIQUES</h2>
+          <p className="text-gray-500 text-sm mt-2">Bientôt disponible</p>
+        </div>
+      )}
+
+      {/* Bottom Navigation */}
+      <div className="bg-black/95 backdrop-blur-md border-t border-gray-800 px-4 py-2 flex-shrink-0 fixed bottom-0 left-0 right-0 z-50">
+        <div className="flex justify-around items-center max-w-screen-xl mx-auto">
+          <button
+            onClick={() => setSelectedTab('classement')}
+            className={`flex flex-col items-center gap-0.5 transition-colors min-w-[60px] py-1 ${
+              selectedTab === 'classement' ? 'text-cyan-400' : 'text-gray-500 hover:text-gray-400'
+            }`}
+          >
+            <div className="text-3xl">🏆</div>
+            <span className="text-xs font-semibold">Classement</span>
+          </button>
+          <button
+            onClick={() => setSelectedTab('match')}
+            className={`flex flex-col items-center gap-0.5 transition-colors min-w-[60px] py-1 ${
+              selectedTab === 'match' ? 'text-cyan-400' : 'text-gray-500 hover:text-gray-400'
+            }`}
+          >
+            <div className="text-3xl">📅</div>
+            <span className="text-xs font-semibold">Match</span>
+          </button>
+          <button
+            onClick={() => setSelectedTab('palmares')}
+            className={`flex flex-col items-center gap-0.5 transition-colors min-w-[60px] py-1 ${
+              selectedTab === 'palmares' ? 'text-cyan-400' : 'text-gray-500 hover:text-gray-400'
+            }`}
+          >
+            <div className="text-3xl">🎯</div>
+            <span className="text-xs font-semibold">Palmarès</span>
+          </button>
+          <button
+            onClick={() => setSelectedTab('pantheon')}
+            className={`flex flex-col items-center gap-0.5 transition-colors min-w-[60px] py-1 ${
+              selectedTab === 'pantheon' ? 'text-cyan-400' : 'text-gray-500 hover:text-gray-400'
+            }`}
+          >
+            <div className="text-3xl">🏅</div>
+            <span className="text-xs font-semibold">Panthéon</span>
+          </button>
+          <button
+            onClick={() => setSelectedTab('stats')}
+            className={`flex flex-col items-center gap-0.5 transition-colors min-w-[60px] py-1 ${
+              selectedTab === 'stats' ? 'text-cyan-400' : 'text-gray-500 hover:text-gray-400'
+            }`}
+          >
+            <div className="text-3xl">📊</div>
+            <span className="text-xs font-semibold">Stats</span>
+          </button>
+          <button
+            onClick={() => setSelectedTab('reglages')}
+            className={`flex flex-col items-center gap-0.5 transition-colors min-w-[60px] py-1 ${
+              selectedTab === 'reglages' ? 'text-cyan-400' : 'text-gray-500 hover:text-gray-400'
+            }`}
+          >
+            <div className="text-3xl">⚙️</div>
+            <span className="text-xs font-semibold">Réglages</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
