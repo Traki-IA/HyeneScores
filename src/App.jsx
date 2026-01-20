@@ -199,7 +199,7 @@ export default function HyeneScores() {
             </div>
           </div>
 
-          <div className="flex-1 px-4 pb-3 overflow-hidden">
+          <div className="flex-1 px-4 pb-20 overflow-hidden">
             <div className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-xl h-full flex flex-col overflow-hidden">
 
               {/* Selectors */}
@@ -350,9 +350,9 @@ export default function HyeneScores() {
             </div>
           </div>
 
-          <div className="flex-1 px-4 pb-3 overflow-hidden">
+          <div className="flex-1 px-4 pb-20 overflow-hidden">
             <div className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-xl h-full flex flex-col overflow-hidden">
-              
+
               {/* Selectors */}
               <div className="px-3 py-2 border-b border-gray-800 flex-shrink-0 relative">
                 <div className="flex items-stretch gap-2">
@@ -670,9 +670,9 @@ export default function HyeneScores() {
             </div>
           </div>
 
-          <div className="flex-1 px-4 pb-3 overflow-hidden">
+          <div className="flex-1 px-4 pb-20 overflow-hidden">
             <div className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-xl h-full flex flex-col overflow-hidden">
-              
+
               {/* Selectors */}
               <div className="px-3 py-2 border-b border-gray-800 flex-shrink-0 relative">
                 <div className="flex items-stretch gap-2">
@@ -801,9 +801,9 @@ export default function HyeneScores() {
             </div>
           </div>
 
-          <div className="flex-1 px-4 pb-3 overflow-hidden">
+          <div className="flex-1 px-4 pb-20 overflow-hidden">
             <div className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-xl h-full flex flex-col overflow-hidden">
-              
+
               {/* Table Header */}
               <div className="px-2 py-2 bg-gray-900/50 border-b border-gray-800 flex-shrink-0">
                 <div className="grid grid-cols-12 gap-0.5 items-center">
