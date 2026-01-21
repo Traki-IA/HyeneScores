@@ -199,7 +199,7 @@ export default function HyeneScores() {
             </div>
           </div>
 
-          <div className="flex-1 px-3 pb-24 overflow-hidden flex flex-col border border-gray-800 rounded-xl mx-4">
+          <div className="flex-1 px-3 pb-24 overflow-hidden flex flex-col">
 
               {/* Selectors */}
               <div className="px-3 py-2 border-b border-gray-800 flex-shrink-0 relative">
@@ -348,7 +348,7 @@ export default function HyeneScores() {
             </div>
           </div>
 
-          <div className="flex-1 px-3 pb-24 overflow-hidden flex flex-col border border-gray-800 rounded-xl mx-4">
+          <div className="flex-1 px-3 pb-24 overflow-hidden flex flex-col">
 
               {/* Selectors */}
               <div className="px-3 py-2 border-b border-gray-800 flex-shrink-0 relative">
@@ -664,7 +664,7 @@ export default function HyeneScores() {
             </div>
           </div>
 
-          <div className="flex-1 px-3 pb-24 overflow-hidden flex flex-col border border-gray-800 rounded-xl mx-4">
+          <div className="flex-1 px-3 pb-24 overflow-hidden flex flex-col">
 
               {/* Selectors */}
               <div className="px-3 py-2 border-b border-gray-800 flex-shrink-0 relative">
@@ -793,7 +793,7 @@ export default function HyeneScores() {
             </div>
           </div>
 
-          <div className="flex-1 px-3 pb-24 overflow-hidden flex flex-col border border-gray-800 rounded-xl mx-4">
+          <div className="flex-1 px-3 pb-24 overflow-hidden flex flex-col">
 
               {/* Table Header */}
               <div className="px-3 py-2 bg-gray-900/50 border-b border-gray-800 flex-shrink-0">
