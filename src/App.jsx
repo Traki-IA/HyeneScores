@@ -199,7 +199,7 @@ export default function HyeneScores() {
             </div>
           </div>
 
-          <div className="flex-1 px-2 pb-24 overflow-hidden flex flex-col">
+          <div className="flex-1 px-2 pb-28 overflow-hidden flex flex-col">
 
               {/* Selectors */}
               <div className="px-2 py-2 border-b border-gray-800 flex-shrink-0 relative">
@@ -297,10 +297,10 @@ export default function HyeneScores() {
               {/* Table Header */}
               <div className="grid grid-cols-12 gap-1 px-2 py-1.5 bg-gray-900/50 border-b border-gray-800 flex-shrink-0">
                 <div className="col-span-1 text-gray-500 text-xs font-semibold tracking-widest text-center">#</div>
-                <div className="col-span-3 text-gray-500 text-xs font-semibold tracking-widest text-left">CLUB</div>
+                <div className="col-span-4 text-gray-500 text-xs font-semibold tracking-widest text-left">CLUB</div>
                 <div className="col-span-2 text-gray-500 text-xs font-semibold tracking-widest text-center">PTS</div>
                 <div className="col-span-2 text-gray-500 text-xs font-semibold tracking-widest text-center">V-N-D</div>
-                <div className="col-span-3 text-gray-500 text-xs font-semibold tracking-widest text-center">BP:BC</div>
+                <div className="col-span-2 text-gray-500 text-xs font-semibold tracking-widest text-center">BP:BC</div>
                 <div className="col-span-1 text-gray-500 text-xs font-semibold tracking-widest text-center">DIF</div>
               </div>
 
@@ -315,7 +315,7 @@ export default function HyeneScores() {
                     <div className="col-span-1 font-bold text-sm whitespace-nowrap overflow-hidden text-cyan-400">
                       {team.rank < 10 ? `0${team.rank}` : team.rank}
                     </div>
-                    <div className="col-span-3 flex items-center whitespace-nowrap overflow-hidden">
+                    <div className="col-span-4 flex items-center whitespace-nowrap overflow-hidden">
                       <span className="text-white font-semibold text-sm tracking-wide">{team.name}</span>
                     </div>
                     <div className="col-span-2 text-center whitespace-nowrap overflow-hidden">
@@ -324,7 +324,7 @@ export default function HyeneScores() {
                     <div className="col-span-2 text-center text-white text-xs font-medium whitespace-nowrap overflow-hidden">
                       {team.record}
                     </div>
-                    <div className="col-span-3 text-center text-white text-xs font-medium whitespace-nowrap overflow-hidden">
+                    <div className="col-span-2 text-center text-white text-xs font-medium whitespace-nowrap overflow-hidden">
                       {team.goalDiff}
                     </div>
                     <div className="col-span-1 text-center whitespace-nowrap overflow-hidden">
@@ -348,7 +348,7 @@ export default function HyeneScores() {
             </div>
           </div>
 
-          <div className="flex-1 px-2 pb-24 overflow-hidden flex flex-col">
+          <div className="flex-1 px-2 pb-28 overflow-hidden flex flex-col">
 
               {/* Selectors */}
               <div className="px-2 py-2 border-b border-gray-800 flex-shrink-0 relative">
@@ -664,7 +664,7 @@ export default function HyeneScores() {
             </div>
           </div>
 
-          <div className="flex-1 px-2 pb-24 overflow-hidden flex flex-col">
+          <div className="flex-1 px-2 pb-28 overflow-hidden flex flex-col">
 
               {/* Selectors */}
               <div className="px-2 py-2 border-b border-gray-800 flex-shrink-0 relative">
@@ -793,7 +793,7 @@ export default function HyeneScores() {
             </div>
           </div>
 
-          <div className="flex-1 px-2 pb-24 overflow-hidden flex flex-col">
+          <div className="flex-1 px-2 pb-28 overflow-hidden flex flex-col">
 
               {/* Table Header */}
               <div className="px-2 py-2 bg-gray-900/50 border-b border-gray-800 flex-shrink-0">
@@ -868,7 +868,7 @@ export default function HyeneScores() {
             </div>
           </div>
 
-          <div className="flex-1 px-4 pb-20 overflow-y-auto">
+          <div className="flex-1 px-4 pb-28 overflow-y-auto">
             <div className="space-y-4">
               
               {/* Sauvegarde */}
@@ -956,62 +956,76 @@ export default function HyeneScores() {
       )}
 
       {/* Bottom Navigation */}
-      <div className="bg-black/95 backdrop-blur-md border-t border-gray-800 px-4 py-2 flex-shrink-0 fixed bottom-0 left-0 right-0 z-50">
-        <div className="flex justify-around items-center max-w-screen-xl mx-auto">
-          <button 
-            onClick={() => setSelectedTab('classement')}
-            className={`flex flex-col items-center gap-0.5 transition-colors min-w-[60px] py-1 ${
-              selectedTab === 'classement' ? 'text-cyan-400' : 'text-gray-500 hover:text-gray-400'
-            }`}
-          >
-            <div className="text-3xl">🏆</div>
-            <span className="text-xs font-semibold">Classement</span>
-          </button>
-          <button 
-            onClick={() => setSelectedTab('match')}
-            className={`flex flex-col items-center gap-0.5 transition-colors min-w-[60px] py-1 ${
-              selectedTab === 'match' ? 'text-cyan-400' : 'text-gray-500 hover:text-gray-400'
-            }`}
-          >
-            <div className="text-3xl">📅</div>
-            <span className="text-xs font-semibold">Match</span>
-          </button>
-          <button 
-            onClick={() => setSelectedTab('palmares')}
-            className={`flex flex-col items-center gap-0.5 transition-colors min-w-[60px] py-1 ${
-              selectedTab === 'palmares' ? 'text-cyan-400' : 'text-gray-500 hover:text-gray-400'
-            }`}
-          >
-            <div className="text-3xl">🎯</div>
-            <span className="text-xs font-semibold">Palmarès</span>
-          </button>
-          <button 
-            onClick={() => setSelectedTab('pantheon')}
-            className={`flex flex-col items-center gap-0.5 transition-colors min-w-[60px] py-1 ${
-              selectedTab === 'pantheon' ? 'text-cyan-400' : 'text-gray-500 hover:text-gray-400'
-            }`}
-          >
-            <div className="text-3xl">🏅</div>
-            <span className="text-xs font-semibold">Panthéon</span>
-          </button>
-          <button 
-            onClick={() => setSelectedTab('stats')}
-            className={`flex flex-col items-center gap-0.5 transition-colors min-w-[60px] py-1 ${
-              selectedTab === 'stats' ? 'text-cyan-400' : 'text-gray-500 hover:text-gray-400'
-            }`}
-          >
-            <div className="text-3xl">📊</div>
-            <span className="text-xs font-semibold">Stats</span>
-          </button>
-          <button 
-            onClick={() => setSelectedTab('reglages')}
-            className={`flex flex-col items-center gap-0.5 transition-colors min-w-[60px] py-1 ${
-              selectedTab === 'reglages' ? 'text-cyan-400' : 'text-gray-500 hover:text-gray-400'
-            }`}
-          >
-            <div className="text-3xl">⚙️</div>
-            <span className="text-xs font-semibold">Réglages</span>
-          </button>
+      <div className="fixed bottom-0 left-0 right-0 z-50 px-3 pb-3 pt-2" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+        <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-800/50 rounded-3xl shadow-2xl max-w-screen-xl mx-auto overflow-hidden">
+          <div className="flex justify-around items-center px-2 py-2">
+            <button
+              onClick={() => setSelectedTab('classement')}
+              className={`flex flex-col items-center gap-1 transition-all duration-300 ease-out rounded-2xl px-3 py-2 min-w-[56px] ${
+                selectedTab === 'classement'
+                  ? 'bg-cyan-500/20 text-cyan-400 scale-105 shadow-lg shadow-cyan-500/20'
+                  : 'text-gray-500 hover:text-gray-400 hover:bg-gray-800/50 active:scale-95'
+              }`}
+            >
+              <div className="text-2xl">{selectedTab === 'classement' ? '🏆' : '🏆'}</div>
+              <span className="text-[10px] font-semibold">Classement</span>
+            </button>
+            <button
+              onClick={() => setSelectedTab('match')}
+              className={`flex flex-col items-center gap-1 transition-all duration-300 ease-out rounded-2xl px-3 py-2 min-w-[56px] ${
+                selectedTab === 'match'
+                  ? 'bg-cyan-500/20 text-cyan-400 scale-105 shadow-lg shadow-cyan-500/20'
+                  : 'text-gray-500 hover:text-gray-400 hover:bg-gray-800/50 active:scale-95'
+              }`}
+            >
+              <div className="text-2xl">📅</div>
+              <span className="text-[10px] font-semibold">Match</span>
+            </button>
+            <button
+              onClick={() => setSelectedTab('palmares')}
+              className={`flex flex-col items-center gap-1 transition-all duration-300 ease-out rounded-2xl px-3 py-2 min-w-[56px] ${
+                selectedTab === 'palmares'
+                  ? 'bg-cyan-500/20 text-cyan-400 scale-105 shadow-lg shadow-cyan-500/20'
+                  : 'text-gray-500 hover:text-gray-400 hover:bg-gray-800/50 active:scale-95'
+              }`}
+            >
+              <div className="text-2xl">🎯</div>
+              <span className="text-[10px] font-semibold">Palmarès</span>
+            </button>
+            <button
+              onClick={() => setSelectedTab('pantheon')}
+              className={`flex flex-col items-center gap-1 transition-all duration-300 ease-out rounded-2xl px-3 py-2 min-w-[56px] ${
+                selectedTab === 'pantheon'
+                  ? 'bg-cyan-500/20 text-cyan-400 scale-105 shadow-lg shadow-cyan-500/20'
+                  : 'text-gray-500 hover:text-gray-400 hover:bg-gray-800/50 active:scale-95'
+              }`}
+            >
+              <div className="text-2xl">🏅</div>
+              <span className="text-[10px] font-semibold">Panthéon</span>
+            </button>
+            <button
+              onClick={() => setSelectedTab('stats')}
+              className={`flex flex-col items-center gap-1 transition-all duration-300 ease-out rounded-2xl px-3 py-2 min-w-[56px] ${
+                selectedTab === 'stats'
+                  ? 'bg-cyan-500/20 text-cyan-400 scale-105 shadow-lg shadow-cyan-500/20'
+                  : 'text-gray-500 hover:text-gray-400 hover:bg-gray-800/50 active:scale-95'
+              }`}
+            >
+              <div className="text-2xl">📊</div>
+              <span className="text-[10px] font-semibold">Stats</span>
+            </button>
+            <button
+              onClick={() => setSelectedTab('reglages')}
+              className={`flex flex-col items-center gap-1 transition-all duration-300 ease-out rounded-2xl px-3 py-2 min-w-[56px] ${
+                selectedTab === 'reglages'
+                  ? 'bg-cyan-500/20 text-cyan-400 scale-105 shadow-lg shadow-cyan-500/20'
+                  : 'text-gray-500 hover:text-gray-400 hover:bg-gray-800/50 active:scale-95'
+              }`}
+            >
+              <div className="text-2xl">⚙️</div>
+              <span className="text-[10px] font-semibold">Réglages</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
