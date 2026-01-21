@@ -193,16 +193,16 @@ export default function HyeneScores() {
       {/* CLASSEMENT */}
       {selectedTab === 'classement' && (
         <div className="h-full flex flex-col bg-gradient-to-br from-gray-900 to-black">
-          <div className="px-4 pt-4 pb-2 flex-shrink-0">
+          <div className="px-2 pt-4 pb-2 flex-shrink-0">
             <div className="bg-gradient-to-br from-gray-900 to-black border-2 border-cyan-500/50 rounded-xl p-3 text-center">
               <h1 className="text-cyan-400 text-2xl font-bold tracking-widest">CLASSEMENT</h1>
             </div>
           </div>
 
-          <div className="flex-1 px-3 pb-24 overflow-hidden flex flex-col">
+          <div className="flex-1 px-2 pb-24 overflow-hidden flex flex-col">
 
               {/* Selectors */}
-              <div className="px-3 py-2 border-b border-gray-800 flex-shrink-0 relative">
+              <div className="px-2 py-2 border-b border-gray-800 flex-shrink-0 relative">
                 <div className="flex items-stretch gap-2">
                   <div className="flex-1 relative">
                     <button
@@ -284,7 +284,7 @@ export default function HyeneScores() {
               </div>
 
               {/* Progress Bar */}
-              <div className="px-3 py-1.5 border-b border-gray-800 flex-shrink-0">
+              <div className="px-2 py-1.5 border-b border-gray-800 flex-shrink-0">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-gray-500 text-xs font-semibold">Journée 53/72</span>
                   <span className="text-cyan-400 text-xs font-bold">73.6%</span>
@@ -295,7 +295,7 @@ export default function HyeneScores() {
               </div>
 
               {/* Table Header */}
-              <div className="grid grid-cols-12 gap-1 px-3 py-1.5 bg-gray-900/50 border-b border-gray-800 flex-shrink-0">
+              <div className="grid grid-cols-12 gap-1 px-2 py-1.5 bg-gray-900/50 border-b border-gray-800 flex-shrink-0">
                 <div className="col-span-1 text-gray-500 text-xs font-semibold tracking-widest text-center">#</div>
                 <div className="col-span-3 text-gray-500 text-xs font-semibold tracking-widest text-left">CLUB</div>
                 <div className="col-span-2 text-gray-500 text-xs font-semibold tracking-widest text-center">PTS</div>
@@ -305,7 +305,7 @@ export default function HyeneScores() {
               </div>
 
               {/* Teams List */}
-              <div className="flex-1 overflow-y-auto px-3 pb-1">
+              <div className="flex-1 overflow-y-auto px-2 pb-1">
                 {teams.map(team => (
                   <div
                     key={team.rank}
@@ -342,16 +342,16 @@ export default function HyeneScores() {
       {/* MATCH */}
       {selectedTab === 'match' && (
         <div className="h-full flex flex-col bg-gradient-to-br from-gray-900 to-black">
-          <div className="px-4 pt-4 pb-2 flex-shrink-0">
+          <div className="px-2 pt-4 pb-2 flex-shrink-0">
             <div className="bg-gradient-to-br from-gray-900 to-black border-2 border-cyan-500/50 rounded-xl p-3 text-center">
               <h1 className="text-cyan-400 text-2xl font-bold tracking-widest">MATCHS</h1>
             </div>
           </div>
 
-          <div className="flex-1 px-3 pb-24 overflow-hidden flex flex-col">
+          <div className="flex-1 px-2 pb-24 overflow-hidden flex flex-col">
 
               {/* Selectors */}
-              <div className="px-3 py-2 border-b border-gray-800 flex-shrink-0 relative">
+              <div className="px-2 py-2 border-b border-gray-800 flex-shrink-0 relative">
                 <div className="flex items-stretch gap-2">
                   {/* Championship Dropdown */}
                   <div className="flex-1 relative">
@@ -472,7 +472,7 @@ export default function HyeneScores() {
               </div>
 
               {/* Matches List */}
-              <div className="flex-1 overflow-y-auto px-3 py-3">
+              <div className="flex-1 overflow-y-auto px-2 py-3">
                 {/* Header */}
                 <div className="grid grid-cols-12 gap-1 py-2 mb-2">
                   <div className="col-span-5 text-center text-gray-500 text-xs font-semibold tracking-widest">
@@ -658,16 +658,16 @@ export default function HyeneScores() {
       {/* PALMARES */}
       {selectedTab === 'palmares' && (
         <div className="h-full flex flex-col bg-gradient-to-br from-gray-900 to-black">
-          <div className="px-4 pt-4 pb-2 flex-shrink-0">
+          <div className="px-2 pt-4 pb-2 flex-shrink-0">
             <div className="bg-gradient-to-br from-gray-900 to-black border-2 border-cyan-500/50 rounded-xl p-3 text-center">
               <h1 className="text-cyan-400 text-2xl font-bold tracking-widest">PALMARÈS</h1>
             </div>
           </div>
 
-          <div className="flex-1 px-3 pb-24 overflow-hidden flex flex-col">
+          <div className="flex-1 px-2 pb-24 overflow-hidden flex flex-col">
 
               {/* Selectors */}
-              <div className="px-3 py-2 border-b border-gray-800 flex-shrink-0 relative">
+              <div className="px-2 py-2 border-b border-gray-800 flex-shrink-0 relative">
                 <div className="flex items-stretch gap-2">
                   {/* Championship Dropdown */}
                   <div className="flex-1 relative">
@@ -761,11 +761,11 @@ export default function HyeneScores() {
               </div>
 
               {/* Champions List */}
-              <div className="flex-1 overflow-y-auto px-3 pb-1">
+              <div className="flex-1 overflow-y-auto px-2 pb-1">
                 {champions.map(champion => (
                   <div
                     key={champion.season}
-                    className="grid grid-cols-12 gap-1 px-4 py-2 border-b border-gray-800 hover:bg-gray-900/30 transition-colors items-center h-[48px]"
+                    className="grid grid-cols-12 gap-1 px-2 py-2 border-b border-gray-800 hover:bg-gray-900/30 transition-colors items-center h-[48px]"
                   >
                     <div className="col-span-3 flex justify-center">
                       <span className="text-cyan-400 text-lg font-bold drop-shadow-[0_0_10px_rgba(34,211,238,0.6)]">{champion.season}</span>
@@ -787,16 +787,16 @@ export default function HyeneScores() {
       {/* PANTHEON */}
       {selectedTab === 'pantheon' && (
         <div className="h-full flex flex-col bg-gradient-to-br from-gray-900 to-black">
-          <div className="px-4 pt-4 pb-2 flex-shrink-0">
+          <div className="px-2 pt-4 pb-2 flex-shrink-0">
             <div className="bg-gradient-to-br from-gray-900 to-black border-2 border-cyan-500/50 rounded-xl p-3 text-center">
               <h1 className="text-cyan-400 text-2xl font-bold tracking-widest">PANTHÉON</h1>
             </div>
           </div>
 
-          <div className="flex-1 px-3 pb-24 overflow-hidden flex flex-col">
+          <div className="flex-1 px-2 pb-24 overflow-hidden flex flex-col">
 
               {/* Table Header */}
-              <div className="px-3 py-2 bg-gray-900/50 border-b border-gray-800 flex-shrink-0">
+              <div className="px-2 py-2 bg-gray-900/50 border-b border-gray-800 flex-shrink-0">
                 <div className="grid grid-cols-12 gap-0.5 items-center">
                   <div className="col-span-1 flex justify-center text-gray-500 text-xs font-semibold tracking-widest">#</div>
                   <div className="col-span-4 flex items-center text-left pl-1 text-gray-500 text-xs font-semibold tracking-widest">ÉQUIPE</div>
@@ -820,7 +820,7 @@ export default function HyeneScores() {
               </div>
 
               {/* Teams List */}
-              <div className="flex-1 overflow-y-auto px-3 pb-1">
+              <div className="flex-1 overflow-y-auto px-2 pb-1">
                 {pantheonTeams.map(team => (
                   <div
                     key={team.rank}
