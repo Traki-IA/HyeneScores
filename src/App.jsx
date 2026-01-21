@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 
 export default function HyeneScores() {
   const [selectedTab, setSelectedTab] = useState('classement');
+  const fileInputRef = useRef(null);
 
   // États Classement
   const [selectedChampionship, setSelectedChampionship] = useState('hyenes');
@@ -17,7 +18,7 @@ export default function HyeneScores() {
     { id: 'england', icon: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', name: 'Angleterre' }
   ];
 
-  const teams = [
+  const [teams, setTeams] = useState([
     { rank: 1, name: 'MILAN AC', pts: 95, record: '30-5-18', goalDiff: '116-67', diff: '+49' },
     { rank: 2, name: 'STOCKY FC', pts: 86, record: '24-14-15', goalDiff: '116-89', diff: '+27' },
     { rank: 3, name: 'BIMBAM', pts: 84, record: '25-9-19', goalDiff: '119-96', diff: '+23' },
@@ -28,10 +29,10 @@ export default function HyeneScores() {
     { rank: 8, name: 'MAMBA TEAM', pts: 64, record: '18-10-25', goalDiff: '96-110', diff: '-14' },
     { rank: 9, name: 'WARNAQUE', pts: 61, record: '17-10-26', goalDiff: '94-110', diff: '-16' },
     { rank: 10, name: 'NOPIGOAL FC', pts: 61, record: '16-12-26', goalDiff: '86-121', diff: '-35' }
-  ];
+  ]);
 
   // États Palmarès
-  const champions = [
+  const [champions, setChampions] = useState([
     { season: '9', team: 'MILAN AC', points: 95 },
     { season: '8', team: 'STOCKY FC', points: 92 },
     { season: '7', team: 'BIMBAM', points: 88 },
@@ -41,10 +42,10 @@ export default function HyeneScores() {
     { season: '3', team: 'FC GRINTA', points: 83 },
     { season: '2', team: 'MILAN AC', points: 89 },
     { season: '1', team: 'STOCKY FC', points: 86 }
-  ];
+  ]);
 
   // États Panthéon
-  const pantheonTeams = [
+  const [pantheonTeams, setPantheonTeams] = useState([
     { rank: 1, name: 'MILAN AC', trophies: 15, france: 5, spain: 4, italy: 4, england: 2, total: 15 },
     { rank: 2, name: 'STOCKY FC', trophies: 12, france: 4, spain: 3, italy: 3, england: 2, total: 12 },
     { rank: 3, name: 'BIMBAM', trophies: 10, france: 3, spain: 3, italy: 2, england: 2, total: 10 },
@@ -55,7 +56,7 @@ export default function HyeneScores() {
     { rank: 8, name: 'MAMBA TEAM', trophies: 2, france: 1, spain: 0, italy: 1, england: 0, total: 2 },
     { rank: 9, name: 'WARNAQUE', trophies: 1, france: 0, spain: 1, italy: 0, england: 0, total: 1 },
     { rank: 10, name: 'NOPIGOAL FC', trophies: 0, france: 0, spain: 0, italy: 0, england: 0, total: 0 }
-  ];
+  ]);
 
   // États Match
   const [selectedJournee, setSelectedJournee] = useState('1');
@@ -164,6 +165,54 @@ export default function HyeneScores() {
     } else {
       alert('Veuillez taper "SUPPRIMER" pour confirmer');
     }
+  };
+
+  const handleImportJSON = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target?.result);
+
+        // Valider et importer les données
+        if (data.classement && Array.isArray(data.classement)) {
+          setTeams(data.classement);
+        }
+        if (data.matches && Array.isArray(data.matches)) {
+          setMatches(data.matches);
+        }
+        if (data.palmares && Array.isArray(data.palmares)) {
+          setChampions(data.palmares);
+        }
+        if (data.pantheon && Array.isArray(data.pantheon)) {
+          setPantheonTeams(data.pantheon);
+        }
+
+        alert('✅ Données importées avec succès !');
+      } catch (error) {
+        alert('❌ Erreur lors de l\'importation : fichier JSON invalide');
+      }
+    };
+    reader.readAsText(file);
+
+    // Réinitialiser l'input pour permettre de sélectionner le même fichier à nouveau
+    event.target.value = '';
+  };
+
+  const handleRefreshData = () => {
+    // Force un re-render pour actualiser l'affichage
+    // Utile après avoir modifié les données manuellement
+    setTeams([...teams]);
+    setMatches([...matches]);
+    setChampions([...champions]);
+    setPantheonTeams([...pantheonTeams]);
+    alert('✅ Données actualisées !');
   };
 
   return (
@@ -861,45 +910,80 @@ export default function HyeneScores() {
 
       {/* REGLAGES */}
       {selectedTab === 'reglages' && (
-        <div className="h-full flex flex-col">
-          <div className="px-4 pt-4 pb-3 flex-shrink-0">
-            <div className="bg-gradient-to-br from-gray-900 to-black border-2 border-cyan-500/50 rounded-xl p-4 text-center">
+        <div className="h-full flex flex-col bg-gradient-to-br from-gray-900 to-black">
+          <div className="px-2 pt-4 pb-2 flex-shrink-0">
+            <div className="bg-gradient-to-br from-gray-900 to-black border-2 border-cyan-500/50 rounded-xl p-3 text-center">
               <h1 className="text-cyan-400 text-2xl font-bold tracking-widest">RÉGLAGES</h1>
             </div>
           </div>
 
-          <div className="flex-1 px-4 pb-28 overflow-y-auto">
-            <div className="space-y-4">
-              
+          <div className="flex-1 px-2 pb-28 overflow-y-auto">
+            <div className="space-y-3">
+
               {/* Sauvegarde */}
-              <div className="bg-gradient-to-br from-gray-900 to-black border-2 border-cyan-500/50 rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-2xl">💾</span>
-                  <h2 className="text-cyan-400 text-lg font-bold tracking-wide">SAUVEGARDE</h2>
+              <div className="bg-gradient-to-br from-gray-900/50 to-black/50 border-2 border-cyan-500/30 rounded-2xl p-4 backdrop-blur-sm">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+                    <span className="text-xl">💾</span>
+                  </div>
+                  <h2 className="text-cyan-400 text-base font-bold tracking-wide">SAUVEGARDE</h2>
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <button
                     onClick={handleExportJSON}
-                    className="w-full bg-black/50 border border-gray-800 hover:border-cyan-500/50 rounded-lg px-4 py-3 text-white text-sm font-medium transition-all flex items-center justify-between"
+                    className="w-full bg-black/40 border border-cyan-500/30 hover:border-cyan-500/60 hover:bg-cyan-500/10 rounded-xl px-4 py-3 text-white text-sm font-medium transition-all duration-300 flex items-center justify-between group"
                   >
-                    <span>Exporter toutes les données (JSON)</span>
-                    <span className="text-xl">📥</span>
+                    <span className="group-hover:text-cyan-400 transition-colors">Exporter toutes les données (JSON)</span>
+                    <span className="text-xl group-hover:scale-110 transition-transform">📥</span>
                   </button>
+                  <button
+                    onClick={handleImportJSON}
+                    className="w-full bg-black/40 border border-cyan-500/30 hover:border-cyan-500/60 hover:bg-cyan-500/10 rounded-xl px-4 py-3 text-white text-sm font-medium transition-all duration-300 flex items-center justify-between group"
+                  >
+                    <span className="group-hover:text-cyan-400 transition-colors">Importer des données (JSON)</span>
+                    <span className="text-xl group-hover:scale-110 transition-transform">📤</span>
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".json"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
                 </div>
               </div>
 
+              {/* Données */}
+              <div className="bg-gradient-to-br from-gray-900/50 to-black/50 border-2 border-green-500/30 rounded-2xl p-4 backdrop-blur-sm">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
+                    <span className="text-xl">🔄</span>
+                  </div>
+                  <h2 className="text-green-400 text-base font-bold tracking-wide">DONNÉES</h2>
+                </div>
+                <button
+                  onClick={handleRefreshData}
+                  className="w-full bg-black/40 border border-green-500/30 hover:border-green-500/60 hover:bg-green-500/10 rounded-xl px-4 py-3 text-white text-sm font-medium transition-all duration-300 flex items-center justify-between group"
+                >
+                  <span className="group-hover:text-green-400 transition-colors">Actualiser l'affichage</span>
+                  <span className="text-xl group-hover:rotate-180 transition-transform duration-500">🔄</span>
+                </button>
+              </div>
+
               {/* Système */}
-              <div className="bg-gradient-to-br from-gray-900 to-black border-2 border-red-500/50 rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-2xl">⚠️</span>
-                  <h2 className="text-red-400 text-lg font-bold tracking-wide">SYSTÈME</h2>
+              <div className="bg-gradient-to-br from-red-900/20 to-black/50 border-2 border-red-500/30 rounded-2xl p-4 backdrop-blur-sm">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center">
+                    <span className="text-xl">⚠️</span>
+                  </div>
+                  <h2 className="text-red-400 text-base font-bold tracking-wide">SYSTÈME</h2>
                 </div>
                 <button
                   onClick={() => setShowResetModal(true)}
-                  className="w-full bg-red-900/20 border border-red-500/50 hover:border-red-500 rounded-lg px-4 py-3 text-red-400 text-sm font-bold transition-all flex items-center justify-between"
+                  className="w-full bg-red-900/30 border border-red-500/30 hover:border-red-500/60 hover:bg-red-500/20 rounded-xl px-4 py-3 text-red-400 text-sm font-bold transition-all duration-300 flex items-center justify-between group"
                 >
-                  <span>Réinitialiser toutes les données</span>
-                  <span className="text-xl">🗑️</span>
+                  <span className="group-hover:text-red-300 transition-colors">Réinitialiser toutes les données</span>
+                  <span className="text-xl group-hover:scale-110 transition-transform">🗑️</span>
                 </button>
               </div>
             </div>
