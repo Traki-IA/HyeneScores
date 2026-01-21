@@ -475,9 +475,9 @@ export default function HyeneScores() {
               </div>
 
               {/* Matches List */}
-              <div className="flex-1 overflow-y-auto px-4 py-3">
+              <div className="flex-1 overflow-y-auto px-2 py-3">
                 {/* Header */}
-                <div className="grid grid-cols-12 gap-2 px-2 py-2 mb-2">
+                <div className="grid grid-cols-12 gap-1 px-0 py-2 mb-2">
                   <div className="col-span-5 text-center text-gray-500 text-xs font-semibold tracking-widest">
                     DOMICILE
                   </div>
