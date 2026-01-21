@@ -477,7 +477,7 @@ export default function HyeneScores() {
               {/* Matches List */}
               <div className="flex-1 overflow-y-auto px-2 py-3">
                 {/* Header */}
-                <div className="grid grid-cols-12 gap-1 px-0 py-2 mb-2">
+                <div className="grid grid-cols-12 gap-1 py-2 mb-2">
                   <div className="col-span-5 text-center text-gray-500 text-xs font-semibold tracking-widest">
                     DOMICILE
                   </div>
@@ -493,10 +493,10 @@ export default function HyeneScores() {
                   {matches.map(match => (
                     <div key={match.id} className="grid grid-cols-12 items-center gap-1 py-2 border-b border-gray-800/50 last:border-b-0">
                       {/* Home Team */}
-                      <div className="col-span-5 relative">
+                      <div className="col-span-5 relative flex justify-start">
                           <button
                             onClick={() => toggleDropdown(match.id, 'home')}
-                            className={`w-full bg-black/50 rounded-md px-1.5 py-1 flex items-center justify-between group hover:border-cyan-500/30 cursor-pointer transition-all duration-300 ${
+                            className={`w-full max-w-[130px] bg-black/50 rounded-md px-1.5 py-1 flex items-center justify-between group hover:border-cyan-500/30 cursor-pointer transition-all duration-300 ${
                               match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
                                 ? 'border-2 border-emerald-500 shadow-[inset_0_0_8px_rgba(16,185,129,0.15)]'
                                 : 'border border-gray-800'
@@ -510,7 +510,7 @@ export default function HyeneScores() {
                           {openDropdown?.matchId === match.id && openDropdown?.type === 'home' && (
                             <>
                               <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)}></div>
-                              <div className="absolute left-0 top-full mt-1 w-full min-w-0 bg-gray-900 border border-cyan-500/30 rounded-lg shadow-2xl z-50 max-h-64 overflow-y-auto">
+                              <div className="absolute left-0 top-full mt-1 w-full max-w-[130px] bg-gray-900 border border-cyan-500/30 rounded-lg shadow-2xl z-50 max-h-64 overflow-y-auto">
                                 <button
                                   onClick={() => handleTeamSelect(match.id, 'home', '')}
                                   className="w-full px-2 py-1.5 text-xs font-medium text-left transition-colors flex items-center text-white hover:bg-gray-800 whitespace-nowrap"
@@ -565,10 +565,10 @@ export default function HyeneScores() {
                       </div>
 
                       {/* Away Team */}
-                      <div className="col-span-5 relative">
+                      <div className="col-span-5 relative flex justify-end">
                           <button
                             onClick={() => toggleDropdown(match.id, 'away')}
-                            className={`w-full bg-black/50 rounded-md px-1.5 py-1 flex items-center justify-between group hover:border-cyan-500/30 cursor-pointer transition-all duration-300 ${
+                            className={`w-full max-w-[130px] bg-black/50 rounded-md px-1.5 py-1 flex items-center justify-between group hover:border-cyan-500/30 cursor-pointer transition-all duration-300 ${
                               match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
                                 ? 'border-2 border-emerald-500 shadow-[inset_0_0_8px_rgba(16,185,129,0.15)]'
                                 : 'border border-gray-800'
@@ -582,7 +582,7 @@ export default function HyeneScores() {
                           {openDropdown?.matchId === match.id && openDropdown?.type === 'away' && (
                             <>
                               <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)}></div>
-                              <div className="absolute left-0 top-full mt-1 w-full min-w-0 bg-gray-900 border border-cyan-500/30 rounded-lg shadow-2xl z-50 max-h-64 overflow-y-auto">
+                              <div className="absolute right-0 top-full mt-1 w-full max-w-[130px] bg-gray-900 border border-cyan-500/30 rounded-lg shadow-2xl z-50 max-h-64 overflow-y-auto">
                                 <button
                                   onClick={() => handleTeamSelect(match.id, 'away', '')}
                                   className="w-full px-2 py-1.5 text-xs font-medium text-left transition-colors flex items-center text-white hover:bg-gray-800 whitespace-nowrap"
