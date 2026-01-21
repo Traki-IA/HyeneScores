@@ -77,7 +77,6 @@ export default function HyeneScores() {
   const [openDropdown, setOpenDropdown] = useState(null);
   const [exemptTeam, setExemptTeam] = useState('');
   const [isTeamDropdownOpen, setIsTeamDropdownOpen] = useState(false);
-  const [showAddSeasonModal, setShowAddSeasonModal] = useState(false);
 
   const seasons = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
   const journees = Array.from({ length: 18 }, (_, i) => (i + 1).toString());
@@ -483,13 +482,11 @@ export default function HyeneScores() {
                       </>
                     )}
                   </div>
-
-
                 </div>
               </div>
 
               {/* Navigation Journée */}
-              <div className="px-3 py-2 border-b border-gray-800 flex-shrink-0">
+              <div className="px-2 py-2 border-b border-gray-800 flex-shrink-0">
                 <div className="flex items-center justify-center gap-4">
                   <button
                     onClick={() => {
@@ -803,7 +800,7 @@ export default function HyeneScores() {
               </div>
 
               {/* Table Header */}
-              <div className="grid grid-cols-12 gap-1 px-4 py-2 bg-gray-900/50 border-b border-gray-800 flex-shrink-0">
+              <div className="grid grid-cols-12 gap-1 px-2 py-2 bg-gray-900/50 border-b border-gray-800 flex-shrink-0">
                 <div className="col-span-3 text-gray-500 text-xs font-semibold tracking-widest text-center">SAISON</div>
                 <div className="col-span-6 text-gray-500 text-xs font-semibold tracking-widest text-center">CHAMPION</div>
                 <div className="col-span-3 text-gray-500 text-xs font-semibold tracking-widest text-center">POINTS</div>
@@ -1051,7 +1048,7 @@ export default function HyeneScores() {
                   : 'text-gray-500 hover:text-gray-400 hover:bg-gray-800/50 active:scale-95'
               }`}
             >
-              <div className="text-2xl">{selectedTab === 'classement' ? '🏆' : '🏆'}</div>
+              <div className="text-2xl">🏆</div>
               <span className="text-[10px] font-semibold">Classement</span>
             </button>
             <button
