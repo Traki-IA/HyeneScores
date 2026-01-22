@@ -147,12 +147,21 @@ export default function HyeneScores() {
     // Extraire matches[] depuis entities.matches
     if (data.entities.matches && Array.isArray(data.entities.matches)) {
       // Utiliser le championshipKey mappé au lieu de championship
+      console.log('[DEBUG] Recherche matches pour:', { championshipKey, season, journee });
+      console.log('[DEBUG] Nombre de blocs matches:', data.entities.matches.length);
+
       const matchesForContext = data.entities.matches.find(
         block =>
           block.championship === championshipKey &&
           block.season === parseInt(season) &&
           block.matchday === parseInt(journee)
       );
+
+      console.log('[DEBUG] Bloc trouvé:', matchesForContext ? 'OUI' : 'NON');
+      if (matchesForContext) {
+        console.log('[DEBUG] Nombre de games:', matchesForContext.games?.length || 0);
+        console.log('[DEBUG] Premier match:', matchesForContext.games?.[0]);
+      }
 
       if (matchesForContext && matchesForContext.games) {
         // Normaliser les matches pour s'assurer que les champs sont corrects
@@ -340,6 +349,7 @@ export default function HyeneScores() {
 
           // Extraire allTeams depuis metadata.managers
           if (data.metadata?.managers && Array.isArray(data.metadata.managers)) {
+            console.log('[DEBUG] Mise à jour allTeams:', data.metadata.managers);
             setAllTeams(data.metadata.managers);
           }
 
