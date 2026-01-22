@@ -75,6 +75,7 @@ export default function HyeneScores() {
   ]);
 
   const [openDropdown, setOpenDropdown] = useState(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, right: 'auto' });
   const [exemptTeam, setExemptTeam] = useState('');
   const [isTeamDropdownOpen, setIsTeamDropdownOpen] = useState(false);
 
@@ -254,7 +255,6 @@ export default function HyeneScores() {
 
   // Fonctions Match
   const getAvailableTeams = (currentMatchId, currentType) => {
-    console.log('[DROPDOWN] allTeams:', allTeams);
     const selectedTeams = [];
     matches.forEach(match => {
       if (match.id === currentMatchId) {
@@ -266,9 +266,7 @@ export default function HyeneScores() {
       }
     });
     if (exemptTeam) selectedTeams.push(exemptTeam);
-    const available = allTeams.filter(team => !selectedTeams.includes(team));
-    console.log('[DROPDOWN] Équipes disponibles:', available);
-    return available;
+    return allTeams.filter(team => !selectedTeams.includes(team));
   };
 
   const getAvailableTeamsForExempt = () => {
@@ -287,8 +285,19 @@ export default function HyeneScores() {
     setOpenDropdown(null);
   };
 
-  const toggleDropdown = (matchId, type) => {
-    setOpenDropdown(openDropdown?.matchId === matchId && openDropdown?.type === type ? null : { matchId, type });
+  const toggleDropdown = (matchId, type, event) => {
+    if (openDropdown?.matchId === matchId && openDropdown?.type === type) {
+      setOpenDropdown(null);
+    } else {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const position = {
+        top: rect.bottom + 4,
+        left: type === 'home' ? rect.left : 'auto',
+        right: type === 'away' ? (window.innerWidth - rect.right) : 'auto'
+      };
+      setDropdownPosition(position);
+      setOpenDropdown({ matchId, type });
+    }
   };
 
   const handleSeasonSelect = (season) => {
@@ -364,13 +373,11 @@ export default function HyeneScores() {
 
           // Extraire allTeams depuis metadata.managers
           if (data.metadata?.managers && Array.isArray(data.metadata.managers)) {
-            console.log('[IMPORT] Mise à jour allTeams avec:', data.metadata.managers);
             setAllTeams(data.metadata.managers);
           } else {
             // Fallback : extraire depuis entities.managers si metadata.managers n'existe pas
             if (data.entities.managers) {
               const managerNames = Object.keys(data.entities.managers);
-              console.log('[IMPORT] Mise à jour allTeams (fallback) avec:', managerNames);
               setAllTeams(managerNames);
             }
           }
@@ -805,8 +812,7 @@ export default function HyeneScores() {
                       {/* Home Team */}
                       <div className="col-span-5 relative flex justify-start">
                           <button
-                            data-dropdown-home={match.id}
-                            onClick={() => toggleDropdown(match.id, 'home')}
+                            onClick={(e) => toggleDropdown(match.id, 'home', e)}
                             className={`w-full max-w-[130px] bg-black/50 rounded-md px-1.5 py-1 flex items-center justify-between group hover:border-cyan-500/30 cursor-pointer transition-all duration-300 ${
                               match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
                                 ? 'border-2 border-emerald-500 shadow-[inset_0_0_8px_rgba(16,185,129,0.15)]'
@@ -821,11 +827,14 @@ export default function HyeneScores() {
                           {openDropdown?.matchId === match.id && openDropdown?.type === 'home' && (
                             <>
                               <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)}></div>
-                              <div className="fixed bg-gray-900 border border-cyan-500/30 rounded-lg shadow-2xl z-50 max-h-64 overflow-y-auto w-[130px]"
+                              <div
+                                className="fixed bg-gray-900 border border-cyan-500/30 rounded-lg shadow-2xl z-50 max-h-64 overflow-y-auto w-[130px]"
                                 style={{
-                                  left: `${document.querySelector(`[data-dropdown-home="${match.id}"]`)?.getBoundingClientRect().left}px`,
-                                  top: `${(document.querySelector(`[data-dropdown-home="${match.id}"]`)?.getBoundingClientRect().bottom || 0) + 4}px`
-                                }}>
+                                  top: `${dropdownPosition.top}px`,
+                                  left: dropdownPosition.left !== 'auto' ? `${dropdownPosition.left}px` : 'auto',
+                                  right: dropdownPosition.right !== 'auto' ? `${dropdownPosition.right}px` : 'auto'
+                                }}
+                              >
                                 <button
                                   onClick={() => handleTeamSelect(match.id, 'home', '')}
                                   className="w-full px-2 py-1.5 text-xs font-medium text-left transition-colors flex items-center text-white hover:bg-gray-800 whitespace-nowrap"
@@ -882,8 +891,7 @@ export default function HyeneScores() {
                       {/* Away Team */}
                       <div className="col-span-5 relative flex justify-end">
                           <button
-                            data-dropdown-away={match.id}
-                            onClick={() => toggleDropdown(match.id, 'away')}
+                            onClick={(e) => toggleDropdown(match.id, 'away', e)}
                             className={`w-full max-w-[130px] bg-black/50 rounded-md px-1.5 py-1 flex items-center justify-between group hover:border-cyan-500/30 cursor-pointer transition-all duration-300 ${
                               match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
                                 ? 'border-2 border-emerald-500 shadow-[inset_0_0_8px_rgba(16,185,129,0.15)]'
@@ -898,11 +906,14 @@ export default function HyeneScores() {
                           {openDropdown?.matchId === match.id && openDropdown?.type === 'away' && (
                             <>
                               <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)}></div>
-                              <div className="fixed bg-gray-900 border border-cyan-500/30 rounded-lg shadow-2xl z-50 max-h-64 overflow-y-auto w-[130px]"
+                              <div
+                                className="fixed bg-gray-900 border border-cyan-500/30 rounded-lg shadow-2xl z-50 max-h-64 overflow-y-auto w-[130px]"
                                 style={{
-                                  right: `${window.innerWidth - (document.querySelector(`[data-dropdown-away="${match.id}"]`)?.getBoundingClientRect().right || 0)}px`,
-                                  top: `${(document.querySelector(`[data-dropdown-away="${match.id}"]`)?.getBoundingClientRect().bottom || 0) + 4}px`
-                                }}>
+                                  top: `${dropdownPosition.top}px`,
+                                  left: dropdownPosition.left !== 'auto' ? `${dropdownPosition.left}px` : 'auto',
+                                  right: dropdownPosition.right !== 'auto' ? `${dropdownPosition.right}px` : 'auto'
+                                }}
+                              >
                                 <button
                                   onClick={() => handleTeamSelect(match.id, 'away', '')}
                                   className="w-full px-2 py-1.5 text-xs font-medium text-left transition-colors flex items-center text-white hover:bg-gray-800 whitespace-nowrap"
