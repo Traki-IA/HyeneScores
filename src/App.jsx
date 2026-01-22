@@ -85,6 +85,9 @@ export default function HyeneScores() {
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetConfirmation, setResetConfirmation] = useState('');
 
+  // État pour stocker les données brutes v2.0
+  const [appData, setAppData] = useState(null);
+
   // Fonctions Match
   const getAvailableTeams = (currentMatchId, currentType) => {
     const selectedTeams = [];
@@ -179,22 +182,117 @@ export default function HyeneScores() {
       try {
         const data = JSON.parse(e.target?.result);
 
-        // Valider et importer les données
-        if (data.classement && Array.isArray(data.classement)) {
-          setTeams(data.classement);
-        }
-        if (data.matches && Array.isArray(data.matches)) {
-          setMatches(data.matches);
-        }
-        if (data.palmares && Array.isArray(data.palmares)) {
-          setChampions(data.palmares);
-        }
-        if (data.pantheon && Array.isArray(data.pantheon)) {
-          setPantheonTeams(data.pantheon);
-        }
+        // Détecter la version du fichier
+        const version = data.version || '1.0';
 
-        alert('✅ Données importées avec succès !');
+        if (version === '2.0') {
+          // Format v2.0 optimisé
+          if (!data.entities || !data.metadata) {
+            alert('❌ Fichier v2.0 invalide : structure entities/metadata manquante');
+            return;
+          }
+
+          // Stocker les données brutes v2.0 pour accès global
+          setAppData(data);
+
+          // Extraire teams[] depuis entities.seasons[selectedChampionship_sXX].standings
+          const championshipKey = selectedChampionship === 'hyenes' ? 'ligue_hyenes' : selectedChampionship;
+          const seasonKey = `${championshipKey}_s${selectedSeason}`;
+
+          if (data.entities.seasons && data.entities.seasons[seasonKey]) {
+            const standings = data.entities.seasons[seasonKey].standings || [];
+            setTeams(standings);
+          }
+
+          // Extraire matches[] depuis entities.matches filtré par championship/season/matchday
+          if (data.entities.matches && Array.isArray(data.entities.matches)) {
+            const matchesForContext = data.entities.matches.find(
+              block =>
+                block.championship === selectedChampionship &&
+                block.season === parseInt(selectedSeason) &&
+                block.matchday === parseInt(selectedJournee)
+            );
+
+            if (matchesForContext && matchesForContext.games) {
+              setMatches(matchesForContext.games);
+            }
+          }
+
+          // Extraire champions[] - les équipes en position 1 pour chaque saison
+          if (data.entities.seasons) {
+            const championsList = [];
+            Object.keys(data.entities.seasons).forEach(seasonKey => {
+              // Parser le seasonKey (ex: "ligue_hyenes_s9" -> championship: ligue_hyenes, season: 9)
+              const parts = seasonKey.split('_');
+              const season = parts[parts.length - 1].replace('s', '');
+              const championship = parts.slice(0, -1).join('_');
+
+              // Vérifier si c'est le championnat sélectionné
+              const championshipId = championship === 'ligue_hyenes' ? 'hyenes' : championship;
+
+              if (championshipId === selectedChampionship) {
+                const seasonData = data.entities.seasons[seasonKey];
+                const champion = seasonData.standings?.find(team => team.rank === 1);
+
+                if (champion) {
+                  championsList.push({
+                    season: season,
+                    team: champion.name,
+                    points: champion.pts
+                  });
+                }
+              }
+            });
+
+            // Trier par saison décroissante
+            championsList.sort((a, b) => parseInt(b.season) - parseInt(a.season));
+            setChampions(championsList);
+          }
+
+          // Extraire pantheonTeams[] depuis entities.managers[].stats
+          if (data.entities.managers && Array.isArray(data.entities.managers)) {
+            const pantheon = data.entities.managers.map((manager, index) => ({
+              rank: index + 1,
+              name: manager.name,
+              trophies: manager.stats?.totalTitles || 0,
+              france: manager.stats?.france?.titles || 0,
+              spain: manager.stats?.spain?.titles || 0,
+              italy: manager.stats?.italy?.titles || 0,
+              england: manager.stats?.england?.titles || 0,
+              total: manager.stats?.totalTitles || 0
+            }));
+
+            // Trier par nombre de trophées
+            pantheon.sort((a, b) => b.total - a.total);
+
+            // Mettre à jour les rangs
+            pantheon.forEach((team, index) => {
+              team.rank = index + 1;
+            });
+
+            setPantheonTeams(pantheon);
+          }
+
+          alert('✅ Données v2.0 importées avec succès !');
+        } else {
+          // Format v1.0 legacy (comportement original)
+          if (data.classement && Array.isArray(data.classement)) {
+            setTeams(data.classement);
+          }
+          if (data.matches && Array.isArray(data.matches)) {
+            setMatches(data.matches);
+          }
+          if (data.palmares && Array.isArray(data.palmares)) {
+            setChampions(data.palmares);
+          }
+          if (data.pantheon && Array.isArray(data.pantheon)) {
+            setPantheonTeams(data.pantheon);
+          }
+
+          alert('✅ Données v1.0 importées avec succès !');
+        }
       } catch (error) {
+        console.error('Erreur d\'importation:', error);
         alert('❌ Erreur lors de l\'importation : fichier JSON invalide');
       }
     };
