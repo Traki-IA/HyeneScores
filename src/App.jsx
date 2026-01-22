@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 export default function HyeneScores() {
   const [selectedTab, setSelectedTab] = useState('classement');
@@ -87,6 +87,90 @@ export default function HyeneScores() {
 
   // État pour stocker les données brutes v2.0
   const [appData, setAppData] = useState(null);
+
+  // Fonction pour charger les données depuis appData v2.0
+  const loadDataFromAppData = (data, championship, season, journee) => {
+    if (!data || !data.entities) return;
+
+    // Extraire teams[] depuis entities.seasons
+    const championshipKey = championship === 'hyenes' ? 'ligue_hyenes' : championship;
+    const seasonKey = `${championshipKey}_s${season}`;
+
+    if (data.entities.seasons && data.entities.seasons[seasonKey]) {
+      const standings = data.entities.seasons[seasonKey].standings || [];
+      setTeams(standings);
+    } else {
+      setTeams([]);
+    }
+
+    // Extraire matches[] depuis entities.matches
+    if (data.entities.matches && Array.isArray(data.entities.matches)) {
+      const matchesForContext = data.entities.matches.find(
+        block =>
+          block.championship === championship &&
+          block.season === parseInt(season) &&
+          block.matchday === parseInt(journee)
+      );
+
+      if (matchesForContext && matchesForContext.games) {
+        setMatches(matchesForContext.games);
+      } else {
+        // Réinitialiser avec des matchs vides
+        setMatches([
+          { id: 1, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null },
+          { id: 2, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null },
+          { id: 3, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null },
+          { id: 4, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null },
+          { id: 5, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null }
+        ]);
+      }
+    }
+
+    // Extraire champions[] pour le championnat sélectionné
+    if (data.entities.seasons) {
+      const championsList = [];
+      Object.keys(data.entities.seasons).forEach(seasonKey => {
+        const parts = seasonKey.split('_');
+        const seasonNum = parts[parts.length - 1].replace('s', '');
+        const championshipName = parts.slice(0, -1).join('_');
+        const championshipId = championshipName === 'ligue_hyenes' ? 'hyenes' : championshipName;
+
+        if (championshipId === championship) {
+          const seasonData = data.entities.seasons[seasonKey];
+          const champion = seasonData.standings?.find(team => team.rank === 1);
+
+          if (champion) {
+            championsList.push({
+              season: seasonNum,
+              team: champion.name,
+              points: champion.pts
+            });
+          }
+        }
+      });
+
+      championsList.sort((a, b) => parseInt(b.season) - parseInt(a.season));
+      setChampions(championsList);
+    }
+
+    // Extraire l'équipe exemptée pour cette journée
+    if (data.indexes?.exemptTeams) {
+      const exemptKey = `${championshipKey}_s${season}`;
+      const exemptData = data.indexes.exemptTeams[exemptKey];
+      if (exemptData && exemptData[journee]) {
+        setExemptTeam(exemptData[journee]);
+      } else {
+        setExemptTeam('');
+      }
+    }
+  };
+
+  // useEffect pour recharger les données quand le contexte change
+  useEffect(() => {
+    if (appData && appData.version === '2.0') {
+      loadDataFromAppData(appData, selectedChampionship, selectedSeason, selectedJournee);
+    }
+  }, [selectedChampionship, selectedSeason, selectedJournee, appData]);
 
   // Fonctions Match
   const getAvailableTeams = (currentMatchId, currentType) => {
@@ -195,59 +279,8 @@ export default function HyeneScores() {
           // Stocker les données brutes v2.0 pour accès global
           setAppData(data);
 
-          // Extraire teams[] depuis entities.seasons[selectedChampionship_sXX].standings
-          const championshipKey = selectedChampionship === 'hyenes' ? 'ligue_hyenes' : selectedChampionship;
-          const seasonKey = `${championshipKey}_s${selectedSeason}`;
-
-          if (data.entities.seasons && data.entities.seasons[seasonKey]) {
-            const standings = data.entities.seasons[seasonKey].standings || [];
-            setTeams(standings);
-          }
-
-          // Extraire matches[] depuis entities.matches filtré par championship/season/matchday
-          if (data.entities.matches && Array.isArray(data.entities.matches)) {
-            const matchesForContext = data.entities.matches.find(
-              block =>
-                block.championship === selectedChampionship &&
-                block.season === parseInt(selectedSeason) &&
-                block.matchday === parseInt(selectedJournee)
-            );
-
-            if (matchesForContext && matchesForContext.games) {
-              setMatches(matchesForContext.games);
-            }
-          }
-
-          // Extraire champions[] - les équipes en position 1 pour chaque saison
-          if (data.entities.seasons) {
-            const championsList = [];
-            Object.keys(data.entities.seasons).forEach(seasonKey => {
-              // Parser le seasonKey (ex: "ligue_hyenes_s9" -> championship: ligue_hyenes, season: 9)
-              const parts = seasonKey.split('_');
-              const season = parts[parts.length - 1].replace('s', '');
-              const championship = parts.slice(0, -1).join('_');
-
-              // Vérifier si c'est le championnat sélectionné
-              const championshipId = championship === 'ligue_hyenes' ? 'hyenes' : championship;
-
-              if (championshipId === selectedChampionship) {
-                const seasonData = data.entities.seasons[seasonKey];
-                const champion = seasonData.standings?.find(team => team.rank === 1);
-
-                if (champion) {
-                  championsList.push({
-                    season: season,
-                    team: champion.name,
-                    points: champion.pts
-                  });
-                }
-              }
-            });
-
-            // Trier par saison décroissante
-            championsList.sort((a, b) => parseInt(b.season) - parseInt(a.season));
-            setChampions(championsList);
-          }
+          // Charger les données pour le contexte actuel
+          loadDataFromAppData(data, selectedChampionship, selectedSeason, selectedJournee);
 
           // Extraire pantheonTeams[] depuis entities.managers[].stats
           if (data.entities.managers && Array.isArray(data.entities.managers)) {
