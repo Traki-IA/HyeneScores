@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 export default function HyeneScores() {
   const [selectedTab, setSelectedTab] = useState('classement');
@@ -69,10 +69,10 @@ export default function HyeneScores() {
     { id: 5, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null }
   ]);
 
-  const allTeams = [
+  const [allTeams, setAllTeams] = useState([
     'MILAN AC', 'STOCKY FC', 'BIMBAM', 'DYNAMO KEV', 'TRAKNAR FC',
     'FC GRINTA', 'COMARDINHO', 'MAMBA TEAM', 'WARNAQUE', 'NOPIGOAL FC'
-  ];
+  ]);
 
   const [openDropdown, setOpenDropdown] = useState(null);
   const [exemptTeam, setExemptTeam] = useState('');
@@ -89,7 +89,7 @@ export default function HyeneScores() {
   const [appData, setAppData] = useState(null);
 
   // Fonction pour charger les données depuis appData v2.0
-  const loadDataFromAppData = (data, championship, season, journee) => {
+  const loadDataFromAppData = useCallback((data, championship, season, journee) => {
     if (!data || !data.entities) return;
 
     // Extraire teams[] depuis entities.seasons
@@ -98,7 +98,17 @@ export default function HyeneScores() {
 
     if (data.entities.seasons && data.entities.seasons[seasonKey]) {
       const standings = data.entities.seasons[seasonKey].standings || [];
-      setTeams(standings);
+
+      // Normaliser les données pour l'affichage
+      const normalizedTeams = standings.map(team => ({
+        ...team,
+        // S'assurer que diff est une string avec le bon format
+        diff: typeof team.diff === 'number'
+          ? (team.diff >= 0 ? `+${team.diff}` : `${team.diff}`)
+          : team.diff
+      }));
+
+      setTeams(normalizedTeams);
     } else {
       setTeams([]);
     }
@@ -163,14 +173,14 @@ export default function HyeneScores() {
         setExemptTeam('');
       }
     }
-  };
+  }, []);
 
   // useEffect pour recharger les données quand le contexte change
   useEffect(() => {
     if (appData && appData.version === '2.0') {
       loadDataFromAppData(appData, selectedChampionship, selectedSeason, selectedJournee);
     }
-  }, [selectedChampionship, selectedSeason, selectedJournee, appData]);
+  }, [selectedChampionship, selectedSeason, selectedJournee, appData, loadDataFromAppData]);
 
   // Fonctions Match
   const getAvailableTeams = (currentMatchId, currentType) => {
@@ -278,6 +288,11 @@ export default function HyeneScores() {
 
           // Stocker les données brutes v2.0 pour accès global
           setAppData(data);
+
+          // Extraire allTeams depuis metadata.managers
+          if (data.metadata?.managers && Array.isArray(data.metadata.managers)) {
+            setAllTeams(data.metadata.managers);
+          }
 
           // Charger les données pour le contexte actuel
           loadDataFromAppData(data, selectedChampionship, selectedSeason, selectedJournee);
@@ -507,7 +522,7 @@ export default function HyeneScores() {
                       {team.goalDiff}
                     </div>
                     <div className="col-span-1 text-center whitespace-nowrap overflow-hidden">
-                      <span className={`text-xs font-semibold ${team.diff.startsWith('+') ? 'text-green-500' : 'text-red-500'}`}>
+                      <span className={`text-xs font-semibold ${String(team.diff || '').startsWith('+') ? 'text-green-500' : 'text-red-500'}`}>
                         {team.diff}
                       </span>
                     </div>
