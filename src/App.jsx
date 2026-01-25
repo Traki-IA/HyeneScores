@@ -1268,90 +1268,22 @@ export default function HyeneScores() {
 
           <div className="flex-1 px-2 pb-28 overflow-hidden flex flex-col">
 
-              {/* Selectors */}
-              <div className="px-2 py-2 border-b border-gray-800 flex-shrink-0 relative">
-                <div className="flex items-stretch gap-2">
-                  {/* Championship Dropdown */}
-                  <div className="flex-1 relative">
+              {/* Championship Buttons */}
+              <div className="px-2 py-2 border-b border-gray-800 flex-shrink-0">
+                <div className="flex items-center justify-center gap-2">
+                  {championships.map(champ => (
                     <button
-                      onClick={() => setIsChampOpen(!isChampOpen)}
-                      className={`w-full h-full bg-black/50 border rounded-lg px-3 py-2.5 text-white text-sm font-medium cursor-pointer transition-colors flex items-center justify-between ${
-                        isChampOpen ? 'border-cyan-500/50' : 'border-gray-800 hover:border-cyan-500/30'
+                      key={champ.id}
+                      onClick={() => setSelectedChampionship(champ.id)}
+                      className={`w-12 h-12 flex items-center justify-center rounded-xl text-2xl transition-all ${
+                        selectedChampionship === champ.id
+                          ? 'bg-cyan-500/20 border-2 border-cyan-500/50 scale-110'
+                          : 'bg-black/30 border border-gray-800 hover:border-cyan-500/30 hover:bg-gray-800/50'
                       }`}
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="text-xl">{championships.find(c => c.id === selectedChampionship)?.icon}</span>
-                        <span className="truncate">{championships.find(c => c.id === selectedChampionship)?.name}</span>
-                      </div>
-                      <svg className={`w-4 h-4 text-gray-500 transition-transform flex-shrink-0 ${isChampOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
+                      {champ.icon}
                     </button>
-
-                    {isChampOpen && (
-                      <>
-                        <div className="fixed inset-0 z-40" onClick={() => setIsChampOpen(false)}></div>
-                        <div className="absolute left-0 right-0 top-full mt-1 bg-gray-900 border border-cyan-500/30 rounded-lg shadow-2xl z-50 max-h-64 overflow-y-auto">
-                          {championships.map(champ => (
-                            <button
-                              key={champ.id}
-                              onClick={() => {
-                                setSelectedChampionship(champ.id);
-                                setIsChampOpen(false);
-                              }}
-                              className={`w-full px-3 py-2.5 text-sm font-medium text-left transition-colors flex items-center gap-2 ${
-                                selectedChampionship === champ.id
-                                  ? 'bg-cyan-500/20 text-cyan-400'
-                                  : 'text-white hover:bg-gray-800'
-                              }`}
-                            >
-                              <span className="text-xl">{champ.icon}</span>
-                              <span>{champ.name}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Season Dropdown */}
-                  <div className="w-32 relative">
-                    <button
-                      onClick={() => setIsSeasonOpen(!isSeasonOpen)}
-                      className={`w-full h-full bg-black/50 border rounded-lg px-3 py-2.5 text-white text-sm font-medium cursor-pointer transition-colors flex items-center justify-between ${
-                        isSeasonOpen ? 'border-cyan-500/50' : 'border-gray-800 hover:border-cyan-500/30'
-                      }`}
-                    >
-                      <span>Saison {selectedSeason}</span>
-                      <svg className={`w-4 h-4 text-gray-500 transition-transform ${isSeasonOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
-
-                    {isSeasonOpen && (
-                      <>
-                        <div className="fixed inset-0 z-40" onClick={() => setIsSeasonOpen(false)}></div>
-                        <div className="absolute right-0 top-full mt-1 bg-gray-900 border border-cyan-500/30 rounded-lg shadow-2xl z-50 w-32 max-h-64 overflow-y-auto">
-                          {seasons.map(season => (
-                            <button
-                              key={season}
-                              onClick={() => {
-                                setSelectedSeason(season);
-                                setIsSeasonOpen(false);
-                              }}
-                              className={`w-full px-3 py-2.5 text-sm font-medium text-left transition-colors ${
-                                selectedSeason === season
-                                  ? 'bg-cyan-500/20 text-cyan-400'
-                                  : 'text-white hover:bg-gray-800'
-                              }`}
-                            >
-                              Saison {season}
-                            </button>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
+                  ))}
                 </div>
               </div>
 
