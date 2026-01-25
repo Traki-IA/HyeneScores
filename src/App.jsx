@@ -373,21 +373,33 @@ export default function HyeneScores() {
   // Fonctions Réglages
   const handleExportJSON = () => {
     try {
-      const data = {
-        classement: teams,
-        matches,
-        palmares: champions,
-        pantheon: pantheonTeams,
-        penalties: penalties,
-        exportDate: new Date().toISOString(),
-        version: '1.0',
-        // Ajouter le contexte pour savoir quel championnat/saison/journée
-        context: {
-          championship: selectedChampionship,
-          season: selectedSeason,
-          journee: selectedJournee
-        }
-      };
+      let data;
+
+      // Si on a des données v2.0, les exporter avec les pénalités
+      if (appData && appData.version === '2.0') {
+        data = {
+          ...appData,
+          penalties: penalties,
+          exportDate: new Date().toISOString()
+        };
+      } else {
+        // Export format v1.0
+        data = {
+          classement: teams,
+          matches,
+          palmares: champions,
+          pantheon: pantheonTeams,
+          penalties: penalties,
+          exportDate: new Date().toISOString(),
+          version: '1.0',
+          context: {
+            championship: selectedChampionship,
+            season: selectedSeason,
+            journee: selectedJournee
+          }
+        };
+      }
+
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
