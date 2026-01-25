@@ -214,11 +214,20 @@ export default function HyeneScores() {
           const champion = seasonData.standings?.find(team => (team.pos || team.rank) === 1);
 
           if (champion) {
-            championsList.push({
-              season: seasonNum,
-              team: champion.mgr || champion.name || '?',
-              points: champion.pts || champion.points || 0
-            });
+            // Vérifier si la saison est terminée
+            // Ligue des Hyènes : 72 journées, Autres : 18 journées
+            const totalMatchdays = championshipId === 'hyenes' ? 72 : 18;
+            const currentMatchday = champion.j || 0;
+            const isSeasonComplete = currentMatchday >= totalMatchdays;
+
+            // N'ajouter au palmarès que si la saison est terminée
+            if (isSeasonComplete) {
+              championsList.push({
+                season: seasonNum,
+                team: champion.mgr || champion.name || '?',
+                points: champion.pts || champion.points || 0
+              });
+            }
           }
         }
       });
