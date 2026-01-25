@@ -6,7 +6,7 @@ export default function HyeneScores() {
 
   // États Classement
   const [selectedChampionship, setSelectedChampionship] = useState('hyenes');
-  const [selectedSeason, setSelectedSeason] = useState('9');
+  const [selectedSeason, setSelectedSeason] = useState('');
   const [isSeasonOpen, setIsSeasonOpen] = useState(false);
   const [isChampOpen, setIsChampOpen] = useState(false);
 
@@ -18,68 +18,33 @@ export default function HyeneScores() {
     { id: 'england', icon: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', name: 'Angleterre' }
   ];
 
-  const [teams, setTeams] = useState([
-    { rank: 1, name: 'MILAN AC', pts: 95, record: '30-5-18', goalDiff: '116-67', diff: '+49' },
-    { rank: 2, name: 'STOCKY FC', pts: 86, record: '24-14-15', goalDiff: '116-89', diff: '+27' },
-    { rank: 3, name: 'BIMBAM', pts: 84, record: '25-9-19', goalDiff: '119-96', diff: '+23' },
-    { rank: 4, name: 'DYNAMO KEV', pts: 82, record: '26-4-23', goalDiff: '119-110', diff: '+09' },
-    { rank: 5, name: 'TRAKNAR FC', pts: 74, record: '21-11-21', goalDiff: '111-105', diff: '+06' },
-    { rank: 6, name: 'FC GRINTA', pts: 74, record: '22-8-23', goalDiff: '96-102', diff: '-06' },
-    { rank: 7, name: 'COMARDINHO', pts: 71, record: '20-11-22', goalDiff: '94-107', diff: '-13' },
-    { rank: 8, name: 'MAMBA TEAM', pts: 64, record: '18-10-25', goalDiff: '96-110', diff: '-14' },
-    { rank: 9, name: 'WARNAQUE', pts: 61, record: '17-10-26', goalDiff: '94-110', diff: '-16' },
-    { rank: 10, name: 'NOPIGOAL FC', pts: 61, record: '16-12-26', goalDiff: '86-121', diff: '-35' }
-  ]);
+  const [teams, setTeams] = useState([]);
 
   // États Palmarès
-  const [champions, setChampions] = useState([
-    { season: '9', team: 'MILAN AC', points: 95 },
-    { season: '8', team: 'STOCKY FC', points: 92 },
-    { season: '7', team: 'BIMBAM', points: 88 },
-    { season: '6', team: 'MILAN AC', points: 90 },
-    { season: '5', team: 'DYNAMO KEV', points: 87 },
-    { season: '4', team: 'TRAKNAR FC', points: 85 },
-    { season: '3', team: 'FC GRINTA', points: 83 },
-    { season: '2', team: 'MILAN AC', points: 89 },
-    { season: '1', team: 'STOCKY FC', points: 86 }
-  ]);
+  const [champions, setChampions] = useState([]);
 
   // États Panthéon
-  const [pantheonTeams, setPantheonTeams] = useState([
-    { rank: 1, name: 'MILAN AC', trophies: 15, france: 5, spain: 4, italy: 4, england: 2, total: 15 },
-    { rank: 2, name: 'STOCKY FC', trophies: 12, france: 4, spain: 3, italy: 3, england: 2, total: 12 },
-    { rank: 3, name: 'BIMBAM', trophies: 10, france: 3, spain: 3, italy: 2, england: 2, total: 10 },
-    { rank: 4, name: 'DYNAMO KEV', trophies: 8, france: 2, spain: 2, italy: 2, england: 2, total: 8 },
-    { rank: 5, name: 'TRAKNAR FC', trophies: 6, france: 2, spain: 1, italy: 2, england: 1, total: 6 },
-    { rank: 6, name: 'FC GRINTA', trophies: 5, france: 1, spain: 2, italy: 1, england: 1, total: 5 },
-    { rank: 7, name: 'COMARDINHO', trophies: 3, france: 1, spain: 1, italy: 1, england: 0, total: 3 },
-    { rank: 8, name: 'MAMBA TEAM', trophies: 2, france: 1, spain: 0, italy: 1, england: 0, total: 2 },
-    { rank: 9, name: 'WARNAQUE', trophies: 1, france: 0, spain: 1, italy: 0, england: 0, total: 1 },
-    { rank: 10, name: 'NOPIGOAL FC', trophies: 0, france: 0, spain: 0, italy: 0, england: 0, total: 0 }
-  ]);
+  const [pantheonTeams, setPantheonTeams] = useState([]);
 
   // États Match
   const [selectedJournee, setSelectedJournee] = useState('1');
   const [isJourneeOpen, setIsJourneeOpen] = useState(false);
   const [matches, setMatches] = useState([
-    { id: 1, homeTeam: 'MILAN AC', awayTeam: 'STOCKY FC', homeScore: 2, awayScore: 2 },
-    { id: 2, homeTeam: 'DYNAMO KEV', awayTeam: 'BIMBAM', homeScore: 4, awayScore: 4 },
+    { id: 1, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null },
+    { id: 2, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null },
     { id: 3, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null },
     { id: 4, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null },
     { id: 5, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null }
   ]);
 
-  const [allTeams, setAllTeams] = useState([
-    'MILAN AC', 'STOCKY FC', 'BIMBAM', 'DYNAMO KEV', 'TRAKNAR FC',
-    'FC GRINTA', 'COMARDINHO', 'MAMBA TEAM', 'WARNAQUE', 'NOPIGOAL FC'
-  ]);
+  const [allTeams, setAllTeams] = useState([]);
 
   const [openDropdown, setOpenDropdown] = useState(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, right: 'auto' });
   const [exemptTeam, setExemptTeam] = useState('');
   const [isTeamDropdownOpen, setIsTeamDropdownOpen] = useState(false);
 
-  const seasons = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
+  const [seasons, setSeasons] = useState([]);
 
   // Nombre de journées dynamique selon le championnat
   const getJourneesForChampionship = (championship) => {
@@ -100,9 +65,9 @@ export default function HyeneScores() {
 
   // État pour la progression de la saison
   const [seasonProgress, setSeasonProgress] = useState({
-    currentMatchday: 53,
-    totalMatchdays: 72,
-    percentage: 73.6
+    currentMatchday: 0,
+    totalMatchdays: 0,
+    percentage: 0
   });
 
   // Fonction pour charger les données depuis appData v2.0
@@ -388,6 +353,23 @@ export default function HyeneScores() {
             }
           }
 
+          // Extraire les saisons disponibles depuis entities.seasons
+          if (data.entities.seasons) {
+            const seasonNumbers = new Set();
+            Object.keys(data.entities.seasons).forEach(seasonKey => {
+              const match = seasonKey.match(/_s(\d+)$/);
+              if (match) {
+                seasonNumbers.add(match[1]);
+              }
+            });
+            const sortedSeasons = Array.from(seasonNumbers).sort((a, b) => parseInt(a) - parseInt(b));
+            setSeasons(sortedSeasons);
+            // Sélectionner la dernière saison par défaut
+            if (sortedSeasons.length > 0) {
+              setSelectedSeason(sortedSeasons[sortedSeasons.length - 1]);
+            }
+          }
+
           // Charger les données pour le contexte actuel
           loadDataFromAppData(data, selectedChampionship, selectedSeason, selectedJournee);
 
@@ -465,6 +447,15 @@ export default function HyeneScores() {
               points: champion.points || champion.pts || 0
             }));
             setChampions(transformedChampions);
+
+            // Extraire les saisons depuis le palmarès
+            const seasonNumbers = transformedChampions
+              .map(c => c.season)
+              .filter(s => s !== '?')
+              .sort((a, b) => parseInt(a) - parseInt(b));
+            if (seasonNumbers.length > 0) {
+              setSeasons([...new Set(seasonNumbers)]);
+            }
           }
 
           // Transformer panthéon
