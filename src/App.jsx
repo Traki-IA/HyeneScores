@@ -342,6 +342,29 @@ export default function HyeneScores() {
       }));
   };
 
+  // Calculer le classement trié avec les pénalités appliquées
+  const getSortedTeams = () => {
+    return [...teams]
+      .map(team => ({
+        ...team,
+        effectivePts: team.pts - getTeamPenalty(team.name)
+      }))
+      .sort((a, b) => {
+        // Trier par points effectifs (décroissant)
+        if (b.effectivePts !== a.effectivePts) {
+          return b.effectivePts - a.effectivePts;
+        }
+        // En cas d'égalité, trier par différence de buts
+        const diffA = parseInt(String(a.diff).replace('+', '')) || 0;
+        const diffB = parseInt(String(b.diff).replace('+', '')) || 0;
+        return diffB - diffA;
+      })
+      .map((team, index) => ({
+        ...team,
+        displayRank: index + 1
+      }));
+  };
+
   const handleJourneeSelect = (journee) => {
     setSelectedJournee(journee);
     setIsJourneeOpen(false);
@@ -721,26 +744,22 @@ export default function HyeneScores() {
 
               {/* Teams List */}
               <div className="flex-1 overflow-y-auto px-2 pb-1">
-                {teams.map(team => (
+                {getSortedTeams().map(team => (
                   <div
-                    key={team.rank}
+                    key={team.name}
                     className="grid grid-cols-12 gap-1 py-1.5 border-b border-gray-800/50 hover:bg-gray-900/30 transition-all items-center"
                     style={{ height: '40px', minHeight: '40px', maxHeight: '40px' }}
                   >
                     <div className="col-span-1 font-bold text-sm whitespace-nowrap overflow-hidden text-cyan-400">
-                      {team.rank < 10 ? `0${team.rank}` : team.rank}
+                      {team.displayRank < 10 ? `0${team.displayRank}` : team.displayRank}
                     </div>
                     <div className="col-span-4 flex items-center whitespace-nowrap overflow-hidden">
                       <span className="text-white font-semibold text-sm tracking-wide">{team.name}</span>
                     </div>
-                    <div className="col-span-2 text-center whitespace-nowrap overflow-hidden">
-                      {getTeamPenalty(team.name) > 0 ? (
-                        <span className="text-orange-500 font-bold text-lg drop-shadow-[0_0_10px_rgba(249,115,22,0.6)]">
-                          {team.pts - getTeamPenalty(team.name)}
-                          <span className="text-xs text-red-400 ml-0.5">(-{getTeamPenalty(team.name)})</span>
-                        </span>
-                      ) : (
-                        <span className="text-green-500 font-bold text-lg drop-shadow-[0_0_10px_rgba(34,197,94,0.6)]">{team.pts}</span>
+                    <div className="col-span-2 text-center whitespace-nowrap overflow-hidden flex items-center justify-center gap-1">
+                      <span className="text-green-500 font-bold text-lg drop-shadow-[0_0_10px_rgba(34,197,94,0.6)]">{team.effectivePts}</span>
+                      {getTeamPenalty(team.name) > 0 && (
+                        <span className="text-orange-400 text-[10px] font-medium">*</span>
                       )}
                     </div>
                     <div className="col-span-2 text-center text-white text-xs font-medium whitespace-nowrap overflow-hidden">
@@ -757,53 +776,35 @@ export default function HyeneScores() {
                   </div>
                 ))}
 
-                {/* Section Pénalités */}
-                <div className="mt-4 pt-4 border-t border-gray-800">
-                  <div className="bg-black/30 border border-orange-500/30 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-orange-400 text-sm font-bold tracking-wide">PÉNALITÉS</span>
-                        {getTeamsWithPenalties().length > 0 && (
-                          <span className="bg-orange-500/20 text-orange-400 text-xs px-2 py-0.5 rounded-full">
-                            {getTeamsWithPenalties().length}
-                          </span>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => setIsPenaltyModalOpen(true)}
-                        className="bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 rounded-lg px-3 py-1.5 text-orange-400 text-xs font-medium transition-colors flex items-center gap-1"
-                      >
-                        <span>+</span>
-                        <span>Ajouter</span>
-                      </button>
-                    </div>
-
-                    {/* Liste des pénalités actives */}
-                    {getTeamsWithPenalties().length > 0 ? (
-                      <div className="space-y-2">
-                        {getTeamsWithPenalties().map(({ teamName, points }) => (
-                          <div
-                            key={teamName}
-                            className="flex items-center justify-between bg-black/40 border border-gray-800 rounded-lg px-3 py-2"
+                {/* Section Pénalités - Compacte */}
+                <div className="mt-2 px-1">
+                  <div className="flex items-center justify-between py-2">
+                    <div className="flex items-center gap-2 flex-wrap flex-1">
+                      <span className="text-orange-400 text-xs font-semibold">PÉNALITÉS</span>
+                      {getTeamsWithPenalties().map(({ teamName, points }) => (
+                        <div
+                          key={teamName}
+                          className="flex items-center gap-1 bg-orange-500/10 border border-orange-500/30 rounded px-2 py-0.5"
+                        >
+                          <span className="text-white text-xs">{teamName}</span>
+                          <span className="text-orange-400 text-xs font-bold">-{points}</span>
+                          <button
+                            onClick={() => handleRemovePenalty(teamName)}
+                            className="text-gray-500 hover:text-red-400 transition-colors ml-1"
                           >
-                            <div className="flex items-center gap-2">
-                              <span className="text-white text-sm font-medium">{teamName}</span>
-                              <span className="text-red-400 text-xs font-bold">-{points} pts</span>
-                            </div>
-                            <button
-                              onClick={() => handleRemovePenalty(teamName)}
-                              className="text-gray-500 hover:text-red-400 transition-colors p-1"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-gray-500 text-xs text-center">Aucune pénalité pour cette saison</p>
-                    )}
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => setIsPenaltyModalOpen(true)}
+                      className="bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 rounded px-2 py-1 text-orange-400 text-xs font-medium transition-colors flex-shrink-0"
+                    >
+                      + Ajouter
+                    </button>
                   </div>
                 </div>
               </div>
