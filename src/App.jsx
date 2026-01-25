@@ -212,14 +212,12 @@ export default function HyeneScores() {
       setChampions(championsList);
     }
 
-    // Extraire l'équipe exemptée pour cette journée (depuis indexes, si pas déjà trouvée dans le bloc match)
+    // Extraire l'équipe exemptée pour cette journée (depuis indexes.exemptTeams)
     if (data.indexes?.exemptTeams) {
-      const exemptKey = `${championshipKey}_s${season}`;
-      const exemptData = data.indexes.exemptTeams[exemptKey];
-      if (exemptData && exemptData[journee]) {
-        setExemptTeam(exemptData[journee]);
+      const exemptFromIndex = data.indexes.exemptTeams[journee];
+      if (exemptFromIndex) {
+        setExemptTeam(exemptFromIndex);
       }
-      // Ne pas réinitialiser si déjà défini depuis le bloc match
     }
   }, []);
 
