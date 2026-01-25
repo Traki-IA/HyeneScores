@@ -135,10 +135,14 @@ export default function HyeneScores() {
         // Normaliser les matches pour s'assurer que les champs sont corrects
         const normalizedMatches = matchesForContext.games.map((match, index) => ({
           id: match.id || (index + 1),
-          homeTeam: match.homeTeam || match.home || match.equipe1 || '',
-          awayTeam: match.awayTeam || match.away || match.equipe2 || '',
-          homeScore: match.homeScore !== undefined ? match.homeScore : (match.scoreHome !== undefined ? match.scoreHome : null),
-          awayScore: match.awayScore !== undefined ? match.awayScore : (match.scoreAway !== undefined ? match.scoreAway : null)
+          homeTeam: match.homeTeam || match.home || match.h || match.equipe1 || '',
+          awayTeam: match.awayTeam || match.away || match.a || match.equipe2 || '',
+          homeScore: match.homeScore !== undefined ? match.homeScore :
+                     (match.hs !== undefined ? match.hs :
+                     (match.scoreHome !== undefined ? match.scoreHome : null)),
+          awayScore: match.awayScore !== undefined ? match.awayScore :
+                     (match.as !== undefined ? match.as :
+                     (match.scoreAway !== undefined ? match.scoreAway : null))
         }));
         setMatches(normalizedMatches);
       } else {
