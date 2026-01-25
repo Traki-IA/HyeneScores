@@ -260,12 +260,8 @@ export default function HyeneScores() {
   };
 
   const getAvailableTeamsForExempt = () => {
-    const selectedTeams = [];
-    matches.forEach(match => {
-      if (match.homeTeam) selectedTeams.push(match.homeTeam);
-      if (match.awayTeam) selectedTeams.push(match.awayTeam);
-    });
-    return allTeams.filter(team => !selectedTeams.includes(team));
+    // L'équipe exemptée est fixe pour toute la saison, afficher toutes les équipes
+    return allTeams;
   };
 
   const handleTeamSelect = (matchId, type, team) => {
