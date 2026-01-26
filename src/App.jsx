@@ -222,11 +222,20 @@ export default function HyeneScores() {
 
             // N'ajouter au palmarès que si la saison est terminée
             if (isSeasonComplete) {
-              championsList.push({
-                season: seasonNum,
-                team: champion.mgr || champion.name || '?',
-                points: champion.pts || champion.points || 0
-              });
+              // Cas spécial : France S6 - deux champions ex-aequo
+              if (championshipName === 'france' && seasonNum === '6') {
+                championsList.push({
+                  season: seasonNum,
+                  team: 'BimBam / Warnaque',
+                  points: champion.pts || champion.points || 0
+                });
+              } else {
+                championsList.push({
+                  season: seasonNum,
+                  team: champion.mgr || champion.name || '?',
+                  points: champion.pts || champion.points || 0
+                });
+              }
             }
           }
         }
@@ -506,6 +515,15 @@ export default function HyeneScores() {
                 england: titles.angleterre || titles.england || 0,
                 total: totalTitles
               };
+            });
+
+            // Cas spécial : France S6 - deux champions ex-aequo (BimBam et Warnaque)
+            // Ajouter un trophée France à chacun
+            pantheon.forEach(team => {
+              if (team.name === 'BimBam' || team.name === 'Warnaque') {
+                team.france += 1;
+                team.total += 1;
+              }
             });
 
             // Trier par nombre de trophées
