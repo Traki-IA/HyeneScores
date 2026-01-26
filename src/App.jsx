@@ -546,10 +546,57 @@ export default function HyeneScores() {
     try {
       let data;
 
-      // Si on a des données v2.0, les exporter avec les pénalités
+      // Si on a des données v2.0, les exporter avec les matchs modifiés et pénalités
       if (appData && appData.version === '2.0') {
+        // Créer une copie profonde de appData
+        const exportData = JSON.parse(JSON.stringify(appData));
+
+        // Mapping des IDs de championnat vers les clés du fichier v2.0
+        const championshipMapping = {
+          'hyenes': 'ligue_hyenes',
+          'france': 'france',
+          'spain': 'espagne',
+          'italy': 'italie',
+          'england': 'angleterre'
+        };
+        const championshipKey = championshipMapping[selectedChampionship] || selectedChampionship;
+
+        // Initialiser entities.matches si nécessaire
+        if (!exportData.entities.matches) {
+          exportData.entities.matches = [];
+        }
+
+        // Chercher si un bloc existe déjà pour ce contexte
+        const existingBlockIndex = exportData.entities.matches.findIndex(
+          block => block.championship === championshipKey &&
+                   block.season === parseInt(selectedSeason) &&
+                   block.matchday === parseInt(selectedJournee)
+        );
+
+        // Préparer le bloc de matchs avec les données actuelles
+        const matchBlock = {
+          championship: championshipKey,
+          season: parseInt(selectedSeason),
+          matchday: parseInt(selectedJournee),
+          games: matches.map(m => ({
+            id: m.id,
+            homeTeam: m.homeTeam || '',
+            awayTeam: m.awayTeam || '',
+            homeScore: m.homeScore,
+            awayScore: m.awayScore
+          })),
+          exempt: exemptTeam || ''
+        };
+
+        // Mettre à jour ou ajouter le bloc
+        if (existingBlockIndex >= 0) {
+          exportData.entities.matches[existingBlockIndex] = matchBlock;
+        } else {
+          exportData.entities.matches.push(matchBlock);
+        }
+
         data = {
-          ...appData,
+          ...exportData,
           penalties: penalties,
           exportDate: new Date().toISOString()
         };
@@ -857,13 +904,67 @@ export default function HyeneScores() {
   };
 
   const handleRefreshData = () => {
-    // Force un re-render pour actualiser l'affichage
-    // Utile après avoir modifié les données manuellement
-    setTeams([...teams]);
-    setMatches([...matches]);
-    setChampions([...champions]);
-    setPantheonTeams([...pantheonTeams]);
-    alert('✅ Données actualisées !');
+    // Synchroniser les matchs modifiés avec appData puis recharger
+    if (appData && appData.version === '2.0') {
+      // Mapping des IDs de championnat vers les clés du fichier v2.0
+      const championshipMapping = {
+        'hyenes': 'ligue_hyenes',
+        'france': 'france',
+        'spain': 'espagne',
+        'italy': 'italie',
+        'england': 'angleterre'
+      };
+      const championshipKey = championshipMapping[selectedChampionship] || selectedChampionship;
+
+      // Créer une copie mise à jour de appData
+      const updatedAppData = JSON.parse(JSON.stringify(appData));
+
+      // Initialiser entities.matches si nécessaire
+      if (!updatedAppData.entities.matches) {
+        updatedAppData.entities.matches = [];
+      }
+
+      // Chercher si un bloc existe déjà pour ce contexte
+      const existingBlockIndex = updatedAppData.entities.matches.findIndex(
+        block => block.championship === championshipKey &&
+                 block.season === parseInt(selectedSeason) &&
+                 block.matchday === parseInt(selectedJournee)
+      );
+
+      // Préparer le bloc de matchs avec les données actuelles
+      const matchBlock = {
+        championship: championshipKey,
+        season: parseInt(selectedSeason),
+        matchday: parseInt(selectedJournee),
+        games: matches.map(m => ({
+          id: m.id,
+          homeTeam: m.homeTeam || '',
+          awayTeam: m.awayTeam || '',
+          homeScore: m.homeScore,
+          awayScore: m.awayScore
+        })),
+        exempt: exemptTeam || ''
+      };
+
+      // Mettre à jour ou ajouter le bloc
+      if (existingBlockIndex >= 0) {
+        updatedAppData.entities.matches[existingBlockIndex] = matchBlock;
+      } else {
+        updatedAppData.entities.matches.push(matchBlock);
+      }
+
+      // Mettre à jour appData avec les modifications
+      setAppData(updatedAppData);
+
+      alert('✅ Matchs synchronisés avec les données !');
+    } else {
+      // Format v1.0 : simple re-render
+      setTeams([...teams]);
+      setMatches([...matches]);
+      setChampions([...champions]);
+      setPantheonTeams([...pantheonTeams]);
+      alert('✅ Données actualisées !');
+    }
   };
 
   return (
