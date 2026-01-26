@@ -621,15 +621,15 @@ export default function HyeneScores() {
           // Stocker les données brutes v2.0 pour accès global
           setAppData(data);
 
-          // Extraire allTeams depuis metadata.managers
-          if (data.metadata?.managers && Array.isArray(data.metadata.managers)) {
+          // Extraire allTeams depuis entities.managers (source de vérité avec tous les managers)
+          if (data.entities.managers) {
+            const managerNames = Object.values(data.entities.managers)
+              .map(manager => manager.name || '?')
+              .filter(name => name !== '?');
+            setAllTeams(managerNames);
+          } else if (data.metadata?.managers && Array.isArray(data.metadata.managers)) {
+            // Fallback : utiliser metadata.managers si entities.managers n'existe pas
             setAllTeams(data.metadata.managers);
-          } else {
-            // Fallback : extraire depuis entities.managers si metadata.managers n'existe pas
-            if (data.entities.managers) {
-              const managerNames = Object.keys(data.entities.managers);
-              setAllTeams(managerNames);
-            }
           }
 
           // Extraire les saisons disponibles depuis entities.seasons
