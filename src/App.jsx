@@ -78,8 +78,14 @@ export default function HyeneScores() {
   const [isPenaltyTeamDropdownOpen, setIsPenaltyTeamDropdownOpen] = useState(false);
 
   // Fonction pour charger les données depuis appData v2.0
-  const loadDataFromAppData = useCallback((data, championship, season, journee) => {
+  const loadDataFromAppData = useCallback((data, championship, season, journee, currentPenalties = {}) => {
     if (!data || !data.entities) return;
+
+    // Fonction locale pour obtenir la pénalité d'une équipe
+    const getTeamPenaltyLocal = (teamName, champ, seas) => {
+      const key = `${champ}_${seas}_${teamName}`;
+      return currentPenalties[key] || 0;
+    };
 
     // Réinitialiser l'équipe exemptée au début (sera mise à jour si trouvée)
     setExemptTeam('');
@@ -217,9 +223,9 @@ export default function HyeneScores() {
 
         if (championshipId === championship) {
           const seasonData = data.entities.seasons[seasonKey];
-          const champion = seasonData.standings?.find(team => (team.pos || team.rank) === 1);
+          const standings = seasonData.standings || [];
 
-          if (champion) {
+          if (standings.length > 0) {
             // Vérifier si la saison est terminée
             // Ligue des Hyènes : 72 journées, Autres : 18 journées
             // Cas spécial S6 : France a 8 journées, Ligue des Hyènes S6 = 62
@@ -229,7 +235,8 @@ export default function HyeneScores() {
             const totalMatchdays = championshipId === 'hyenes'
               ? (isHyenesS6 ? 62 : 72)
               : 18;
-            const currentMatchday = champion.j || 0;
+            const firstTeam = standings[0];
+            const currentMatchday = firstTeam?.j || 0;
 
             // France S6 et Hyènes S6 sont considérées comme terminées
             const isSeasonComplete = isFranceS6 || currentMatchday >= totalMatchdays;
@@ -241,13 +248,37 @@ export default function HyeneScores() {
                 championsList.push({
                   season: seasonNum,
                   team: 'BimBam / Warnaque',
-                  points: champion.pts || champion.points || 0
+                  points: firstTeam?.pts || firstTeam?.points || 0
                 });
               } else {
+                // Trouver le champion basé sur les points effectifs (pts - pénalité)
+                const teamsWithEffectivePts = standings.map(team => {
+                  const teamName = team.mgr || team.name || '?';
+                  const penalty = getTeamPenaltyLocal(teamName, championshipId, seasonNum);
+                  const pts = team.pts || team.points || 0;
+                  return {
+                    ...team,
+                    name: teamName,
+                    effectivePts: pts - penalty
+                  };
+                });
+
+                // Trier par points effectifs (décroissant)
+                teamsWithEffectivePts.sort((a, b) => {
+                  if (b.effectivePts !== a.effectivePts) {
+                    return b.effectivePts - a.effectivePts;
+                  }
+                  // En cas d'égalité, utiliser la différence de buts
+                  const diffA = parseInt(String(a.diff).replace('+', '')) || 0;
+                  const diffB = parseInt(String(b.diff).replace('+', '')) || 0;
+                  return diffB - diffA;
+                });
+
+                const champion = teamsWithEffectivePts[0];
                 championsList.push({
                   season: seasonNum,
-                  team: champion.mgr || champion.name || '?',
-                  points: champion.pts || champion.points || 0
+                  team: champion.name,
+                  points: champion.effectivePts
                 });
               }
             }
@@ -261,12 +292,12 @@ export default function HyeneScores() {
 
   }, []);
 
-  // useEffect pour recharger les données quand le contexte change
+  // useEffect pour recharger les données quand le contexte change ou les pénalités
   useEffect(() => {
     if (appData && appData.version === '2.0') {
-      loadDataFromAppData(appData, selectedChampionship, selectedSeason, selectedJournee);
+      loadDataFromAppData(appData, selectedChampionship, selectedSeason, selectedJournee, penalties);
     }
-  }, [selectedChampionship, selectedSeason, selectedJournee, appData, loadDataFromAppData]);
+  }, [selectedChampionship, selectedSeason, selectedJournee, appData, penalties, loadDataFromAppData]);
 
   // useEffect pour basculer automatiquement vers 'france' si on entre dans Match avec 'hyenes'
   useEffect(() => {
@@ -510,8 +541,9 @@ export default function HyeneScores() {
             }
           }
 
-          // Charger les données pour le contexte actuel
-          loadDataFromAppData(data, selectedChampionship, selectedSeason, selectedJournee);
+          // Charger les données pour le contexte actuel (avec pénalités du fichier si disponibles)
+          const filePenalties = data.penalties && typeof data.penalties === 'object' ? data.penalties : {};
+          loadDataFromAppData(data, selectedChampionship, selectedSeason, selectedJournee, filePenalties);
 
           // Extraire pantheonTeams[] depuis entities.managers
           if (data.entities.managers) {
