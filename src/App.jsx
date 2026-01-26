@@ -290,6 +290,114 @@ export default function HyeneScores() {
       setChampions(championsList);
     }
 
+    // Recalculer le Panthéon dynamiquement à partir des standings
+    if (data.entities.seasons && data.entities.managers) {
+      // Initialiser le compteur de trophées pour chaque manager
+      const trophyCount = {};
+      Object.values(data.entities.managers).forEach(manager => {
+        const name = manager.name || '?';
+        trophyCount[name] = {
+          name: name,
+          trophies: 0,  // Ligue des Hyènes
+          france: 0,
+          spain: 0,
+          italy: 0,
+          england: 0,
+          total: 0
+        };
+      });
+
+      // Mapping des championnats
+      const championshipConfigPantheon = {
+        'ligue_hyenes': { field: 'trophies', totalMatchdays: 72, s6Matchdays: 62 },
+        'france': { field: 'france', totalMatchdays: 18, s6Matchdays: 8 },
+        'espagne': { field: 'spain', totalMatchdays: 18, s6Matchdays: 18 },
+        'italie': { field: 'italy', totalMatchdays: 18, s6Matchdays: 18 },
+        'angleterre': { field: 'england', totalMatchdays: 18, s6Matchdays: 18 }
+      };
+
+      // Parcourir toutes les saisons pour comptabiliser les trophées
+      Object.keys(data.entities.seasons).forEach(seasonKey => {
+        const parts = seasonKey.split('_');
+        const seasonNum = parts[parts.length - 1].replace('s', '');
+        const championshipName = parts.slice(0, -1).join('_');
+        const config = championshipConfigPantheon[championshipName];
+
+        if (!config) return;
+
+        const seasonData = data.entities.seasons[seasonKey];
+        const standings = seasonData.standings || [];
+
+        if (standings.length === 0) return;
+
+        // Vérifier si la saison est terminée
+        const isS6 = seasonNum === '6';
+        const isFranceS6 = championshipName === 'france' && isS6;
+        const totalMatchdays = isS6 ? config.s6Matchdays : config.totalMatchdays;
+        const currentMatchday = standings[0]?.j || 0;
+        const isSeasonComplete = isFranceS6 || currentMatchday >= totalMatchdays;
+
+        if (!isSeasonComplete) return;
+
+        // Cas spécial : France S6 - deux champions ex-aequo
+        if (isFranceS6) {
+          if (trophyCount['BimBam']) {
+            trophyCount['BimBam'].france += 1;
+            trophyCount['BimBam'].total += 1;
+          }
+          if (trophyCount['Warnaque']) {
+            trophyCount['Warnaque'].france += 1;
+            trophyCount['Warnaque'].total += 1;
+          }
+          return;
+        }
+
+        // Trouver le champion basé sur les points effectifs (pts - pénalité)
+        const teamsWithEffectivePts = standings.map(team => {
+          const teamName = team.mgr || team.name || '?';
+          const penalty = getTeamPenaltyLocal(teamName,
+            championshipName === 'ligue_hyenes' ? 'hyenes' :
+            championshipName === 'espagne' ? 'spain' :
+            championshipName === 'italie' ? 'italy' :
+            championshipName === 'angleterre' ? 'england' :
+            championshipName,
+            seasonNum);
+          const pts = team.pts || team.points || 0;
+          return {
+            name: teamName,
+            effectivePts: pts - penalty,
+            diff: team.diff
+          };
+        });
+
+        // Trier par points effectifs (décroissant)
+        teamsWithEffectivePts.sort((a, b) => {
+          if (b.effectivePts !== a.effectivePts) {
+            return b.effectivePts - a.effectivePts;
+          }
+          const diffA = parseInt(String(a.diff).replace('+', '')) || 0;
+          const diffB = parseInt(String(b.diff).replace('+', '')) || 0;
+          return diffB - diffA;
+        });
+
+        const champion = teamsWithEffectivePts[0];
+        if (champion && trophyCount[champion.name]) {
+          trophyCount[champion.name][config.field] += 1;
+          trophyCount[champion.name].total += 1;
+        }
+      });
+
+      // Convertir en tableau et trier par nombre total de trophées
+      const pantheon = Object.values(trophyCount)
+        .sort((a, b) => b.total - a.total)
+        .map((team, index) => ({
+          ...team,
+          rank: index + 1
+        }));
+
+      setPantheonTeams(pantheon);
+    }
+
   }, []);
 
   // useEffect pour recharger les données quand le contexte change ou les pénalités
@@ -545,40 +653,111 @@ export default function HyeneScores() {
           const filePenalties = data.penalties && typeof data.penalties === 'object' ? data.penalties : {};
           loadDataFromAppData(data, selectedChampionship, selectedSeason, selectedJournee, filePenalties);
 
-          // Extraire pantheonTeams[] depuis entities.managers
-          if (data.entities.managers) {
-            const pantheon = Object.values(data.entities.managers).map((manager, index) => {
-              const titles = manager.stats?.totalTitles || {};
-              const totalTitles = Object.values(titles).reduce((sum, count) => sum + (count || 0), 0);
-
-              return {
-                rank: index + 1,
-                name: manager.name || '?',
-                trophies: titles.ligue_hyenes || 0,
-                france: titles.france || 0,
-                spain: titles.espagne || titles.spain || 0,
-                italy: titles.italie || titles.italy || 0,
-                england: titles.angleterre || titles.england || 0,
-                total: totalTitles
+          // Extraire pantheonTeams[] - calcul DYNAMIQUE depuis les standings de toutes les saisons
+          if (data.entities.seasons && data.entities.managers) {
+            // Initialiser le compteur de trophées pour chaque manager
+            const trophyCount = {};
+            Object.values(data.entities.managers).forEach(manager => {
+              const name = manager.name || '?';
+              trophyCount[name] = {
+                name: name,
+                trophies: 0,  // Ligue des Hyènes
+                france: 0,
+                spain: 0,
+                italy: 0,
+                england: 0,
+                total: 0
               };
             });
 
-            // Cas spécial : France S6 - deux champions ex-aequo (BimBam et Warnaque)
-            // Ajouter un trophée France à chacun
-            pantheon.forEach(team => {
-              if (team.name === 'BimBam' || team.name === 'Warnaque') {
-                team.france += 1;
-                team.total += 1;
+            // Mapping des championnats
+            const championshipConfig = {
+              'ligue_hyenes': { field: 'trophies', totalMatchdays: 72, s6Matchdays: 62 },
+              'france': { field: 'france', totalMatchdays: 18, s6Matchdays: 8 },
+              'espagne': { field: 'spain', totalMatchdays: 18, s6Matchdays: 18 },
+              'italie': { field: 'italy', totalMatchdays: 18, s6Matchdays: 18 },
+              'angleterre': { field: 'england', totalMatchdays: 18, s6Matchdays: 18 }
+            };
+
+            // Parcourir toutes les saisons pour comptabiliser les trophées
+            Object.keys(data.entities.seasons).forEach(seasonKey => {
+              const parts = seasonKey.split('_');
+              const seasonNum = parts[parts.length - 1].replace('s', '');
+              const championshipName = parts.slice(0, -1).join('_');
+              const config = championshipConfig[championshipName];
+
+              if (!config) return;
+
+              const seasonData = data.entities.seasons[seasonKey];
+              const standings = seasonData.standings || [];
+
+              if (standings.length === 0) return;
+
+              // Vérifier si la saison est terminée
+              const isS6 = seasonNum === '6';
+              const isFranceS6 = championshipName === 'france' && isS6;
+              const totalMatchdays = isS6 ? config.s6Matchdays : config.totalMatchdays;
+              const currentMatchday = standings[0]?.j || 0;
+              const isSeasonComplete = isFranceS6 || currentMatchday >= totalMatchdays;
+
+              if (!isSeasonComplete) return;
+
+              // Cas spécial : France S6 - deux champions ex-aequo
+              if (isFranceS6) {
+                if (trophyCount['BimBam']) {
+                  trophyCount['BimBam'].france += 1;
+                  trophyCount['BimBam'].total += 1;
+                }
+                if (trophyCount['Warnaque']) {
+                  trophyCount['Warnaque'].france += 1;
+                  trophyCount['Warnaque'].total += 1;
+                }
+                return;
+              }
+
+              // Trouver le champion basé sur les points effectifs (pts - pénalité)
+              const teamsWithEffectivePts = standings.map(team => {
+                const teamName = team.mgr || team.name || '?';
+                // Construire la clé de pénalité avec le bon format de championnat
+                const champId = championshipName === 'ligue_hyenes' ? 'hyenes' :
+                               championshipName === 'espagne' ? 'spain' :
+                               championshipName === 'italie' ? 'italy' :
+                               championshipName === 'angleterre' ? 'england' :
+                               championshipName;
+                const penaltyKey = `${champId}_${seasonNum}_${teamName}`;
+                const penalty = filePenalties[penaltyKey] || 0;
+                const pts = team.pts || team.points || 0;
+                return {
+                  name: teamName,
+                  effectivePts: pts - penalty,
+                  diff: team.diff
+                };
+              });
+
+              // Trier par points effectifs (décroissant)
+              teamsWithEffectivePts.sort((a, b) => {
+                if (b.effectivePts !== a.effectivePts) {
+                  return b.effectivePts - a.effectivePts;
+                }
+                const diffA = parseInt(String(a.diff).replace('+', '')) || 0;
+                const diffB = parseInt(String(b.diff).replace('+', '')) || 0;
+                return diffB - diffA;
+              });
+
+              const champion = teamsWithEffectivePts[0];
+              if (champion && trophyCount[champion.name]) {
+                trophyCount[champion.name][config.field] += 1;
+                trophyCount[champion.name].total += 1;
               }
             });
 
-            // Trier par nombre de trophées
-            pantheon.sort((a, b) => b.total - a.total);
-
-            // Mettre à jour les rangs
-            pantheon.forEach((team, index) => {
-              team.rank = index + 1;
-            });
+            // Convertir en tableau et trier par nombre total de trophées
+            const pantheon = Object.values(trophyCount)
+              .sort((a, b) => b.total - a.total)
+              .map((team, index) => ({
+                ...team,
+                rank: index + 1
+              }));
 
             setPantheonTeams(pantheon);
           }
