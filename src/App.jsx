@@ -60,6 +60,7 @@ export default function HyeneScores() {
   // États Réglages
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetConfirmation, setResetConfirmation] = useState('');
+  const [newSeasonNumber, setNewSeasonNumber] = useState('');
 
   // État pour stocker les données brutes v2.0
   const [appData, setAppData] = useState(null);
@@ -621,6 +622,52 @@ export default function HyeneScores() {
       delete newPenalties[key];
       return newPenalties;
     });
+  };
+
+  // === Création d'une nouvelle saison ===
+  const handleCreateSeason = () => {
+    const seasonNum = newSeasonNumber.trim();
+    if (!seasonNum || isNaN(parseInt(seasonNum)) || parseInt(seasonNum) < 1) {
+      alert('Veuillez entrer un numéro de saison valide (nombre positif).');
+      return;
+    }
+
+    // Vérifier si la saison existe déjà
+    if (seasons.includes(seasonNum)) {
+      alert(`La Saison ${seasonNum} existe déjà.`);
+      return;
+    }
+
+    if (!appData || appData.version !== '2.0') {
+      alert('Veuillez d\'abord importer un fichier de données v2.0.');
+      return;
+    }
+
+    const updatedAppData = JSON.parse(JSON.stringify(appData));
+
+    // Créer les entrées de saison pour TOUS les championnats
+    const championships = ['ligue_hyenes', 'france', 'espagne', 'italie', 'angleterre'];
+    championships.forEach(champKey => {
+      const seasonKey = `${champKey}_s${seasonNum}`;
+      if (!updatedAppData.entities.seasons[seasonKey]) {
+        updatedAppData.entities.seasons[seasonKey] = { standings: [] };
+      }
+    });
+
+    // Mettre à jour la liste des saisons
+    const updatedSeasons = [...seasons, seasonNum].sort((a, b) => parseInt(a) - parseInt(b));
+    setSeasons(updatedSeasons);
+
+    // Sélectionner la nouvelle saison
+    setSelectedSeason(seasonNum);
+
+    // Sauvegarder dans appData
+    setAppData(updatedAppData);
+
+    // Réinitialiser le formulaire
+    setNewSeasonNumber('');
+
+    alert(`Saison ${seasonNum} créée avec succès pour tous les championnats.`);
   };
 
   // Obtenir les équipes avec pénalités pour la saison actuelle
@@ -2316,6 +2363,39 @@ export default function HyeneScores() {
                   <span className="group-hover:text-green-400 transition-colors">Actualiser l'affichage</span>
                   <span className="text-xl group-hover:rotate-180 transition-transform duration-500">🔄</span>
                 </button>
+              </div>
+
+              {/* Nouvelle Saison */}
+              <div className="bg-gradient-to-br from-gray-900/50 to-black/50 border-2 border-purple-500/30 rounded-2xl p-4 backdrop-blur-sm">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                    <span className="text-xl">+</span>
+                  </div>
+                  <h2 className="text-purple-400 text-base font-bold tracking-wide">NOUVELLE SAISON</h2>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      value={newSeasonNumber}
+                      onChange={(e) => setNewSeasonNumber(e.target.value)}
+                      placeholder="N° saison (ex: 11)"
+                      min="1"
+                      className="flex-1 bg-black/50 border border-purple-500/30 rounded-xl px-4 py-3 text-white text-sm font-medium outline-none focus:border-purple-500/60 transition-colors placeholder-gray-600"
+                    />
+                    <button
+                      onClick={handleCreateSeason}
+                      className="bg-purple-500/20 border border-purple-500/30 hover:border-purple-500/60 hover:bg-purple-500/30 rounded-xl px-5 py-3 text-purple-400 text-sm font-bold transition-all duration-300"
+                    >
+                      Créer
+                    </button>
+                  </div>
+                  {seasons.length > 0 && (
+                    <p className="text-gray-500 text-xs">
+                      Saisons existantes : {seasons.map(s => `S${s}`).join(', ')}
+                    </p>
+                  )}
+                </div>
               </div>
 
               {/* Système */}
