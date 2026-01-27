@@ -43,6 +43,7 @@ export default function HyeneScores() {
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, right: 'auto' });
   const [exemptTeam, setExemptTeam] = useState('');
   const [isTeamDropdownOpen, setIsTeamDropdownOpen] = useState(false);
+  const skipNextMatchesLoadRef = useRef(false);
 
   const [seasons, setSeasons] = useState([]);
 
@@ -211,6 +212,11 @@ export default function HyeneScores() {
         standings = savedStandings;
       }
 
+      // Mettre à jour les standings dans data pour que Palmarès/Panthéon voient les données recalculées
+      if (data.entities.seasons[seasonKey]) {
+        data.entities.seasons[seasonKey].standings = standings;
+      }
+
       // Normaliser les données pour l'affichage (même transformation que v1.0)
       const normalizedTeams = standings.map(team => ({
         rank: team.pos || team.rank || 0,
@@ -274,7 +280,12 @@ export default function HyeneScores() {
                      (match.as !== undefined ? match.as :
                      (match.scoreAway !== undefined ? match.scoreAway : null))
         }));
-        setMatches(normalizedMatches);
+        // Ne pas écraser les matchs si c'est un auto-sync (l'utilisateur est en train de saisir)
+        if (skipNextMatchesLoadRef.current) {
+          skipNextMatchesLoadRef.current = false;
+        } else {
+          setMatches(normalizedMatches);
+        }
 
         // Extraire l'équipe exemptée depuis le bloc match (format v2.0)
         const exemptFromMatch = matchesForContext.exempt || matchesForContext.ex || '';
@@ -544,9 +555,11 @@ export default function HyeneScores() {
   };
 
   const handleTeamSelect = (matchId, type, team) => {
-    setMatches(matches.map(m => 
+    const updatedMatches = matches.map(m =>
       m.id === matchId ? { ...m, [type === 'home' ? 'homeTeam' : 'awayTeam']: team } : m
-    ));
+    );
+    setMatches(updatedMatches);
+    syncMatchesToAppData(updatedMatches);
     setOpenDropdown(null);
   };
 
@@ -1330,6 +1343,145 @@ export default function HyeneScores() {
     }
   };
 
+  // === AUTO-SYNC : synchroniser les matchs vers appData à chaque modification ===
+  const syncMatchesToAppData = useCallback((updatedMatches) => {
+    if (!appData || appData.version !== '2.0' || allTeams.length === 0) return;
+
+    const championshipMapping = {
+      'hyenes': 'ligue_hyenes',
+      'france': 'france',
+      'spain': 'espagne',
+      'italy': 'italie',
+      'england': 'angleterre'
+    };
+    const championshipKey = championshipMapping[selectedChampionship] || selectedChampionship;
+    const seasonKey = `${championshipKey}_s${selectedSeason}`;
+
+    const updatedAppData = JSON.parse(JSON.stringify(appData));
+
+    if (!updatedAppData.entities.matches) {
+      updatedAppData.entities.matches = [];
+    }
+
+    // Créer le bloc de matchs avec les données actuelles
+    const newMatchBlock = {
+      championship: championshipKey,
+      season: parseInt(selectedSeason),
+      matchday: parseInt(selectedJournee),
+      games: updatedMatches.map(m => ({
+        id: m.id,
+        homeTeam: m.homeTeam || '',
+        awayTeam: m.awayTeam || '',
+        homeScore: m.homeScore,
+        awayScore: m.awayScore
+      })),
+      exempt: exemptTeam || ''
+    };
+
+    // Mettre à jour ou ajouter le bloc
+    const existingBlockIndex = updatedAppData.entities.matches.findIndex(
+      block => block.championship === championshipKey &&
+               block.season === parseInt(selectedSeason) &&
+               block.matchday === parseInt(selectedJournee)
+    );
+    if (existingBlockIndex >= 0) {
+      updatedAppData.entities.matches[existingBlockIndex] = newMatchBlock;
+    } else {
+      updatedAppData.entities.matches.push(newMatchBlock);
+    }
+
+    // Recalculer le classement depuis TOUS les matchs de la saison
+    const allSeasonMatches = updatedAppData.entities.matches.filter(
+      block => block.championship === championshipKey &&
+               block.season === parseInt(selectedSeason)
+    );
+
+    const teamStats = {};
+    allTeams.forEach(team => {
+      teamStats[team] = {
+        name: team, pts: 0, j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0, diff: 0
+      };
+    });
+
+    allSeasonMatches.forEach(matchBlock => {
+      if (matchBlock.games && Array.isArray(matchBlock.games)) {
+        matchBlock.games.forEach(match => {
+          const home = match.homeTeam || match.home || match.h || match.equipe1 || '';
+          const away = match.awayTeam || match.away || match.a || match.equipe2 || '';
+          const hs = match.homeScore !== undefined ? match.homeScore :
+                     (match.hs !== undefined ? match.hs :
+                     (match.scoreHome !== undefined ? match.scoreHome : null));
+          const as2 = match.awayScore !== undefined ? match.awayScore :
+                      (match.as !== undefined ? match.as :
+                      (match.scoreAway !== undefined ? match.scoreAway : null));
+
+          if (hs !== null && hs !== undefined && as2 !== null && as2 !== undefined) {
+            const homeScore = parseInt(hs);
+            const awayScore = parseInt(as2);
+
+            if (!isNaN(homeScore) && !isNaN(awayScore) && teamStats[home] && teamStats[away]) {
+              teamStats[home].j++;
+              teamStats[away].j++;
+              teamStats[home].bp += homeScore;
+              teamStats[home].bc += awayScore;
+              teamStats[away].bp += awayScore;
+              teamStats[away].bc += homeScore;
+
+              if (homeScore > awayScore) {
+                teamStats[home].pts += 3;
+                teamStats[home].g++;
+                teamStats[away].p++;
+              } else if (homeScore < awayScore) {
+                teamStats[away].pts += 3;
+                teamStats[away].g++;
+                teamStats[home].p++;
+              } else {
+                teamStats[home].pts++;
+                teamStats[away].pts++;
+                teamStats[home].n++;
+                teamStats[away].n++;
+              }
+              teamStats[home].diff = teamStats[home].bp - teamStats[home].bc;
+              teamStats[away].diff = teamStats[away].bp - teamStats[away].bc;
+            }
+          }
+        });
+      }
+    });
+
+    // Trier avec pénalités
+    const sortedTeams = Object.values(teamStats)
+      .filter(team => team.j > 0)
+      .map(team => {
+        const penaltyKey = `${selectedChampionship}_${selectedSeason}_${team.name}`;
+        const penalty = penalties[penaltyKey] || 0;
+        return { ...team, penalty, effectivePts: team.pts - penalty };
+      })
+      .sort((a, b) => {
+        if (b.effectivePts !== a.effectivePts) return b.effectivePts - a.effectivePts;
+        if (b.diff !== a.diff) return b.diff - a.diff;
+        return b.bp - a.bp;
+      });
+
+    const newStandings = sortedTeams.map((team, index) => ({
+      pos: index + 1,
+      mgr: team.name,
+      pts: team.pts,
+      j: team.j, g: team.g, n: team.n, p: team.p,
+      bp: team.bp, bc: team.bc, diff: team.diff
+    }));
+
+    // Sauvegarder les standings recalculés dans appData
+    if (!updatedAppData.entities.seasons[seasonKey]) {
+      updatedAppData.entities.seasons[seasonKey] = { standings: [] };
+    }
+    updatedAppData.entities.seasons[seasonKey].standings = newStandings;
+
+    // Empêcher loadDataFromAppData d'écraser les matchs en cours de saisie
+    skipNextMatchesLoadRef.current = true;
+    setAppData(updatedAppData);
+  }, [appData, allTeams, selectedChampionship, selectedSeason, selectedJournee, exemptTeam, penalties]);
+
   return (
     <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden safe-top">
       <style>{`
@@ -1833,7 +1985,9 @@ export default function HyeneScores() {
                             value={match.homeScore !== null ? match.homeScore : ''}
                             onChange={(e) => {
                               const value = e.target.value === '' ? null : parseInt(e.target.value);
-                              setMatches(matches.map(m => m.id === match.id ? { ...m, homeScore: value } : m));
+                              const updatedMatches = matches.map(m => m.id === match.id ? { ...m, homeScore: value } : m);
+                              setMatches(updatedMatches);
+                              syncMatchesToAppData(updatedMatches);
                             }}
                             placeholder="-"
                             className={`rounded-md w-8 h-8 text-center text-cyan-400 text-sm font-bold outline-none transition-all duration-300 ${
@@ -1848,7 +2002,9 @@ export default function HyeneScores() {
                             value={match.awayScore !== null ? match.awayScore : ''}
                             onChange={(e) => {
                               const value = e.target.value === '' ? null : parseInt(e.target.value);
-                              setMatches(matches.map(m => m.id === match.id ? { ...m, awayScore: value } : m));
+                              const updatedMatches = matches.map(m => m.id === match.id ? { ...m, awayScore: value } : m);
+                              setMatches(updatedMatches);
+                              syncMatchesToAppData(updatedMatches);
                             }}
                             placeholder="-"
                             className={`rounded-md w-8 h-8 text-center text-cyan-400 text-sm font-bold outline-none transition-all duration-300 ${
