@@ -1630,14 +1630,6 @@ export default function HyeneScores() {
           box-shadow:
             0 8px 32px rgba(0, 0, 0, 0.3),
             inset 0 1px 0 rgba(255, 255, 255, 0.15);
-          transition: all 0.3s var(--spring-smooth);
-        }
-
-        .ios26-card:hover {
-          transform: translateY(-2px);
-          box-shadow:
-            0 12px 40px rgba(0, 0, 0, 0.4),
-            inset 0 1px 0 rgba(255, 255, 255, 0.2);
         }
 
         /* === iOS 26 Button === */
@@ -1653,14 +1645,6 @@ export default function HyeneScores() {
           box-shadow:
             0 4px 16px rgba(0, 0, 0, 0.2),
             inset 0 1px 0 rgba(255, 255, 255, 0.2);
-          transition: all 0.2s var(--spring-bounce);
-        }
-
-        .ios26-btn:active {
-          transform: scale(0.96);
-          box-shadow:
-            0 2px 8px rgba(0, 0, 0, 0.2),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
 
         /* === iOS 26 Input === */
@@ -1670,7 +1654,6 @@ export default function HyeneScores() {
           -webkit-backdrop-filter: blur(10px);
           border: 1px solid rgba(255, 255, 255, 0.1);
           box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
-          transition: all 0.2s var(--spring-smooth);
         }
 
         .ios26-input:focus {
@@ -1755,35 +1738,6 @@ export default function HyeneScores() {
           text-shadow: 0 0 20px var(--green-glow), 0 0 40px var(--green-glow);
         }
 
-        /* === iOS 26 Spring Animations === */
-        @keyframes ios26-fade-in {
-          from { opacity: 0; transform: scale(0.95) translateY(10px); }
-          to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-
-        @keyframes ios26-slide-up {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes ios26-pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.7; }
-        }
-
-        @keyframes ios26-shimmer {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
-        }
-
-        .ios26-animate-in {
-          animation: ios26-fade-in 0.4s var(--spring-bounce) forwards;
-        }
-
-        .ios26-slide-up {
-          animation: ios26-slide-up 0.3s var(--spring-smooth) forwards;
-        }
-
         /* === Tab Active Indicator === */
         .ios26-tab-active {
           background: linear-gradient(
@@ -1796,15 +1750,10 @@ export default function HyeneScores() {
             inset 0 1px 0 rgba(255, 255, 255, 0.2);
         }
 
-        /* === Row Hover Effect === */
+        /* === Row Style === */
         .ios26-row {
-          transition: all 0.2s var(--spring-smooth);
           border-radius: 12px;
           margin: 2px 0;
-        }
-
-        .ios26-row:hover {
-          background: rgba(255, 255, 255, 0.05);
         }
 
         /* === Number Inputs === */
@@ -1855,17 +1804,17 @@ export default function HyeneScores() {
 
       {/* CLASSEMENT */}
       {selectedTab === 'classement' && (
-        <div className="h-full flex flex-col ios26-vibrancy">
+        <div className="h-full flex flex-col ios26-vibrancy overflow-y-auto pb-28">
           <div className="px-3 pt-4 pb-2 flex-shrink-0">
-            <div className="ios26-header rounded-2xl p-4 text-center ios26-animate-in">
+            <div className="ios26-header rounded-2xl p-4 text-center">
               <h1 className="text-cyan-400 text-2xl font-extrabold tracking-widest glow-cyan">CLASSEMENT</h1>
             </div>
           </div>
 
-          <div className="flex-1 px-3 pb-28 overflow-hidden flex flex-col">
+          <div className="flex-1 px-3">
 
               {/* Selectors */}
-              <div className="py-3 border-b border-white/5 flex-shrink-0 relative">
+              <div className="py-3 border-b border-white/5 relative">
                 <div className="flex items-stretch gap-3">
                   <div className="flex-1 relative">
                     <button
@@ -1878,7 +1827,7 @@ export default function HyeneScores() {
                         <span className="text-2xl">{championships.find(c => c.id === selectedChampionship)?.icon}</span>
                         <span className="truncate">{championships.find(c => c.id === selectedChampionship)?.name}</span>
                       </div>
-                      <svg className={`w-4 h-4 text-cyan-400 transition-transform duration-300 flex-shrink-0 ${isChampOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className={`w-4 h-4 text-cyan-400 flex-shrink-0 ${isChampOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </button>
@@ -1886,7 +1835,7 @@ export default function HyeneScores() {
                     {isChampOpen && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setIsChampOpen(false)}></div>
-                        <div className="absolute left-0 right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 max-h-64 overflow-y-auto ios26-animate-in">
+                        <div className="absolute left-0 right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 max-h-64 overflow-y-auto">
                           {championships.map(champ => (
                             <button
                               key={champ.id}
@@ -1894,7 +1843,7 @@ export default function HyeneScores() {
                                 setSelectedChampionship(champ.id);
                                 setIsChampOpen(false);
                               }}
-                              className={`w-full px-4 py-3 text-sm font-semibold text-left transition-all duration-200 flex items-center gap-3 ${
+                              className={`w-full px-4 py-3 text-sm font-semibold text-left flex items-center gap-3 ${
                                 selectedChampionship === champ.id
                                   ? 'bg-cyan-500/20 text-cyan-400'
                                   : 'text-white hover:bg-white/10'
@@ -1917,7 +1866,7 @@ export default function HyeneScores() {
                       }`}
                     >
                       <span>Saison {selectedSeason}</span>
-                      <svg className={`w-4 h-4 text-cyan-400 transition-transform duration-300 ${isSeasonOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className={`w-4 h-4 text-cyan-400 ${isSeasonOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </button>
@@ -1925,12 +1874,12 @@ export default function HyeneScores() {
                     {isSeasonOpen && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setIsSeasonOpen(false)}></div>
-                        <div className="absolute right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 w-36 max-h-64 overflow-y-auto ios26-animate-in">
+                        <div className="absolute right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 w-36 max-h-64 overflow-y-auto">
                           {seasons.map(season => (
                             <button
                               key={season}
                               onClick={() => handleSeasonSelect(season)}
-                              className={`w-full px-4 py-3 text-sm font-semibold text-left transition-all duration-200 ${
+                              className={`w-full px-4 py-3 text-sm font-semibold text-left ${
                                 selectedSeason === season
                                   ? 'bg-cyan-500/20 text-cyan-400'
                                   : 'text-white hover:bg-white/10'
@@ -1947,7 +1896,7 @@ export default function HyeneScores() {
               </div>
 
               {/* Progress Bar */}
-              <div className="py-3 border-b border-white/5 flex-shrink-0">
+              <div className="py-3 border-b border-white/5">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-gray-400 text-xs font-semibold">
                     Journée {seasonProgress.currentMatchday}/{seasonProgress.totalMatchdays}
@@ -1956,14 +1905,14 @@ export default function HyeneScores() {
                 </div>
                 <div className="ios26-progress rounded-full h-2">
                   <div
-                    className="ios26-progress-bar h-full rounded-full transition-all duration-500 ease-out"
+                    className="ios26-progress-bar h-full rounded-full"
                     style={{ width: `${seasonProgress.percentage}%` }}
                   ></div>
                 </div>
               </div>
 
               {/* Table Header */}
-              <div className="grid grid-cols-12 gap-1 px-3 py-3 liquid-glass rounded-xl my-2 flex-shrink-0">
+              <div className="grid grid-cols-12 gap-1 px-3 py-3 liquid-glass rounded-xl my-2">
                 <div className="col-span-1 text-gray-400 text-xs font-bold tracking-widest text-center">#</div>
                 <div className="col-span-4 text-gray-400 text-xs font-bold tracking-widest text-left">CLUB</div>
                 <div className="col-span-2 text-gray-400 text-xs font-bold tracking-widest text-center">PTS</div>
@@ -1973,17 +1922,12 @@ export default function HyeneScores() {
               </div>
 
               {/* Teams List */}
-              <div className="flex-1 overflow-y-auto pb-1">
-                {getSortedTeams().map((team, index) => (
+              <div className="pb-1">
+                {getSortedTeams().map((team) => (
                   <div
                     key={team.name}
-                    className="grid grid-cols-12 gap-1 py-2 px-2 ios26-row items-center ios26-slide-up"
-                    style={{
-                      height: '44px',
-                      minHeight: '44px',
-                      maxHeight: '44px',
-                      animationDelay: `${index * 30}ms`
-                    }}
+                    className="grid grid-cols-12 gap-1 py-2 px-2 ios26-row items-center"
+                    style={{ height: '44px', minHeight: '44px', maxHeight: '44px' }}
                   >
                     <div className="col-span-1 flex items-center justify-center font-mono font-bold text-sm whitespace-nowrap overflow-hidden text-cyan-400 glow-cyan">
                       {team.displayRank < 10 ? `0${team.displayRank}` : team.displayRank}
@@ -2026,7 +1970,7 @@ export default function HyeneScores() {
                             <span className="text-orange-400 text-xs font-bold">-{points}</span>
                             <button
                               onClick={() => handleRemovePenalty(teamName)}
-                              className="text-gray-400 hover:text-red-400 transition-colors ml-1"
+                              className="text-gray-400 hover:text-red-400 ml-1"
                             >
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -2037,7 +1981,7 @@ export default function HyeneScores() {
                       </div>
                       <button
                         onClick={() => setIsPenaltyModalOpen(true)}
-                        className="ios26-btn rounded-xl px-3 py-1.5 text-orange-400 text-xs font-bold transition-all flex-shrink-0 border-orange-500/30"
+                        className="ios26-btn rounded-xl px-3 py-1.5 text-orange-400 text-xs font-bold flex-shrink-0 border-orange-500/30"
                       >
                         + Ajouter
                       </button>
@@ -2051,7 +1995,7 @@ export default function HyeneScores() {
                 <>
                   <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50" onClick={() => setIsPenaltyModalOpen(false)}></div>
                   <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
-                    <div className="ios26-modal rounded-3xl p-6 max-w-md w-full ios26-animate-in">
+                    <div className="ios26-modal rounded-3xl p-6 max-w-md w-full">
                       <div className="text-center mb-6">
                         <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-orange-500/20 flex items-center justify-center">
                           <span className="text-3xl">-</span>
@@ -2069,14 +2013,14 @@ export default function HyeneScores() {
                             className="w-full ios26-btn rounded-xl px-4 py-3.5 text-white text-sm font-semibold cursor-pointer flex items-center justify-between"
                           >
                             <span className="truncate">{selectedPenaltyTeam || 'Sélectionner une équipe'}</span>
-                            <svg className={`w-4 h-4 text-orange-400 flex-shrink-0 ml-2 transition-transform duration-300 ${isPenaltyTeamDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className={`w-4 h-4 text-orange-400 flex-shrink-0 ml-2 ${isPenaltyTeamDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
                           </button>
                           {isPenaltyTeamDropdownOpen && (
                             <>
                               <div className="fixed inset-0 z-40" onClick={() => setIsPenaltyTeamDropdownOpen(false)}></div>
-                              <div className="absolute left-0 right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 max-h-48 overflow-y-auto ios26-animate-in">
+                              <div className="absolute left-0 right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 max-h-48 overflow-y-auto">
                                 {teams.map(team => (
                                   <button
                                     key={team.name}
@@ -2084,7 +2028,7 @@ export default function HyeneScores() {
                                       setSelectedPenaltyTeam(team.name);
                                       setIsPenaltyTeamDropdownOpen(false);
                                     }}
-                                    className={`w-full px-4 py-3 text-sm font-semibold text-left transition-all duration-200 ${
+                                    className={`w-full px-4 py-3 text-sm font-semibold text-left ${
                                       selectedPenaltyTeam === team.name
                                         ? 'bg-orange-500/20 text-orange-400'
                                         : 'text-white hover:bg-white/10'
@@ -2126,7 +2070,7 @@ export default function HyeneScores() {
                         <button
                           onClick={handleApplyPenalty}
                           disabled={!selectedPenaltyTeam || !penaltyPoints}
-                          className="flex-1 bg-orange-500/20 border border-orange-500/50 hover:bg-orange-500/30 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl px-4 py-3.5 text-orange-400 text-sm font-bold transition-all duration-200"
+                          className="flex-1 bg-orange-500/20 border border-orange-500/50 hover:bg-orange-500/30 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl px-4 py-3.5 text-orange-400 text-sm font-bold"
                         >
                           Appliquer
                         </button>
@@ -2141,14 +2085,14 @@ export default function HyeneScores() {
 
       {/* MATCH */}
       {selectedTab === 'match' && (
-        <div className="h-full flex flex-col ios26-vibrancy">
+        <div className="h-full flex flex-col ios26-vibrancy overflow-y-auto pb-28">
           <div className="px-3 pt-4 pb-2 flex-shrink-0">
-            <div className="ios26-header rounded-2xl p-4 text-center ios26-animate-in">
+            <div className="ios26-header rounded-2xl p-4 text-center">
               <h1 className="text-cyan-400 text-2xl font-extrabold tracking-widest glow-cyan">MATCHS</h1>
             </div>
           </div>
 
-          <div className="flex-1 px-3 pb-28 overflow-hidden flex flex-col">
+          <div className="flex-1 px-3">
 
               {/* Selectors */}
               <div className="py-3 border-b border-white/5 flex-shrink-0 relative">
@@ -2165,7 +2109,7 @@ export default function HyeneScores() {
                         <span className="text-2xl">{championships.find(c => c.id === selectedChampionship)?.icon}</span>
                         <span className="truncate">{championships.find(c => c.id === selectedChampionship)?.name}</span>
                       </div>
-                      <svg className={`w-4 h-4 text-cyan-400 transition-transform duration-300 flex-shrink-0 ${isChampOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className={`w-4 h-4 text-cyan-400  flex-shrink-0 ${isChampOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </button>
@@ -2173,7 +2117,7 @@ export default function HyeneScores() {
                     {isChampOpen && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setIsChampOpen(false)}></div>
-                        <div className="absolute left-0 right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 max-h-64 overflow-y-auto ios26-animate-in">
+                        <div className="absolute left-0 right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 max-h-64 overflow-y-auto ">
                           {championships.filter(c => c.id !== 'hyenes').map(champ => (
                             <button
                               key={champ.id}
@@ -2181,7 +2125,7 @@ export default function HyeneScores() {
                                 setSelectedChampionship(champ.id);
                                 setIsChampOpen(false);
                               }}
-                              className={`w-full px-4 py-3 text-sm font-semibold text-left transition-all duration-200 flex items-center gap-3 ${
+                              className={`w-full px-4 py-3 text-sm font-semibold text-left flex items-center gap-3 ${
                                 selectedChampionship === champ.id
                                   ? 'bg-cyan-500/20 text-cyan-400'
                                   : 'text-white hover:bg-white/10'
@@ -2205,7 +2149,7 @@ export default function HyeneScores() {
                       }`}
                     >
                       <span>Saison {selectedSeason}</span>
-                      <svg className={`w-4 h-4 text-cyan-400 transition-transform duration-300 ${isSeasonOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className={`w-4 h-4 text-cyan-400  ${isSeasonOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </button>
@@ -2213,7 +2157,7 @@ export default function HyeneScores() {
                     {isSeasonOpen && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setIsSeasonOpen(false)}></div>
-                        <div className="absolute left-0 right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 max-h-64 overflow-y-auto ios26-animate-in">
+                        <div className="absolute left-0 right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 max-h-64 overflow-y-auto ">
                           {seasons.map(season => (
                             <button
                               key={season}
@@ -2221,7 +2165,7 @@ export default function HyeneScores() {
                                 setSelectedSeason(season);
                                 setIsSeasonOpen(false);
                               }}
-                              className={`w-full px-4 py-3 text-sm font-semibold text-left transition-all duration-200 ${
+                              className={`w-full px-4 py-3 text-sm font-semibold text-left  ${
                                 selectedSeason === season
                                   ? 'bg-cyan-500/20 text-cyan-400'
                                   : 'text-white hover:bg-white/10'
@@ -2245,7 +2189,7 @@ export default function HyeneScores() {
                       const currentIdx = journees.indexOf(selectedJournee);
                       if (currentIdx > 0) setSelectedJournee(journees[currentIdx - 1]);
                     }}
-                    className="w-12 h-12 flex items-center justify-center text-cyan-400 ios26-btn rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="w-12 h-12 flex items-center justify-center text-cyan-400 ios26-btn rounded-xl disabled:opacity-30 disabled:cursor-not-allowed"
                     disabled={selectedJournee === '1'}
                   >
                     <span className="text-xl font-bold">◀</span>
@@ -2261,7 +2205,7 @@ export default function HyeneScores() {
                       const currentIdx = journees.indexOf(selectedJournee);
                       if (currentIdx < journees.length - 1) setSelectedJournee(journees[currentIdx + 1]);
                     }}
-                    className="w-12 h-12 flex items-center justify-center text-cyan-400 ios26-btn rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="w-12 h-12 flex items-center justify-center text-cyan-400 ios26-btn rounded-xl disabled:opacity-30 disabled:cursor-not-allowed"
                     disabled={selectedJournee === journees[journees.length - 1]}
                   >
                     <span className="text-xl font-bold">▶</span>
@@ -2270,7 +2214,7 @@ export default function HyeneScores() {
               </div>
 
               {/* Matches List */}
-              <div className="flex-1 overflow-y-auto py-3">
+              <div className="py-3">
                 {/* Header */}
                 <div className="grid grid-cols-12 gap-1 py-3 mb-2 liquid-glass rounded-xl">
                   <div className="col-span-5 text-center text-gray-400 text-xs font-bold tracking-widest">
@@ -2288,21 +2232,20 @@ export default function HyeneScores() {
                   {matches.map((match, index) => (
                     <div
                       key={match.id}
-                      className="grid grid-cols-12 items-center gap-1 py-3 px-2 ios26-row ios26-slide-up"
-                      style={{ animationDelay: `${index * 50}ms` }}
-                    >
+                      className="grid grid-cols-12 items-center gap-1 py-3 px-2 ios26-row "
+                                          >
                       {/* Home Team */}
                       <div className="col-span-5 relative flex justify-start">
                           <button
                             onClick={(e) => toggleDropdown(match.id, 'home', e)}
-                            className={`w-full max-w-[130px] rounded-xl px-2.5 py-2 flex items-center justify-between group cursor-pointer transition-all duration-300 ${
+                            className={`w-full max-w-[130px] rounded-xl px-2.5 py-2 flex items-center justify-between group cursor-pointer  ${
                               match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
                                 ? 'bg-emerald-500/15 border border-emerald-500/40 shadow-lg shadow-emerald-500/10'
                                 : 'ios26-btn'
                             }`}
                           >
                             <span className="text-white text-xs font-semibold leading-tight text-left flex-1 pr-0.5">{match.homeTeam || '────────'}</span>
-                            <svg className={`w-3 h-3 flex-shrink-0 transition-colors duration-200 ${
+                            <svg className={`w-3 h-3 flex-shrink-0  ${
                               match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
                                 ? 'text-emerald-400'
                                 : 'text-gray-500 group-hover:text-cyan-400'
@@ -2314,7 +2257,7 @@ export default function HyeneScores() {
                             <>
                               <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)}></div>
                               <div
-                                className="fixed ios26-dropdown rounded-2xl z-50 max-h-[420px] overflow-y-auto w-[140px] ios26-animate-in"
+                                className="fixed ios26-dropdown rounded-2xl z-50 max-h-[420px] overflow-y-auto w-[140px] "
                                 style={{
                                   top: `${dropdownPosition.top}px`,
                                   left: dropdownPosition.left !== 'auto' ? `${dropdownPosition.left}px` : 'auto',
@@ -2323,7 +2266,7 @@ export default function HyeneScores() {
                               >
                                 <button
                                   onClick={() => handleTeamSelect(match.id, 'home', '')}
-                                  className="w-full px-3 py-2.5 text-xs font-semibold text-left transition-all duration-200 flex items-center text-white hover:bg-white/10 whitespace-nowrap"
+                                  className="w-full px-3 py-2.5 text-xs font-semibold text-left flex items-center text-white hover:bg-white/10 whitespace-nowrap"
                                 >
                                   Aucune équipe
                                 </button>
@@ -2331,7 +2274,7 @@ export default function HyeneScores() {
                                   <button
                                     key={team}
                                     onClick={() => handleTeamSelect(match.id, 'home', team)}
-                                    className="w-full px-3 py-2.5 text-xs font-semibold text-left transition-all duration-200 flex items-center text-white hover:bg-white/10 whitespace-nowrap"
+                                    className="w-full px-3 py-2.5 text-xs font-semibold text-left flex items-center text-white hover:bg-white/10 whitespace-nowrap"
                                   >
                                     {team}
                                   </button>
@@ -2353,7 +2296,7 @@ export default function HyeneScores() {
                               syncMatchesToAppData(updatedMatches);
                             }}
                             placeholder="-"
-                            className={`rounded-xl w-9 h-9 text-center text-sm font-bold outline-none transition-all duration-300 ${
+                            className={`rounded-xl w-9 h-9 text-center text-sm font-bold outline-none  ${
                               match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
                                 ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 shadow-lg shadow-emerald-500/10'
                                 : 'ios26-input text-cyan-400'
@@ -2370,7 +2313,7 @@ export default function HyeneScores() {
                               syncMatchesToAppData(updatedMatches);
                             }}
                             placeholder="-"
-                            className={`rounded-xl w-9 h-9 text-center text-sm font-bold outline-none transition-all duration-300 ${
+                            className={`rounded-xl w-9 h-9 text-center text-sm font-bold outline-none  ${
                               match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
                                 ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 shadow-lg shadow-emerald-500/10'
                                 : 'ios26-input text-cyan-400'
@@ -2382,14 +2325,14 @@ export default function HyeneScores() {
                       <div className="col-span-5 relative flex justify-end">
                           <button
                             onClick={(e) => toggleDropdown(match.id, 'away', e)}
-                            className={`w-full max-w-[130px] rounded-xl px-2.5 py-2 flex items-center justify-between group cursor-pointer transition-all duration-300 ${
+                            className={`w-full max-w-[130px] rounded-xl px-2.5 py-2 flex items-center justify-between group cursor-pointer  ${
                               match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
                                 ? 'bg-emerald-500/15 border border-emerald-500/40 shadow-lg shadow-emerald-500/10'
                                 : 'ios26-btn'
                             }`}
                           >
                             <span className="text-white text-xs font-semibold leading-tight text-left flex-1 pr-0.5">{match.awayTeam || '────────'}</span>
-                            <svg className={`w-3 h-3 flex-shrink-0 transition-colors duration-200 ${
+                            <svg className={`w-3 h-3 flex-shrink-0  ${
                               match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
                                 ? 'text-emerald-400'
                                 : 'text-gray-500 group-hover:text-cyan-400'
@@ -2401,7 +2344,7 @@ export default function HyeneScores() {
                             <>
                               <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)}></div>
                               <div
-                                className="fixed ios26-dropdown rounded-2xl z-50 max-h-[420px] overflow-y-auto w-[140px] ios26-animate-in"
+                                className="fixed ios26-dropdown rounded-2xl z-50 max-h-[420px] overflow-y-auto w-[140px] "
                                 style={{
                                   top: `${dropdownPosition.top}px`,
                                   left: dropdownPosition.left !== 'auto' ? `${dropdownPosition.left}px` : 'auto',
@@ -2410,7 +2353,7 @@ export default function HyeneScores() {
                               >
                                 <button
                                   onClick={() => handleTeamSelect(match.id, 'away', '')}
-                                  className="w-full px-3 py-2.5 text-xs font-semibold text-left transition-all duration-200 flex items-center text-white hover:bg-white/10 whitespace-nowrap"
+                                  className="w-full px-3 py-2.5 text-xs font-semibold text-left flex items-center text-white hover:bg-white/10 whitespace-nowrap"
                                 >
                                   Aucune équipe
                                 </button>
@@ -2418,7 +2361,7 @@ export default function HyeneScores() {
                                   <button
                                     key={team}
                                     onClick={() => handleTeamSelect(match.id, 'away', team)}
-                                    className="w-full px-3 py-2.5 text-xs font-semibold text-left transition-all duration-200 flex items-center text-white hover:bg-white/10 whitespace-nowrap"
+                                    className="w-full px-3 py-2.5 text-xs font-semibold text-left flex items-center text-white hover:bg-white/10 whitespace-nowrap"
                                   >
                                     {team}
                                   </button>
@@ -2439,23 +2382,23 @@ export default function HyeneScores() {
                       <div className="relative w-52">
                         <button
                           onClick={() => setIsTeamDropdownOpen(!isTeamDropdownOpen)}
-                          className="w-full bg-red-500/15 border border-red-500/30 hover:bg-red-500/20 rounded-xl px-4 py-3 text-white text-sm font-semibold cursor-pointer transition-all duration-200 flex items-center justify-between backdrop-blur-sm"
+                          className="w-full bg-red-500/15 border border-red-500/30 hover:bg-red-500/20 rounded-xl px-4 py-3 text-white text-sm font-semibold cursor-pointer flex items-center justify-between backdrop-blur-sm"
                         >
                           <span className="truncate">{exemptTeam || 'Aucune'}</span>
-                          <svg className={`w-4 h-4 text-red-400 flex-shrink-0 ml-2 transition-transform duration-300 ${isTeamDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className={`w-4 h-4 text-red-400 flex-shrink-0 ml-2  ${isTeamDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                           </svg>
                         </button>
                         {isTeamDropdownOpen && (
                           <>
                             <div className="fixed inset-0 z-40" onClick={() => setIsTeamDropdownOpen(false)}></div>
-                            <div className="absolute left-0 right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 max-h-[420px] overflow-y-auto ios26-animate-in">
+                            <div className="absolute left-0 right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 max-h-[420px] overflow-y-auto ">
                               <button
                                 onClick={() => {
                                   setExemptTeam('');
                                   setIsTeamDropdownOpen(false);
                                 }}
-                                className="w-full px-4 py-3 text-sm font-semibold text-left transition-all duration-200 text-white hover:bg-white/10"
+                                className="w-full px-4 py-3 text-sm font-semibold text-left text-white hover:bg-white/10"
                               >
                                 Aucune
                               </button>
@@ -2466,7 +2409,7 @@ export default function HyeneScores() {
                                     setExemptTeam(team);
                                     setIsTeamDropdownOpen(false);
                                   }}
-                                  className="w-full px-4 py-3 text-sm font-semibold text-left transition-all duration-200 text-white hover:bg-white/10"
+                                  className="w-full px-4 py-3 text-sm font-semibold text-left text-white hover:bg-white/10"
                                 >
                                   {team}
                                 </button>
@@ -2485,14 +2428,14 @@ export default function HyeneScores() {
 
       {/* PALMARES */}
       {selectedTab === 'palmares' && (
-        <div className="h-full flex flex-col ios26-vibrancy">
+        <div className="h-full flex flex-col ios26-vibrancy overflow-y-auto pb-28">
           <div className="px-3 pt-4 pb-2 flex-shrink-0">
-            <div className="ios26-header rounded-2xl p-4 text-center ios26-animate-in">
+            <div className="ios26-header rounded-2xl p-4 text-center">
               <h1 className="text-cyan-400 text-2xl font-extrabold tracking-widest glow-cyan">PALMARÈS</h1>
             </div>
           </div>
 
-          <div className="flex-1 px-3 pb-28 overflow-hidden flex flex-col">
+          <div className="flex-1 px-3">
 
               {/* Championship Buttons - iOS 26 Style */}
               <div className="py-3 border-b border-white/5 flex-shrink-0">
@@ -2501,7 +2444,7 @@ export default function HyeneScores() {
                     <button
                       key={champ.id}
                       onClick={() => setSelectedChampionship(champ.id)}
-                      className={`w-14 h-14 flex items-center justify-center rounded-2xl text-2xl transition-all duration-300 ${
+                      className={`w-14 h-14 flex items-center justify-center rounded-2xl text-2xl  ${
                         selectedChampionship === champ.id
                           ? 'ios26-tab-active scale-110'
                           : 'ios26-btn hover:scale-105'
@@ -2521,12 +2464,12 @@ export default function HyeneScores() {
               </div>
 
               {/* Champions List */}
-              <div className="flex-1 overflow-y-auto pb-1">
+              <div className="pb-1">
                 {champions.map((champion, index) => (
                   <div
                     key={champion.season}
-                    className="grid grid-cols-12 gap-1 px-3 py-3 ios26-row items-center ios26-slide-up"
-                    style={{ height: '52px', animationDelay: `${index * 50}ms` }}
+                    className="grid grid-cols-12 gap-1 px-3 py-3 ios26-row items-center "
+                    style={{ height: '52px' }}
                   >
                     <div className="col-span-3 flex justify-center">
                       <span className="text-cyan-400 text-xl font-bold glow-cyan">{champion.season}</span>
@@ -2547,14 +2490,14 @@ export default function HyeneScores() {
 
       {/* PANTHEON */}
       {selectedTab === 'pantheon' && (
-        <div className="h-full flex flex-col ios26-vibrancy">
+        <div className="h-full flex flex-col ios26-vibrancy overflow-y-auto pb-28">
           <div className="px-3 pt-4 pb-2 flex-shrink-0">
-            <div className="ios26-header rounded-2xl p-4 text-center ios26-animate-in">
+            <div className="ios26-header rounded-2xl p-4 text-center">
               <h1 className="text-cyan-400 text-2xl font-extrabold tracking-widest glow-cyan">PANTHÉON</h1>
             </div>
           </div>
 
-          <div className="flex-1 px-3 pb-28 overflow-hidden flex flex-col">
+          <div className="flex-1 px-3">
 
               {/* Table Header */}
               <div className="py-3 px-2 liquid-glass rounded-xl my-2 flex-shrink-0">
@@ -2581,12 +2524,12 @@ export default function HyeneScores() {
               </div>
 
               {/* Teams List */}
-              <div className="flex-1 overflow-y-auto pb-1">
+              <div className="pb-1">
                 {pantheonTeams.map((team, index) => (
                   <div
                     key={team.rank}
-                    className="py-3 px-2 ios26-row ios26-slide-up"
-                    style={{ height: '52px', animationDelay: `${index * 30}ms` }}
+                    className="py-3 px-2 ios26-row "
+                    style={{ height: '52px' }}
                   >
                     <div className="grid grid-cols-12 gap-0.5 items-center w-full h-full">
                       <div className="col-span-1 flex items-center justify-center font-mono font-bold text-sm text-cyan-400 glow-cyan">
@@ -2623,18 +2566,18 @@ export default function HyeneScores() {
 
       {/* REGLAGES */}
       {selectedTab === 'reglages' && (
-        <div className="h-full flex flex-col ios26-vibrancy">
+        <div className="h-full flex flex-col ios26-vibrancy overflow-y-auto pb-28">
           <div className="px-3 pt-4 pb-2 flex-shrink-0">
-            <div className="ios26-header rounded-2xl p-4 text-center ios26-animate-in">
+            <div className="ios26-header rounded-2xl p-4 text-center">
               <h1 className="text-cyan-400 text-2xl font-extrabold tracking-widest glow-cyan">RÉGLAGES</h1>
             </div>
           </div>
 
-          <div className="flex-1 px-3 pb-28 overflow-y-auto">
+          <div className="flex-1 px-3">
             <div className="space-y-4 mt-2">
 
               {/* Sauvegarde - iOS 26 Card */}
-              <div className="ios26-card rounded-2xl p-5 ios26-slide-up" style={{ animationDelay: '50ms' }}>
+              <div className="ios26-card rounded-2xl p-5 " >
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center backdrop-blur-sm">
                     <span className="text-2xl">💾</span>
@@ -2646,15 +2589,15 @@ export default function HyeneScores() {
                     onClick={handleExportJSON}
                     className="w-full ios26-btn rounded-xl px-4 py-3.5 text-white text-sm font-semibold flex items-center justify-between group"
                   >
-                    <span className="group-hover:text-cyan-400 transition-colors">Exporter toutes les données (JSON)</span>
-                    <span className="text-xl group-hover:scale-110 transition-transform duration-300">📥</span>
+                    <span className="group-hover:text-cyan-400 ">Exporter toutes les données (JSON)</span>
+                    <span className="text-xl group-hover:scale-110 ">📥</span>
                   </button>
                   <button
                     onClick={handleImportJSON}
                     className="w-full ios26-btn rounded-xl px-4 py-3.5 text-white text-sm font-semibold flex items-center justify-between group"
                   >
-                    <span className="group-hover:text-cyan-400 transition-colors">Importer des données (JSON)</span>
-                    <span className="text-xl group-hover:scale-110 transition-transform duration-300">📤</span>
+                    <span className="group-hover:text-cyan-400 ">Importer des données (JSON)</span>
+                    <span className="text-xl group-hover:scale-110 ">📤</span>
                   </button>
                   <input
                     ref={fileInputRef}
@@ -2667,7 +2610,7 @@ export default function HyeneScores() {
               </div>
 
               {/* Données - iOS 26 Card */}
-              <div className="ios26-card rounded-2xl p-5 ios26-slide-up" style={{ animationDelay: '100ms', borderColor: 'rgba(34, 197, 94, 0.2)' }}>
+              <div className="ios26-card rounded-2xl p-5 " style={{ borderColor: 'rgba(34, 197, 94, 0.2)' }}>
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center backdrop-blur-sm">
                     <span className="text-2xl">🔄</span>
@@ -2679,13 +2622,13 @@ export default function HyeneScores() {
                   className="w-full ios26-btn rounded-xl px-4 py-3.5 text-white text-sm font-semibold flex items-center justify-between group"
                   style={{ borderColor: 'rgba(34, 197, 94, 0.2)' }}
                 >
-                  <span className="group-hover:text-green-400 transition-colors">Actualiser l'affichage</span>
-                  <span className="text-xl group-hover:rotate-180 transition-transform duration-500">🔄</span>
+                  <span className="group-hover:text-green-400 ">Actualiser l'affichage</span>
+                  <span className="text-xl group-hover:rotate-180 ">🔄</span>
                 </button>
               </div>
 
               {/* Nouvelle Saison - iOS 26 Card */}
-              <div className="ios26-card rounded-2xl p-5 ios26-slide-up" style={{ animationDelay: '150ms', borderColor: 'rgba(168, 85, 247, 0.2)' }}>
+              <div className="ios26-card rounded-2xl p-5 " style={{ borderColor: 'rgba(168, 85, 247, 0.2)' }}>
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center backdrop-blur-sm">
                     <span className="text-2xl font-bold text-purple-400">+</span>
@@ -2705,7 +2648,7 @@ export default function HyeneScores() {
                     />
                     <button
                       onClick={handleCreateSeason}
-                      className="bg-purple-500/20 border border-purple-500/30 hover:bg-purple-500/30 rounded-xl px-6 py-3.5 text-purple-400 text-sm font-bold transition-all duration-300"
+                      className="bg-purple-500/20 border border-purple-500/30 hover:bg-purple-500/30 rounded-xl px-6 py-3.5 text-purple-400 text-sm font-bold "
                     >
                       Créer
                     </button>
@@ -2719,7 +2662,7 @@ export default function HyeneScores() {
               </div>
 
               {/* Système - iOS 26 Card */}
-              <div className="ios26-card rounded-2xl p-5 ios26-slide-up" style={{ animationDelay: '200ms', borderColor: 'rgba(239, 68, 68, 0.2)', background: 'linear-gradient(145deg, rgba(239, 68, 68, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%)' }}>
+              <div className="ios26-card rounded-2xl p-5 " style={{ borderColor: 'rgba(239, 68, 68, 0.2)', background: 'linear-gradient(145deg, rgba(239, 68, 68, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%)' }}>
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center backdrop-blur-sm">
                     <span className="text-2xl">⚠️</span>
@@ -2728,10 +2671,10 @@ export default function HyeneScores() {
                 </div>
                 <button
                   onClick={() => setShowResetModal(true)}
-                  className="w-full bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 rounded-xl px-4 py-3.5 text-red-400 text-sm font-bold transition-all duration-300 flex items-center justify-between group"
+                  className="w-full bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 rounded-xl px-4 py-3.5 text-red-400 text-sm font-bold flex items-center justify-between group"
                 >
-                  <span className="group-hover:text-red-300 transition-colors">Réinitialiser toutes les données</span>
-                  <span className="text-xl group-hover:scale-110 transition-transform duration-300">🗑️</span>
+                  <span className="group-hover:text-red-300 ">Réinitialiser toutes les données</span>
+                  <span className="text-xl group-hover:scale-110 ">🗑️</span>
                 </button>
               </div>
             </div>
@@ -2742,7 +2685,7 @@ export default function HyeneScores() {
             <>
               <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50" onClick={() => setShowResetModal(false)}></div>
               <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
-                <div className="ios26-modal rounded-3xl p-6 max-w-md w-full ios26-animate-in">
+                <div className="ios26-modal rounded-3xl p-6 max-w-md w-full ">
                   <div className="text-center mb-6">
                     <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-red-500/20 flex items-center justify-center">
                       <span className="text-5xl">⚠️</span>
@@ -2769,7 +2712,7 @@ export default function HyeneScores() {
                     </button>
                     <button
                       onClick={handleReset}
-                      className="flex-1 bg-red-500/20 border border-red-500/50 hover:bg-red-500/30 rounded-xl px-4 py-3.5 text-red-400 text-sm font-bold transition-all duration-200"
+                      className="flex-1 bg-red-500/20 border border-red-500/50 hover:bg-red-500/30 rounded-xl px-4 py-3.5 text-red-400 text-sm font-bold "
                     >
                       Confirmer
                     </button>
@@ -2784,7 +2727,7 @@ export default function HyeneScores() {
       {/* STATS (Placeholder) */}
       {selectedTab === 'stats' && (
         <div className="h-full flex flex-col items-center justify-center ios26-vibrancy">
-          <div className="ios26-animate-in text-center">
+          <div className=" text-center">
             <div className="w-24 h-24 mx-auto mb-6 rounded-3xl liquid-glass-intense flex items-center justify-center">
               <span className="text-5xl">📊</span>
             </div>
@@ -2800,7 +2743,7 @@ export default function HyeneScores() {
           <div className="flex justify-around items-center px-2 py-2.5">
             <button
               onClick={() => setSelectedTab('classement')}
-              className={`flex flex-col items-center gap-1.5 transition-all duration-300 rounded-2xl px-3 py-2 min-w-[58px] ${
+              className={`flex flex-col items-center gap-1.5  rounded-2xl px-3 py-2 min-w-[58px] ${
                 selectedTab === 'classement'
                   ? 'ios26-tab-active text-cyan-400 scale-105'
                   : 'text-gray-500 hover:text-gray-400 active:scale-95'
@@ -2811,7 +2754,7 @@ export default function HyeneScores() {
             </button>
             <button
               onClick={() => setSelectedTab('match')}
-              className={`flex flex-col items-center gap-1.5 transition-all duration-300 rounded-2xl px-3 py-2 min-w-[58px] ${
+              className={`flex flex-col items-center gap-1.5  rounded-2xl px-3 py-2 min-w-[58px] ${
                 selectedTab === 'match'
                   ? 'ios26-tab-active text-cyan-400 scale-105'
                   : 'text-gray-500 hover:text-gray-400 active:scale-95'
@@ -2822,7 +2765,7 @@ export default function HyeneScores() {
             </button>
             <button
               onClick={() => setSelectedTab('palmares')}
-              className={`flex flex-col items-center gap-1.5 transition-all duration-300 rounded-2xl px-3 py-2 min-w-[58px] ${
+              className={`flex flex-col items-center gap-1.5  rounded-2xl px-3 py-2 min-w-[58px] ${
                 selectedTab === 'palmares'
                   ? 'ios26-tab-active text-cyan-400 scale-105'
                   : 'text-gray-500 hover:text-gray-400 active:scale-95'
@@ -2833,7 +2776,7 @@ export default function HyeneScores() {
             </button>
             <button
               onClick={() => setSelectedTab('pantheon')}
-              className={`flex flex-col items-center gap-1.5 transition-all duration-300 rounded-2xl px-3 py-2 min-w-[58px] ${
+              className={`flex flex-col items-center gap-1.5  rounded-2xl px-3 py-2 min-w-[58px] ${
                 selectedTab === 'pantheon'
                   ? 'ios26-tab-active text-cyan-400 scale-105'
                   : 'text-gray-500 hover:text-gray-400 active:scale-95'
@@ -2844,7 +2787,7 @@ export default function HyeneScores() {
             </button>
             <button
               onClick={() => setSelectedTab('stats')}
-              className={`flex flex-col items-center gap-1.5 transition-all duration-300 rounded-2xl px-3 py-2 min-w-[58px] ${
+              className={`flex flex-col items-center gap-1.5  rounded-2xl px-3 py-2 min-w-[58px] ${
                 selectedTab === 'stats'
                   ? 'ios26-tab-active text-cyan-400 scale-105'
                   : 'text-gray-500 hover:text-gray-400 active:scale-95'
@@ -2855,7 +2798,7 @@ export default function HyeneScores() {
             </button>
             <button
               onClick={() => setSelectedTab('reglages')}
-              className={`flex flex-col items-center gap-1.5 transition-all duration-300 rounded-2xl px-3 py-2 min-w-[58px] ${
+              className={`flex flex-col items-center gap-1.5  rounded-2xl px-3 py-2 min-w-[58px] ${
                 selectedTab === 'reglages'
                   ? 'ios26-tab-active text-cyan-400 scale-105'
                   : 'text-gray-500 hover:text-gray-400 active:scale-95'
