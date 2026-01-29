@@ -1819,7 +1819,7 @@ export default function HyeneScores() {
                   <div className="flex-1 relative">
                     <button
                       onClick={() => setIsChampOpen(!isChampOpen)}
-                      className={`w-full h-full ios26-btn rounded-xl px-4 py-2.5 text-white text-base font-semibold cursor-pointer flex items-center justify-between ${
+                      className={`w-full h-12 ios26-btn rounded-xl px-4 text-white text-base font-semibold cursor-pointer flex items-center justify-between ${
                         isChampOpen ? 'border-cyan-500/50' : ''
                       }`}
                     >
@@ -1858,15 +1858,15 @@ export default function HyeneScores() {
                     )}
                   </div>
 
-                  <div className="w-24 relative">
+                  <div className="w-32 relative">
                     <button
                       onClick={() => setIsSeasonOpen(!isSeasonOpen)}
-                      className={`w-full h-full ios26-btn rounded-xl px-3 py-2.5 text-white text-base font-semibold cursor-pointer flex items-center justify-between ${
+                      className={`w-full h-12 ios26-btn rounded-xl px-4 text-white text-base font-semibold cursor-pointer flex items-center justify-between ${
                         isSeasonOpen ? 'border-cyan-500/50' : ''
                       }`}
                     >
-                      <span>S{selectedSeason}</span>
-                      <svg className={`w-5 h-5 text-cyan-400 ${isSeasonOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <span>Saison {selectedSeason}</span>
+                      <svg className={`w-5 h-5 text-cyan-400 flex-shrink-0 ${isSeasonOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </button>
@@ -1874,12 +1874,12 @@ export default function HyeneScores() {
                     {isSeasonOpen && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setIsSeasonOpen(false)}></div>
-                        <div className="absolute right-0 top-full mt-1 ios26-dropdown rounded-xl z-50 w-28 max-h-48 overflow-y-auto">
+                        <div className="absolute right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 w-36 max-h-48 overflow-y-auto">
                           {seasons.map(season => (
                             <button
                               key={season}
                               onClick={() => handleSeasonSelect(season)}
-                              className={`w-full px-3 py-2.5 text-base font-semibold text-left ${
+                              className={`w-full px-4 py-3 text-base font-semibold text-left ${
                                 selectedSeason === season
                                   ? 'bg-cyan-500/20 text-cyan-400'
                                   : 'text-white hover:bg-white/10'
@@ -1896,8 +1896,8 @@ export default function HyeneScores() {
               </div>
 
               {/* Progress Bar */}
-              <div className="flex items-center gap-3 py-1">
-                <span className="text-gray-400 text-sm font-bold">
+              <div className="flex items-center gap-3 py-1.5">
+                <span className="text-gray-400 text-sm font-bold min-w-[52px]">
                   J{seasonProgress.currentMatchday}/{seasonProgress.totalMatchdays}
                 </span>
                 <div className="flex-1 ios26-progress rounded-full h-2">
@@ -1906,7 +1906,7 @@ export default function HyeneScores() {
                     style={{ width: `${seasonProgress.percentage}%` }}
                   ></div>
                 </div>
-                <span className="text-cyan-400 text-sm font-bold glow-cyan">{seasonProgress.percentage}%</span>
+                <span className="text-cyan-400 text-sm font-bold glow-cyan min-w-[48px] text-right">{seasonProgress.percentage}%</span>
               </div>
 
               {/* Table Header */}
@@ -2099,7 +2099,7 @@ export default function HyeneScores() {
                   <div className="flex-1 relative">
                     <button
                       onClick={() => setIsChampOpen(!isChampOpen)}
-                      className={`w-full h-full ios26-btn rounded-xl px-4 py-2.5 text-white text-base font-semibold cursor-pointer flex items-center justify-between ${
+                      className={`w-full h-12 ios26-btn rounded-xl px-4 text-white text-base font-semibold cursor-pointer flex items-center justify-between ${
                         isChampOpen ? 'border-cyan-500/50' : ''
                       }`}
                     >
@@ -2139,15 +2139,15 @@ export default function HyeneScores() {
                   </div>
 
                   {/* Season Dropdown */}
-                  <div className="w-24 relative">
+                  <div className="w-32 relative">
                     <button
                       onClick={() => setIsSeasonOpen(!isSeasonOpen)}
-                      className={`w-full h-full ios26-btn rounded-xl px-3 py-2.5 text-white text-base font-semibold cursor-pointer flex items-center justify-between ${
+                      className={`w-full h-12 ios26-btn rounded-xl px-4 text-white text-base font-semibold cursor-pointer flex items-center justify-between ${
                         isSeasonOpen ? 'border-cyan-500/50' : ''
                       }`}
                     >
-                      <span>S{selectedSeason}</span>
-                      <svg className={`w-5 h-5 text-cyan-400 ${isSeasonOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <span>Saison {selectedSeason}</span>
+                      <svg className={`w-5 h-5 text-cyan-400 flex-shrink-0 ${isSeasonOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </button>
@@ -2155,7 +2155,7 @@ export default function HyeneScores() {
                     {isSeasonOpen && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setIsSeasonOpen(false)}></div>
-                        <div className="absolute left-0 right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 max-h-48 overflow-y-auto">
+                        <div className="absolute right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 w-36 max-h-48 overflow-y-auto">
                           {seasons.map(season => (
                             <button
                               key={season}
