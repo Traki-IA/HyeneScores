@@ -2181,7 +2181,7 @@ export default function HyeneScores() {
 
               {/* Navigation Journée - iOS 26 Style */}
               <div className="py-1.5 flex-shrink-0">
-                <div className="flex items-center justify-center gap-3">
+                <div className="flex items-center justify-between px-1">
                   <button
                     onClick={() => {
                       const currentIdx = journees.indexOf(selectedJournee);
@@ -2192,8 +2192,8 @@ export default function HyeneScores() {
                   >
                     <span className="text-base font-bold">◀</span>
                   </button>
-                  <div className="liquid-glass rounded-xl px-5 py-2 flex items-center gap-2">
-                    <span className="text-gray-400 text-base font-medium">J</span>
+                  <div className="liquid-glass rounded-xl px-4 py-2 flex items-center gap-2">
+                    <span className="text-gray-400 text-base font-medium">Journée</span>
                     <span className="text-cyan-400 text-xl font-bold glow-cyan">{selectedJournee}</span>
                     <span className="text-gray-500 text-base">/</span>
                     <span className="text-gray-400 text-base">{journees.length}</span>
@@ -2230,20 +2230,20 @@ export default function HyeneScores() {
                   {matches.map((match, index) => (
                     <div
                       key={match.id}
-                      className="grid grid-cols-12 items-center gap-1 py-1.5 px-1 ios26-row"
+                      className="grid grid-cols-12 items-center gap-0.5 py-1.5 px-0.5 ios26-row"
                     >
                       {/* Home Team */}
                       <div className="col-span-5 relative flex justify-start">
                           <button
                             onClick={(e) => toggleDropdown(match.id, 'home', e)}
-                            className={`w-full max-w-[150px] rounded-xl px-3 py-2 flex items-center justify-between group cursor-pointer ${
+                            className={`w-full max-w-[135px] rounded-xl px-2.5 py-2 flex items-center justify-between group cursor-pointer ${
                               match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
                                 ? 'bg-emerald-500/15 border border-emerald-500/40 shadow-lg shadow-emerald-500/10'
                                 : 'ios26-btn'
                             }`}
                           >
-                            <span className="text-white text-sm font-semibold leading-tight text-left flex-1 pr-1">{match.homeTeam || '────────'}</span>
-                            <svg className={`w-4 h-4 flex-shrink-0 ${
+                            <span className="text-white text-sm font-semibold leading-tight text-left flex-1 pr-1 truncate">{match.homeTeam || '────────'}</span>
+                            <svg className={`w-3.5 h-3.5 flex-shrink-0 ${
                               match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
                                 ? 'text-emerald-400'
                                 : 'text-gray-500 group-hover:text-cyan-400'
@@ -2255,7 +2255,7 @@ export default function HyeneScores() {
                             <>
                               <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)}></div>
                               <div
-                                className="fixed ios26-dropdown rounded-2xl z-50 max-h-[420px] overflow-y-auto w-[160px] "
+                                className="fixed ios26-dropdown rounded-2xl z-50 max-h-[420px] overflow-y-auto w-[150px] "
                                 style={{
                                   top: `${dropdownPosition.top}px`,
                                   left: dropdownPosition.left !== 'auto' ? `${dropdownPosition.left}px` : 'auto',
@@ -2283,7 +2283,7 @@ export default function HyeneScores() {
                       </div>
 
                       {/* Scores */}
-                      <div className="col-span-2 flex items-center justify-center gap-1">
+                      <div className="col-span-2 flex items-center justify-center gap-0.5">
                           <input
                             type="number"
                             value={match.homeScore !== null ? match.homeScore : ''}
@@ -2294,7 +2294,7 @@ export default function HyeneScores() {
                               syncMatchesToAppData(updatedMatches);
                             }}
                             placeholder="-"
-                            className={`rounded-xl w-10 h-10 text-center text-base font-bold outline-none ${
+                            className={`rounded-xl w-9 h-9 text-center text-base font-bold outline-none ${
                               match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
                                 ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 shadow-lg shadow-emerald-500/10'
                                 : 'ios26-input text-cyan-400'
@@ -2311,7 +2311,7 @@ export default function HyeneScores() {
                               syncMatchesToAppData(updatedMatches);
                             }}
                             placeholder="-"
-                            className={`rounded-xl w-10 h-10 text-center text-base font-bold outline-none ${
+                            className={`rounded-xl w-9 h-9 text-center text-base font-bold outline-none ${
                               match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
                                 ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 shadow-lg shadow-emerald-500/10'
                                 : 'ios26-input text-cyan-400'
@@ -2323,14 +2323,14 @@ export default function HyeneScores() {
                       <div className="col-span-5 relative flex justify-end">
                           <button
                             onClick={(e) => toggleDropdown(match.id, 'away', e)}
-                            className={`w-full max-w-[150px] rounded-xl px-3 py-2 flex items-center justify-between group cursor-pointer ${
+                            className={`w-full max-w-[135px] rounded-xl px-2.5 py-2 flex items-center justify-between group cursor-pointer ${
                               match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
                                 ? 'bg-emerald-500/15 border border-emerald-500/40 shadow-lg shadow-emerald-500/10'
                                 : 'ios26-btn'
                             }`}
                           >
-                            <span className="text-white text-sm font-semibold leading-tight text-left flex-1 pr-1">{match.awayTeam || '────────'}</span>
-                            <svg className={`w-4 h-4 flex-shrink-0 ${
+                            <span className="text-white text-sm font-semibold leading-tight text-left flex-1 pr-1 truncate">{match.awayTeam || '────────'}</span>
+                            <svg className={`w-3.5 h-3.5 flex-shrink-0 ${
                               match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
                                 ? 'text-emerald-400'
                                 : 'text-gray-500 group-hover:text-cyan-400'
@@ -2342,7 +2342,7 @@ export default function HyeneScores() {
                             <>
                               <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)}></div>
                               <div
-                                className="fixed ios26-dropdown rounded-2xl z-50 max-h-[420px] overflow-y-auto w-[160px] "
+                                className="fixed ios26-dropdown rounded-2xl z-50 max-h-[420px] overflow-y-auto w-[150px] "
                                 style={{
                                   top: `${dropdownPosition.top}px`,
                                   left: dropdownPosition.left !== 'auto' ? `${dropdownPosition.left}px` : 'auto',
