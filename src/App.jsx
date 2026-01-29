@@ -2181,18 +2181,18 @@ export default function HyeneScores() {
 
               {/* Navigation Journée - iOS 26 Style */}
               <div className="py-1.5 flex-shrink-0">
-                <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2 px-1">
                   <button
                     onClick={() => {
                       const currentIdx = journees.indexOf(selectedJournee);
                       if (currentIdx > 0) setSelectedJournee(journees[currentIdx - 1]);
                     }}
-                    className="w-11 h-11 flex items-center justify-center text-cyan-400 ios26-btn rounded-xl disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="w-11 h-11 flex items-center justify-center text-cyan-400 ios26-btn rounded-xl disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0"
                     disabled={selectedJournee === '1'}
                   >
                     <span className="text-base font-bold">◀</span>
                   </button>
-                  <div className="liquid-glass rounded-xl px-4 py-2 flex items-center gap-2">
+                  <div className="flex-1 liquid-glass rounded-xl px-4 py-2 flex items-center justify-center gap-2">
                     <span className="text-gray-400 text-base font-medium">Journée</span>
                     <span className="text-cyan-400 text-xl font-bold glow-cyan">{selectedJournee}</span>
                     <span className="text-gray-500 text-base">/</span>
@@ -2203,7 +2203,7 @@ export default function HyeneScores() {
                       const currentIdx = journees.indexOf(selectedJournee);
                       if (currentIdx < journees.length - 1) setSelectedJournee(journees[currentIdx + 1]);
                     }}
-                    className="w-11 h-11 flex items-center justify-center text-cyan-400 ios26-btn rounded-xl disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="w-11 h-11 flex items-center justify-center text-cyan-400 ios26-btn rounded-xl disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0"
                     disabled={selectedJournee === journees[journees.length - 1]}
                   >
                     <span className="text-base font-bold">▶</span>
@@ -2436,8 +2436,8 @@ export default function HyeneScores() {
           <div className="flex-1 px-2">
 
               {/* Championship Buttons - iOS 26 Style */}
-              <div className="py-2 flex-shrink-0">
-                <div className="flex items-center justify-center gap-2">
+              <div className="py-2 flex-shrink-0 px-1">
+                <div className="flex items-center justify-between">
                   {championships.map(champ => (
                     <button
                       key={champ.id}
