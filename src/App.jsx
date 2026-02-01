@@ -111,6 +111,166 @@ export default function HyeneScores() {
     const championshipKey = championshipMapping[championship] || championship;
     const seasonKey = `${championshipKey}_s${season}`;
 
+    // === CAS SPÉCIAL: LIGUE DES HYÈNES ===
+    // La Ligue des Hyènes n'a pas de matchs propres - c'est une agrégation des 4 championnats
+    if (championship === 'hyenes' || championshipKey === 'ligue_hyenes') {
+      console.log('=== Calcul Ligue des Hyènes (agrégation) ===');
+
+      // Les 4 championnats à agréger
+      const euroChampionships = ['france', 'espagne', 'italie', 'angleterre'];
+
+      // Récupérer la liste des managers
+      const managerList = data.entities.managers
+        ? Object.values(data.entities.managers).map(m => m.name || '?').filter(n => n !== '?')
+        : [];
+
+      // Initialiser les stats agrégées pour chaque manager
+      const aggregatedStats = {};
+      managerList.forEach(mgr => {
+        aggregatedStats[mgr] = {
+          name: mgr,
+          pts: 0, j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0, diff: 0,
+          // Détail par championnat pour affichage
+          details: { france: 0, espagne: 0, italie: 0, angleterre: 0 }
+        };
+      });
+
+      // Parcourir chaque championnat européen
+      euroChampionships.forEach(euroChamp => {
+        const euroMatches = (data.entities.matches || []).filter(
+          block => block.championship?.toLowerCase() === euroChamp.toLowerCase() &&
+                   block.season === parseInt(season)
+        );
+
+        // Calculer les stats de ce championnat
+        const champStats = {};
+        managerList.forEach(mgr => {
+          champStats[mgr] = { pts: 0, j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0, diff: 0 };
+        });
+
+        euroMatches.forEach(matchBlock => {
+          if (matchBlock.games && Array.isArray(matchBlock.games)) {
+            matchBlock.games.forEach(match => {
+              const home = match.homeTeam || match.home || match.h || '';
+              const away = match.awayTeam || match.away || match.a || '';
+              const hs = match.homeScore ?? match.hs ?? null;
+              const as2 = match.awayScore ?? match.as ?? null;
+
+              if (hs !== null && as2 !== null && champStats[home] && champStats[away]) {
+                const homeScore = parseInt(hs);
+                const awayScore = parseInt(as2);
+
+                if (!isNaN(homeScore) && !isNaN(awayScore)) {
+                  champStats[home].j++;
+                  champStats[away].j++;
+                  champStats[home].bp += homeScore;
+                  champStats[home].bc += awayScore;
+                  champStats[away].bp += awayScore;
+                  champStats[away].bc += homeScore;
+
+                  if (homeScore > awayScore) {
+                    champStats[home].pts += 3;
+                    champStats[home].g++;
+                    champStats[away].p++;
+                  } else if (homeScore < awayScore) {
+                    champStats[away].pts += 3;
+                    champStats[away].g++;
+                    champStats[home].p++;
+                  } else {
+                    champStats[home].pts++;
+                    champStats[away].pts++;
+                    champStats[home].n++;
+                    champStats[away].n++;
+                  }
+                  champStats[home].diff = champStats[home].bp - champStats[home].bc;
+                  champStats[away].diff = champStats[away].bp - champStats[away].bc;
+                }
+              }
+            });
+          }
+        });
+
+        // Ajouter les stats de ce championnat aux stats agrégées
+        managerList.forEach(mgr => {
+          if (aggregatedStats[mgr] && champStats[mgr]) {
+            aggregatedStats[mgr].pts += champStats[mgr].pts;
+            aggregatedStats[mgr].j += champStats[mgr].j;
+            aggregatedStats[mgr].g += champStats[mgr].g;
+            aggregatedStats[mgr].n += champStats[mgr].n;
+            aggregatedStats[mgr].p += champStats[mgr].p;
+            aggregatedStats[mgr].bp += champStats[mgr].bp;
+            aggregatedStats[mgr].bc += champStats[mgr].bc;
+            aggregatedStats[mgr].diff += champStats[mgr].diff;
+            aggregatedStats[mgr].details[euroChamp] = champStats[mgr].pts;
+          }
+        });
+      });
+
+      // Appliquer les pénalités et trier
+      const sortedAggregated = Object.values(aggregatedStats)
+        .filter(team => team.j > 0)
+        .map(team => {
+          const penalty = getTeamPenaltyLocal(team.name, championship, season);
+          return {
+            ...team,
+            penalty: penalty,
+            effectivePts: team.pts - penalty
+          };
+        })
+        .sort((a, b) => {
+          if (b.effectivePts !== a.effectivePts) return b.effectivePts - a.effectivePts;
+          if (b.diff !== a.diff) return b.diff - a.diff;
+          return b.bp - a.bp;
+        });
+
+      const hyenesStandings = sortedAggregated.map((team, index) => ({
+        pos: index + 1,
+        mgr: team.name,
+        pts: team.pts,
+        j: team.j,
+        g: team.g,
+        n: team.n,
+        p: team.p,
+        bp: team.bp,
+        bc: team.bc,
+        diff: team.diff,
+        details: team.details
+      }));
+
+      console.log('Classement Ligue des Hyènes calculé:', hyenesStandings.length, 'équipes');
+
+      // Mettre à jour les équipes et le classement
+      const normalizedTeams = hyenesStandings.map(team => ({
+        name: team.mgr,
+        pts: team.pts,
+        j: team.j,
+        g: team.g,
+        n: team.n,
+        p: team.p,
+        bp: team.bp,
+        bc: team.bc,
+        diff: team.diff
+      }));
+      setTeams(normalizedTeams);
+
+      // Calculer la progression de la saison (basé sur les matchs France par exemple)
+      const franceMatches = (data.entities.matches || []).filter(
+        block => block.championship?.toLowerCase() === 'france' &&
+                 block.season === parseInt(season)
+      );
+      const maxMatchday = franceMatches.length > 0
+        ? Math.max(...franceMatches.map(b => b.matchday))
+        : 0;
+      const totalMatchdays = 18; // Ligue des Hyènes = 18 journées
+      const percentage = totalMatchdays > 0 ? Math.round((maxMatchday / totalMatchdays) * 100) : 0;
+      setSeasonProgress({ currentMatchday: maxMatchday, totalMatchdays, percentage });
+
+      // Pas de matchs à afficher pour la Ligue des Hyènes (c'est une agrégation)
+      setMatches([]);
+
+      return; // Sortir de la fonction - le cas Ligue des Hyènes est traité
+    }
+
     if (data.entities.seasons && data.entities.seasons[seasonKey]) {
       const savedStandings = data.entities.seasons[seasonKey].standings || [];
       const seasonData = data.entities.seasons[seasonKey];
@@ -624,10 +784,11 @@ export default function HyeneScores() {
     }
   }, [selectedChampionship, selectedSeason, selectedJournee, appData, penalties, loadDataFromAppData]);
 
-  // useEffect pour basculer automatiquement vers 'france' si on entre dans Match avec 'hyenes'
+  // useEffect pour basculer automatiquement vers 'classement' si on est sur Match avec 'hyenes'
+  // La Ligue des Hyènes n'a pas de matchs directs (c'est une agrégation)
   useEffect(() => {
     if (selectedTab === 'match' && selectedChampionship === 'hyenes') {
-      setSelectedChampionship('france');
+      setSelectedTab('classement');
     }
   }, [selectedTab, selectedChampionship]);
 
@@ -2928,17 +3089,20 @@ export default function HyeneScores() {
               <div className="text-lg">{selectedTab === 'classement' ? '🏆' : '🏆'}</div>
               <span className="text-[10px] font-bold tracking-wide">Classement</span>
             </button>
-            <button
-              onClick={() => setSelectedTab('match')}
-              className={`flex flex-col items-center gap-0.5 rounded-xl px-2 py-1 min-w-[48px] ${
-                selectedTab === 'match'
-                  ? 'ios26-tab-active text-cyan-400 scale-105'
-                  : 'text-gray-500 hover:text-gray-400 active:scale-95'
-              }`}
-            >
-              <div className="text-lg">📅</div>
-              <span className="text-[10px] font-bold tracking-wide">Match</span>
-            </button>
+            {/* L'onglet Match est caché pour la Ligue des Hyènes (pas de matchs directs) */}
+            {selectedChampionship !== 'hyenes' && (
+              <button
+                onClick={() => setSelectedTab('match')}
+                className={`flex flex-col items-center gap-0.5 rounded-xl px-2 py-1 min-w-[48px] ${
+                  selectedTab === 'match'
+                    ? 'ios26-tab-active text-cyan-400 scale-105'
+                    : 'text-gray-500 hover:text-gray-400 active:scale-95'
+                }`}
+              >
+                <div className="text-lg">📅</div>
+                <span className="text-[10px] font-bold tracking-wide">Match</span>
+              </button>
+            )}
             <button
               onClick={() => setSelectedTab('palmares')}
               className={`flex flex-col items-center gap-0.5 rounded-xl px-2 py-1 min-w-[48px] ${
