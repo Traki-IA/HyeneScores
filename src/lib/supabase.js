@@ -3,11 +3,16 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
+// Verifier si Supabase est configure
+export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey);
+
+if (!isSupabaseConfigured) {
   console.warn('Supabase credentials missing. Check your .env file.');
 }
 
-export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '');
+export const supabase = isSupabaseConfigured
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
 
 // ============================================
 // SERVICES POUR LA BASE DE DONNEES
@@ -18,6 +23,18 @@ export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '');
  * Format compatible avec le format v2.0 existant
  */
 export async function fetchAppData() {
+  // Si Supabase n'est pas configure, retourner des donnees vides
+  if (!isSupabaseConfigured || !supabase) {
+    console.log('Supabase non configure - mode hors ligne');
+    return {
+      version: '2.0',
+      entities: { managers: {}, seasons: {}, matches: [] },
+      palmares: {},
+      pantheon: [],
+      penalties: {}
+    };
+  }
+
   try {
     const [
       { data: managers, error: managersError },
@@ -35,12 +52,13 @@ export async function fetchAppData() {
       supabase.from('penalties').select('*')
     ]);
 
-    if (managersError) throw managersError;
-    if (seasonsError) throw seasonsError;
-    if (matchesError) throw matchesError;
-    if (championsError) throw championsError;
-    if (pantheonError) throw pantheonError;
-    if (penaltiesError) throw penaltiesError;
+    // Log les erreurs mais ne pas crasher - les tables peuvent ne pas exister encore
+    if (managersError) console.warn('Erreur managers:', managersError.message);
+    if (seasonsError) console.warn('Erreur seasons:', seasonsError.message);
+    if (matchesError) console.warn('Erreur matches:', matchesError.message);
+    if (championsError) console.warn('Erreur champions:', championsError.message);
+    if (pantheonError) console.warn('Erreur pantheon:', pantheonError.message);
+    if (penaltiesError) console.warn('Erreur penalties:', penaltiesError.message);
 
     // Transformer en format v2.0 compatible
     const managersMap = {};
@@ -120,7 +138,14 @@ export async function fetchAppData() {
     };
   } catch (error) {
     console.error('Erreur lors du chargement des donnees:', error);
-    throw error;
+    // Retourner des donnees vides en cas d'erreur pour ne pas crasher l'app
+    return {
+      version: '2.0',
+      entities: { managers: {}, seasons: {}, matches: [] },
+      palmares: {},
+      pantheon: [],
+      penalties: {}
+    };
   }
 }
 
@@ -132,6 +157,7 @@ export async function fetchAppData() {
  * Sauvegarde un manager
  */
 export async function saveManager(manager) {
+  if (!supabase) throw new Error('Supabase non configure');
   const { data, error } = await supabase
     .from('managers')
     .upsert({ id: manager.id, name: manager.name })
@@ -145,6 +171,7 @@ export async function saveManager(manager) {
  * Sauvegarde les donnees d'une saison
  */
 export async function saveSeason(championship, seasonNumber, standings) {
+  if (!supabase) throw new Error('Supabase non configure');
   const { data, error } = await supabase
     .from('seasons')
     .upsert({
@@ -162,6 +189,7 @@ export async function saveSeason(championship, seasonNumber, standings) {
  * Sauvegarde les matchs d'une journee
  */
 export async function saveMatches(championship, season, matchday, games, exemptTeam = null) {
+  if (!supabase) throw new Error('Supabase non configure');
   // Supprimer les anciens matchs de cette journee
   await supabase
     .from('matches')
@@ -195,6 +223,7 @@ export async function saveMatches(championship, season, matchday, games, exemptT
  * Sauvegarde un champion
  */
 export async function saveChampion(championship, season, championName, runnerUpName = null) {
+  if (!supabase) throw new Error('Supabase non configure');
   const { data, error } = await supabase
     .from('champions')
     .upsert({
@@ -213,6 +242,7 @@ export async function saveChampion(championship, season, championName, runnerUpN
  * Met a jour le pantheon
  */
 export async function updatePantheon(managerName, totalPoints, titles, runnerUps) {
+  if (!supabase) throw new Error('Supabase non configure');
   const { data, error } = await supabase
     .from('pantheon')
     .upsert({
@@ -231,6 +261,7 @@ export async function updatePantheon(managerName, totalPoints, titles, runnerUps
  * Sauvegarde une penalite
  */
 export async function savePenalty(championship, season, teamName, points) {
+  if (!supabase) throw new Error('Supabase non configure');
   const { data, error } = await supabase
     .from('penalties')
     .upsert({
@@ -250,6 +281,7 @@ export async function savePenalty(championship, season, teamName, points) {
  * Utile pour la migration initiale
  */
 export async function importFromJSON(jsonData) {
+  if (!supabase) throw new Error('Supabase non configure');
   if (!jsonData || !jsonData.entities) {
     throw new Error('Format de donnees invalide');
   }
