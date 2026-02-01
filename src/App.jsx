@@ -117,8 +117,10 @@ export default function HyeneScores() {
 
       // === RECALCULER le classement depuis TOUS les matchs de la saison ===
       // (les standings sauvegardés peuvent être obsolètes si de nouvelles journées existent)
+      // Comparaison insensible à la casse pour éviter les problèmes de format
+      const championshipKeyLowerForStandings = championshipKey.toLowerCase();
       const allSeasonMatches = (data.entities.matches || []).filter(
-        block => block.championship === championshipKey &&
+        block => block.championship?.toLowerCase() === championshipKeyLowerForStandings &&
                  block.season === parseInt(season)
       );
 
@@ -271,10 +273,16 @@ export default function HyeneScores() {
       console.log('Recherche matchs:', { championshipKey, season: parseInt(season), journee: parseInt(journee) });
       console.log('Nombre de blocs de matchs:', data.entities.matches.length);
 
+      // Debug: afficher les valeurs uniques de championship dans les blocs
+      const uniqueChampionships = [...new Set(data.entities.matches.map(b => b.championship))];
+      console.log('Championships uniques dans les blocs:', uniqueChampionships);
+
       // Utiliser le championshipKey mappé au lieu de championship
+      // Comparaison insensible à la casse pour éviter les problèmes de format
+      const championshipKeyLower = championshipKey.toLowerCase();
       const matchesForContext = data.entities.matches.find(
         block =>
-          block.championship === championshipKey &&
+          block.championship?.toLowerCase() === championshipKeyLower &&
           block.season === parseInt(season) &&
           block.matchday === parseInt(journee)
       );
@@ -803,8 +811,10 @@ export default function HyeneScores() {
     const seasonKey = `${championshipKey}_s${season}`;
 
     // Récupérer tous les matchs de cette saison/championnat
+    // Comparaison insensible à la casse
+    const championshipKeyLower = championshipKey.toLowerCase();
     const allSeasonMatches = (exportData.entities.matches || []).filter(
-      block => block.championship === championshipKey &&
+      block => block.championship?.toLowerCase() === championshipKeyLower &&
                block.season === parseInt(season)
     );
 
@@ -959,8 +969,10 @@ export default function HyeneScores() {
         }
 
         // Chercher si un bloc existe déjà pour ce contexte
+        // Comparaison insensible à la casse
+        const championshipKeyLowerExport = championshipKey.toLowerCase();
         const existingBlockIndex = exportData.entities.matches.findIndex(
-          block => block.championship === championshipKey &&
+          block => block.championship?.toLowerCase() === championshipKeyLowerExport &&
                    block.season === parseInt(selectedSeason) &&
                    block.matchday === parseInt(selectedJournee)
         );
@@ -1325,8 +1337,10 @@ export default function HyeneScores() {
       }
 
       // Chercher si un bloc existe déjà pour ce contexte (journée actuelle)
+      // Comparaison insensible à la casse
+      const championshipKeyLowerRefresh = championshipKey.toLowerCase();
       const existingBlockIndex = updatedAppData.entities.matches.findIndex(
-        block => block.championship === championshipKey &&
+        block => block.championship?.toLowerCase() === championshipKeyLowerRefresh &&
                  block.season === parseInt(selectedSeason) &&
                  block.matchday === parseInt(selectedJournee)
       );
@@ -1360,8 +1374,10 @@ export default function HyeneScores() {
 
       // === RECALCULER LE CLASSEMENT DEPUIS TOUS LES MATCHS DE LA SAISON ===
       // Récupérer TOUS les matchs de ce championnat/saison (toutes les journées)
+      // Comparaison insensible à la casse
+      const championshipKeyLowerRecalc = championshipKey.toLowerCase();
       const allSeasonMatches = updatedAppData.entities.matches.filter(
-        block => block.championship === championshipKey &&
+        block => block.championship?.toLowerCase() === championshipKeyLowerRecalc &&
                  block.season === parseInt(selectedSeason)
       );
 
@@ -1547,8 +1563,10 @@ export default function HyeneScores() {
     };
 
     // Mettre à jour ou ajouter le bloc
+    // Comparaison insensible à la casse
+    const championshipKeyLowerSync = championshipKey.toLowerCase();
     const existingBlockIndex = updatedAppData.entities.matches.findIndex(
-      block => block.championship === championshipKey &&
+      block => block.championship?.toLowerCase() === championshipKeyLowerSync &&
                block.season === parseInt(selectedSeason) &&
                block.matchday === parseInt(selectedJournee)
     );
@@ -1559,8 +1577,9 @@ export default function HyeneScores() {
     }
 
     // Recalculer le classement depuis TOUS les matchs de la saison
+    // Comparaison insensible à la casse
     const allSeasonMatches = updatedAppData.entities.matches.filter(
-      block => block.championship === championshipKey &&
+      block => block.championship?.toLowerCase() === championshipKeyLowerSync &&
                block.season === parseInt(selectedSeason)
     );
 
