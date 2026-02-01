@@ -46,7 +46,7 @@ export async function fetchAppData() {
     ] = await Promise.all([
       supabase.from('managers').select('*'),
       supabase.from('seasons').select('*'),
-      supabase.from('matches').select('*').order('matchday', { ascending: true }),
+      supabase.from('matches').select('*').order('matchday', { ascending: true }).range(0, 9999),
       supabase.from('champions').select('*').order('season', { ascending: true }),
       supabase.from('pantheon').select('*').order('total_points', { ascending: false }),
       supabase.from('penalties').select('*')
