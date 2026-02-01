@@ -322,11 +322,20 @@ export async function importFromJSON(jsonData) {
   // Import matches
   if (entities.matches && Array.isArray(entities.matches)) {
     for (const matchBlock of entities.matches) {
+      // Transformer les games si format abrege (h, a, hs, as)
+      const normalizedGames = matchBlock.games.map(game => ({
+        id: game.id,
+        homeTeam: game.homeTeam || game.h,
+        awayTeam: game.awayTeam || game.a,
+        homeScore: game.homeScore ?? game.hs,
+        awayScore: game.awayScore ?? game.as
+      }));
+
       await saveMatches(
         matchBlock.championship,
         matchBlock.season,
         matchBlock.matchday,
-        matchBlock.games,
+        normalizedGames,
         matchBlock.exempt
       );
     }
