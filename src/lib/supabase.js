@@ -190,6 +190,14 @@ export async function saveSeason(championship, seasonNumber, standings) {
  */
 export async function saveMatches(championship, season, matchday, games, exemptTeam = null) {
   if (!supabase) throw new Error('Supabase non configure');
+
+  // Filtrer les matchs vides (sans equipes)
+  const validGames = games.filter(game => game.homeTeam && game.awayTeam);
+
+  if (validGames.length === 0) {
+    return []; // Pas de matchs valides a sauvegarder
+  }
+
   // Supprimer les anciens matchs de cette journee
   await supabase
     .from('matches')
@@ -199,7 +207,7 @@ export async function saveMatches(championship, season, matchday, games, exemptT
     .eq('matchday', matchday);
 
   // Inserer les nouveaux matchs
-  const matchesToInsert = games.map(game => ({
+  const matchesToInsert = validGames.map(game => ({
     championship,
     season,
     matchday,
