@@ -267,6 +267,10 @@ export default function HyeneScores() {
     // Extraire matches[] depuis entities.matches (si disponible)
     // Note: Le format v2.0 pourrait ne pas inclure les matches, seulement les standings finaux
     if (data.entities.matches && Array.isArray(data.entities.matches)) {
+      // Debug: afficher les infos de recherche
+      console.log('Recherche matchs:', { championshipKey, season: parseInt(season), journee: parseInt(journee) });
+      console.log('Nombre de blocs de matchs:', data.entities.matches.length);
+
       // Utiliser le championshipKey mappé au lieu de championship
       const matchesForContext = data.entities.matches.find(
         block =>
@@ -274,6 +278,8 @@ export default function HyeneScores() {
           block.season === parseInt(season) &&
           block.matchday === parseInt(journee)
       );
+
+      console.log('Bloc trouvé:', matchesForContext ? 'OUI' : 'NON', matchesForContext);
 
       if (matchesForContext && matchesForContext.games) {
         // Normaliser les matches pour s'assurer que les champs sont corrects
