@@ -2029,8 +2029,8 @@ export default function HyeneScores() {
                 <div className="col-span-1 text-gray-400 text-sm font-bold text-center">#</div>
                 <div className="col-span-4 text-gray-400 text-sm font-bold text-left">CLUB</div>
                 <div className="col-span-2 text-gray-400 text-sm font-bold text-center">PTS</div>
-                <div className="col-span-2 text-gray-400 text-sm font-bold text-center">V-N-D</div>
-                <div className="col-span-2 text-gray-400 text-sm font-bold text-center">BP:BC</div>
+                <div className="col-span-2 text-gray-400 text-xs font-bold text-center">V-N-D</div>
+                <div className="col-span-2 text-gray-400 text-xs font-bold text-center">BP:BC</div>
                 <div className="col-span-1 text-gray-400 text-sm font-bold text-center">DIF</div>
               </div>
 
@@ -2054,10 +2054,10 @@ export default function HyeneScores() {
                         <span className="text-orange-400 text-[9px] font-bold absolute -top-0.5 ml-0.5">*</span>
                       )}
                     </div>
-                    <div className="col-span-2 text-center text-gray-300 text-sm font-medium">
+                    <div className="col-span-2 text-center text-gray-300 text-xs font-medium whitespace-nowrap">
                       {team.record}
                     </div>
-                    <div className="col-span-2 text-center text-gray-300 text-sm font-medium">
+                    <div className="col-span-2 text-center text-gray-300 text-xs font-medium whitespace-nowrap">
                       {team.goalDiff}
                     </div>
                     <div className="col-span-1 text-center">
