@@ -319,26 +319,46 @@ export async function importFromJSON(jsonData) {
     }
   }
 
-  // Import matches
+  // Import matches avec gestion d'erreurs et progression
   if (entities.matches && Array.isArray(entities.matches)) {
-    for (const matchBlock of entities.matches) {
-      // Transformer les games si format abrege (h, a, hs, as)
-      const normalizedGames = matchBlock.games.map(game => ({
-        id: game.id,
-        homeTeam: game.homeTeam || game.h,
-        awayTeam: game.awayTeam || game.a,
-        homeScore: game.homeScore ?? game.hs,
-        awayScore: game.awayScore ?? game.as
-      }));
+    const totalBlocks = entities.matches.length;
+    let importedCount = 0;
+    let errorCount = 0;
 
-      await saveMatches(
-        matchBlock.championship,
-        matchBlock.season,
-        matchBlock.matchday,
-        normalizedGames,
-        matchBlock.exempt
-      );
+    console.log(`Import de ${totalBlocks} blocs de matchs...`);
+
+    for (const matchBlock of entities.matches) {
+      try {
+        // Transformer les games si format abrege (h, a, hs, as)
+        const normalizedGames = matchBlock.games.map(game => ({
+          id: game.id,
+          homeTeam: game.homeTeam || game.h,
+          awayTeam: game.awayTeam || game.a,
+          homeScore: game.homeScore ?? game.hs,
+          awayScore: game.awayScore ?? game.as
+        }));
+
+        await saveMatches(
+          matchBlock.championship,
+          matchBlock.season,
+          matchBlock.matchday,
+          normalizedGames,
+          matchBlock.exempt
+        );
+
+        importedCount++;
+
+        // Log progression tous les 50 blocs
+        if (importedCount % 50 === 0) {
+          console.log(`Progression: ${importedCount}/${totalBlocks} blocs importes`);
+        }
+      } catch (err) {
+        errorCount++;
+        console.error(`Erreur import ${matchBlock.championship} S${matchBlock.season} J${matchBlock.matchday}:`, err.message);
+      }
     }
+
+    console.log(`Import termine: ${importedCount}/${totalBlocks} blocs, ${errorCount} erreurs`);
   }
 
   // Import palmares
