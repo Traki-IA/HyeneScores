@@ -240,7 +240,9 @@ export default function HyeneScores() {
       console.log('Classement Ligue des Hyènes calculé:', hyenesStandings.length, 'équipes');
 
       // Mettre à jour les équipes et le classement
-      const normalizedTeams = hyenesStandings.map(team => ({
+      // Inclure tous les champs nécessaires pour l'affichage (record, goalDiff)
+      const normalizedTeams = hyenesStandings.map((team, index) => ({
+        rank: index + 1,
         name: team.mgr,
         pts: team.pts,
         j: team.j,
@@ -249,7 +251,10 @@ export default function HyeneScores() {
         p: team.p,
         bp: team.bp,
         bc: team.bc,
-        diff: team.diff
+        diff: team.diff,
+        record: `${team.g}-${team.n}-${team.p}`,
+        goalDiff: `${team.bp}-${team.bc}`,
+        details: team.details
       }));
       setTeams(normalizedTeams);
 
