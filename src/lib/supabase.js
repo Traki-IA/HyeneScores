@@ -79,6 +79,10 @@ export async function fetchAppData() {
     // Grouper les matches par championship/season/matchday
     const matchesArray = [];
     const matchGroups = {};
+
+    // Debug: voir combien de matchs bruts sont récupérés
+    console.log('Matchs bruts recus de Supabase:', matches?.length || 0);
+
     matches?.forEach(m => {
       const key = `${m.championship}_${m.season}_${m.matchday}`;
       if (!matchGroups[key]) {
