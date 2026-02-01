@@ -36,17 +36,49 @@ export async function fetchAppData() {
   }
 
   try {
+    // Fonction pour récupérer tous les matchs avec pagination
+    // Supabase limite à 1000 lignes par requête par défaut
+    const fetchAllMatches = async () => {
+      const allMatches = [];
+      const pageSize = 1000;
+      let offset = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('matches')
+          .select('*')
+          .order('matchday', { ascending: true })
+          .range(offset, offset + pageSize - 1);
+
+        if (error) {
+          console.warn('Erreur matches page', offset / pageSize, ':', error.message);
+          hasMore = false;
+        } else if (data && data.length > 0) {
+          allMatches.push(...data);
+          console.log(`Matchs chargés: ${allMatches.length} (page ${Math.floor(offset / pageSize) + 1})`);
+          offset += pageSize;
+          // Si on reçoit moins que pageSize, c'est la dernière page
+          hasMore = data.length === pageSize;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      return allMatches;
+    };
+
     const [
       { data: managers, error: managersError },
       { data: seasons, error: seasonsError },
-      { data: matches, error: matchesError },
+      matches,
       { data: champions, error: championsError },
       { data: pantheon, error: pantheonError },
       { data: penalties, error: penaltiesError }
     ] = await Promise.all([
       supabase.from('managers').select('*'),
       supabase.from('seasons').select('*'),
-      supabase.from('matches').select('*').order('matchday', { ascending: true }).range(0, 9999),
+      fetchAllMatches(),
       supabase.from('champions').select('*').order('season', { ascending: true }),
       supabase.from('pantheon').select('*').order('total_points', { ascending: false }),
       supabase.from('penalties').select('*')
@@ -55,7 +87,7 @@ export async function fetchAppData() {
     // Log les erreurs mais ne pas crasher - les tables peuvent ne pas exister encore
     if (managersError) console.warn('Erreur managers:', managersError.message);
     if (seasonsError) console.warn('Erreur seasons:', seasonsError.message);
-    if (matchesError) console.warn('Erreur matches:', matchesError.message);
+    // Note: les erreurs de matches sont gérées dans fetchAllMatches()
     if (championsError) console.warn('Erreur champions:', championsError.message);
     if (pantheonError) console.warn('Erreur pantheon:', pantheonError.message);
     if (penaltiesError) console.warn('Erreur penalties:', penaltiesError.message);
