@@ -1,8 +1,15 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { fetchAppData, importFromJSON } from './lib/supabase';
 
 export default function HyeneScores() {
   const [selectedTab, setSelectedTab] = useState('classement');
   const fileInputRef = useRef(null);
+
+  // États Supabase
+  const [isLoadingFromSupabase, setIsLoadingFromSupabase] = useState(true);
+  const [supabaseError, setSupabaseError] = useState(null);
+  const [isSavingToSupabase, setIsSavingToSupabase] = useState(false);
+  const [pendingJsonData, setPendingJsonData] = useState(null); // Données JSON en attente de sauvegarde
 
   // États Classement
   const [selectedChampionship, setSelectedChampionship] = useState('hyenes');
@@ -520,6 +527,82 @@ export default function HyeneScores() {
 
   }, []);
 
+  // useEffect pour charger les données depuis Supabase au démarrage
+  useEffect(() => {
+    async function loadFromSupabase() {
+      try {
+        setIsLoadingFromSupabase(true);
+        setSupabaseError(null);
+        const data = await fetchAppData();
+
+        // Vérifier si des données existent dans Supabase
+        if (data && data.entities && (
+          Object.keys(data.entities.managers || {}).length > 0 ||
+          Object.keys(data.entities.seasons || {}).length > 0 ||
+          (data.entities.matches || []).length > 0
+        )) {
+          // Charger les données depuis Supabase
+          setAppData(data);
+
+          // Extraire allTeams depuis managers
+          if (data.entities.managers) {
+            const managerNames = Object.values(data.entities.managers)
+              .map(manager => manager.name || '?')
+              .filter(name => name !== '?');
+            setAllTeams(managerNames);
+          }
+
+          // Extraire les saisons disponibles
+          if (data.entities.seasons) {
+            const seasonNumbers = new Set();
+            Object.keys(data.entities.seasons).forEach(seasonKey => {
+              const match = seasonKey.match(/_s(\d+)$/);
+              if (match) {
+                seasonNumbers.add(match[1]);
+              }
+            });
+            const sortedSeasons = Array.from(seasonNumbers).sort((a, b) => parseInt(a) - parseInt(b));
+            setSeasons(sortedSeasons);
+            if (sortedSeasons.length > 0) {
+              setSelectedSeason(sortedSeasons[sortedSeasons.length - 1]);
+            }
+          }
+
+          // Charger les pénalités
+          if (data.penalties) {
+            setPenalties(data.penalties);
+          }
+
+          // Charger le panthéon
+          if (data.pantheon && Array.isArray(data.pantheon)) {
+            const transformedPantheon = data.pantheon.map((team, index) => ({
+              rank: index + 1,
+              name: team.name,
+              trophies: team.titles || 0,
+              france: 0,
+              spain: 0,
+              italy: 0,
+              england: 0,
+              total: team.titles || 0
+            }));
+            setPantheonTeams(transformedPantheon);
+          }
+
+          console.log('Données chargées depuis Supabase');
+        } else {
+          console.log('Aucune donnée dans Supabase - en attente d\'import JSON');
+        }
+      } catch (error) {
+        console.error('Erreur chargement Supabase:', error);
+        setSupabaseError(error.message);
+      } finally {
+        setIsLoadingFromSupabase(false);
+      }
+    }
+
+    loadFromSupabase();
+  }, []);
+
   // useEffect pour recharger les données quand le contexte change ou les pénalités
   useEffect(() => {
     if (appData && appData.version === '2.0') {
@@ -816,6 +899,34 @@ export default function HyeneScores() {
     return exportData;
   };
 
+  // Fonction pour sauvegarder les données vers Supabase
+  const handleSaveToSupabase = async () => {
+    if (!pendingJsonData && !appData) {
+      alert('Aucune donnée à sauvegarder. Importez d\'abord un fichier JSON.');
+      return;
+    }
+
+    const dataToSave = pendingJsonData || appData;
+
+    try {
+      setIsSavingToSupabase(true);
+      await importFromJSON(dataToSave);
+      setPendingJsonData(null);
+      alert('Données sauvegardées dans Supabase avec succès !');
+
+      // Recharger les données depuis Supabase pour confirmer
+      const freshData = await fetchAppData();
+      if (freshData) {
+        setAppData(freshData);
+      }
+    } catch (error) {
+      console.error('Erreur sauvegarde Supabase:', error);
+      alert('Erreur lors de la sauvegarde vers Supabase: ' + error.message);
+    } finally {
+      setIsSavingToSupabase(false);
+    }
+  };
+
   // Fonctions Réglages
   const handleExportJSON = () => {
     try {
@@ -1092,7 +1203,9 @@ export default function HyeneScores() {
             setPenalties(data.penalties);
           }
 
-          alert('✅ Données v2.0 importées avec succès !');
+          // Stocker les données pour sauvegarde vers Supabase
+          setPendingJsonData(data);
+          alert('✅ Données v2.0 importées ! Cliquez sur "Sauvegarder vers Supabase" pour les enregistrer dans la base de données.');
         } else {
           // Format v1.0 legacy - transformer vers format interne
 
@@ -1168,7 +1281,9 @@ export default function HyeneScores() {
             setPenalties(data.penalties);
           }
 
-          alert('✅ Données v1.0 importées avec succès !');
+          // Stocker les données pour sauvegarde vers Supabase
+          setPendingJsonData(data);
+          alert('✅ Données v1.0 importées ! Cliquez sur "Sauvegarder vers Supabase" pour les enregistrer dans la base de données.');
         }
       } catch (error) {
         console.error('Erreur d\'importation:', error);
@@ -2604,6 +2719,44 @@ export default function HyeneScores() {
                     onChange={handleFileChange}
                     className="hidden"
                   />
+                </div>
+              </div>
+
+              {/* Supabase - iOS 26 Card */}
+              <div className="ios26-card rounded-xl p-3" style={{ borderColor: 'rgba(59, 130, 246, 0.2)' }}>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-9 h-9 rounded-lg bg-blue-500/20 flex items-center justify-center backdrop-blur-sm">
+                    <span className="text-xl">☁️</span>
+                  </div>
+                  <h2 className="text-blue-400 text-base font-bold tracking-wide">SUPABASE</h2>
+                  {isLoadingFromSupabase && (
+                    <span className="text-xs text-blue-300 animate-pulse">Chargement...</span>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <button
+                    onClick={handleSaveToSupabase}
+                    disabled={isSavingToSupabase || (!pendingJsonData && !appData)}
+                    className={`w-full ios26-btn rounded-xl px-4 py-2.5 text-white text-base font-semibold flex items-center justify-between group ${
+                      isSavingToSupabase ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                    style={{ borderColor: 'rgba(59, 130, 246, 0.2)' }}
+                  >
+                    <span className="group-hover:text-blue-400">
+                      {isSavingToSupabase ? 'Sauvegarde en cours...' : 'Sauvegarder vers Supabase'}
+                    </span>
+                    <span className="text-lg group-hover:scale-110">{isSavingToSupabase ? '⏳' : '☁️'}</span>
+                  </button>
+                  {pendingJsonData && (
+                    <p className="text-xs text-blue-300 text-center">
+                      Données JSON en attente de sauvegarde
+                    </p>
+                  )}
+                  {supabaseError && (
+                    <p className="text-xs text-red-400 text-center">
+                      Erreur: {supabaseError}
+                    </p>
+                  )}
                 </div>
               </div>
 
