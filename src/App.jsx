@@ -808,6 +808,13 @@ export default function HyeneScores() {
     }
   }, [selectedChampionship, selectedSeason, selectedJournee, appData, penalties, loadDataFromAppData]);
 
+  // useEffect pour forcer un championnat valide sur l'onglet Match (exclure Ligue des Hyènes)
+  useEffect(() => {
+    if (selectedTab === 'match' && selectedChampionship === 'hyenes') {
+      setSelectedChampionship('france');
+    }
+  }, [selectedTab, selectedChampionship]);
+
   // Fonctions Match
   const getAvailableTeams = (currentMatchId, currentType) => {
     const selectedTeams = [];
