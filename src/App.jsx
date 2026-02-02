@@ -2439,7 +2439,7 @@ export default function HyeneScores() {
                     {isChampOpen && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setIsChampOpen(false)}></div>
-                        <div className="absolute left-0 right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 max-h-48 overflow-y-auto">
+                        <div className="absolute left-0 right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 max-h-64 overflow-y-auto">
                           {championships.filter(c => c.id !== 'hyenes').map(champ => (
                             <button
                               key={champ.id}
@@ -2566,7 +2566,7 @@ export default function HyeneScores() {
                                 : 'ios26-btn'
                             }`}
                           >
-                            <span className="text-white text-sm font-semibold leading-tight text-left flex-1 pr-1 truncate">{match.homeTeam || '────────'}</span>
+                            <span className={`text-sm font-semibold leading-tight text-left flex-1 pr-1 truncate ${match.homeTeam ? 'text-white' : 'text-gray-500'}`}>{match.homeTeam || 'Sélectionner'}</span>
                             <svg className={`w-3.5 h-3.5 flex-shrink-0 ${
                               match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
                                 ? 'text-emerald-400'
@@ -2653,7 +2653,7 @@ export default function HyeneScores() {
                                 : 'ios26-btn'
                             }`}
                           >
-                            <span className="text-white text-sm font-semibold leading-tight text-left flex-1 pr-1 truncate">{match.awayTeam || '────────'}</span>
+                            <span className={`text-sm font-semibold leading-tight text-left flex-1 pr-1 truncate ${match.awayTeam ? 'text-white' : 'text-gray-500'}`}>{match.awayTeam || 'Sélectionner'}</span>
                             <svg className={`w-3.5 h-3.5 flex-shrink-0 ${
                               match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
                                 ? 'text-emerald-400'
