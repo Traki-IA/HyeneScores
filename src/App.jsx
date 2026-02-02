@@ -467,11 +467,30 @@ export default function HyeneScores() {
                      (match.as !== undefined ? match.as :
                      (match.scoreAway !== undefined ? match.scoreAway : null))
         }));
+
+        // Dédupliquer les matchs (garder le premier de chaque paire d'équipes)
+        const seen = new Set();
+        const deduplicatedMatches = normalizedMatches.filter(match => {
+          const key = `${match.homeTeam}_${match.awayTeam}`;
+          if (seen.has(key)) {
+            console.warn('Match en double ignoré:', match);
+            return false;
+          }
+          seen.add(key);
+          return true;
+        });
+
+        // Limiter à 5 matchs max par journée (10 équipes qui jouent)
+        const finalMatches = deduplicatedMatches.slice(0, 5);
+
+        if (normalizedMatches.length !== finalMatches.length) {
+          console.warn(`Matchs dédupliqués: ${normalizedMatches.length} -> ${finalMatches.length}`);
+        }
         // Ne pas écraser les matchs si c'est un auto-sync (l'utilisateur est en train de saisir)
         if (skipNextMatchesLoadRef.current) {
           skipNextMatchesLoadRef.current = false;
         } else {
-          setMatches(normalizedMatches);
+          setMatches(finalMatches);
         }
 
         // Extraire l'équipe exemptée depuis le bloc match (format v2.0)
@@ -788,14 +807,6 @@ export default function HyeneScores() {
       loadDataFromAppData(appData, selectedChampionship, selectedSeason, selectedJournee, penalties);
     }
   }, [selectedChampionship, selectedSeason, selectedJournee, appData, penalties, loadDataFromAppData]);
-
-  // useEffect pour basculer automatiquement vers 'classement' si on est sur Match avec 'hyenes'
-  // La Ligue des Hyènes n'a pas de matchs directs (c'est une agrégation)
-  useEffect(() => {
-    if (selectedTab === 'match' && selectedChampionship === 'hyenes') {
-      setSelectedTab('classement');
-    }
-  }, [selectedTab, selectedChampionship]);
 
   // Fonctions Match
   const getAvailableTeams = (currentMatchId, currentType) => {
@@ -3094,20 +3105,17 @@ export default function HyeneScores() {
               <div className="text-lg">{selectedTab === 'classement' ? '🏆' : '🏆'}</div>
               <span className="text-[10px] font-bold tracking-wide">Classement</span>
             </button>
-            {/* L'onglet Match est caché pour la Ligue des Hyènes (pas de matchs directs) */}
-            {selectedChampionship !== 'hyenes' && (
-              <button
-                onClick={() => setSelectedTab('match')}
-                className={`flex flex-col items-center gap-0.5 rounded-xl px-2 py-1 min-w-[48px] ${
-                  selectedTab === 'match'
-                    ? 'ios26-tab-active text-cyan-400 scale-105'
-                    : 'text-gray-500 hover:text-gray-400 active:scale-95'
-                }`}
-              >
-                <div className="text-lg">📅</div>
-                <span className="text-[10px] font-bold tracking-wide">Match</span>
-              </button>
-            )}
+            <button
+              onClick={() => setSelectedTab('match')}
+              className={`flex flex-col items-center gap-0.5 rounded-xl px-2 py-1 min-w-[48px] ${
+                selectedTab === 'match'
+                  ? 'ios26-tab-active text-cyan-400 scale-105'
+                  : 'text-gray-500 hover:text-gray-400 active:scale-95'
+              }`}
+            >
+              <div className="text-lg">📅</div>
+              <span className="text-[10px] font-bold tracking-wide">Match</span>
+            </button>
             <button
               onClick={() => setSelectedTab('palmares')}
               className={`flex flex-col items-center gap-0.5 rounded-xl px-2 py-1 min-w-[48px] ${
