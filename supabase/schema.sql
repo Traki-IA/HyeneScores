@@ -1,6 +1,6 @@
 -- ============================================
 -- SCHEMA HYENESCORES - SUPABASE
--- Version 2.0 avec Authentification Admin
+-- Version 2.1 - Sécurité renforcée
 -- ============================================
 --
 -- INSTRUCTIONS:
@@ -8,35 +8,15 @@
 -- 2. Allez dans Authentication > Users > Add user
 --    Créez votre compte admin avec votre email
 -- 3. Copiez ce script dans SQL Editor et exécutez-le
--- 4. IMPORTANT: Remplacez 'VOTRE_EMAIL@EXAMPLE.COM' par votre email admin
+-- 4. IMPORTANT: À la fin du script, remplacez 'VOTRE_EMAIL@EXAMPLE.COM'
+--    par votre vrai email pour vous ajouter comme admin
+--
+-- SÉCURITÉ:
+-- - Lecture: Publique (tout le monde peut voir les classements)
+-- - Écriture: Réservée aux admins (liste dans table admin_users)
+-- - Le premier utilisateur ajouté devient automatiquement admin
 --
 -- ============================================
-
--- ============================================
--- CONFIGURATION: VOTRE EMAIL ADMIN
--- ============================================
--- Remplacez cette valeur par votre email avant d'exécuter le script
-
-DO $$
-BEGIN
-  -- Créer une variable de configuration pour l'email admin
-  -- MODIFIEZ CETTE LIGNE avec votre email:
-  PERFORM set_config('app.admin_email', 'VOTRE_EMAIL@EXAMPLE.COM', false);
-END $$;
-
--- ============================================
--- FONCTION: Vérifier si l'utilisateur est admin
--- ============================================
-
-CREATE OR REPLACE FUNCTION is_admin()
-RETURNS BOOLEAN AS $$
-BEGIN
-  RETURN (
-    auth.jwt() IS NOT NULL AND
-    auth.jwt() ->> 'email' = current_setting('app.admin_email', true)
-  );
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ============================================
 -- TABLE 1: managers (équipes/joueurs)
@@ -180,64 +160,100 @@ CREATE POLICY "Lecture publique app_settings" ON app_settings
   FOR SELECT USING (true);
 
 -- ============================================
+-- TABLE: Liste des administrateurs autorisés
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS admin_users (
+  email TEXT PRIMARY KEY,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- RLS pour admin_users (seul un admin existant peut ajouter d'autres admins)
+ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Lecture admin_users" ON admin_users
+  FOR SELECT USING (true);
+
+-- ============================================
+-- FONCTION: Vérifier si l'utilisateur est admin
+-- ============================================
+
+CREATE OR REPLACE FUNCTION is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM admin_users
+    WHERE email = auth.jwt() ->> 'email'
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================
 -- POLITIQUES: ÉCRITURE ADMIN SEULEMENT
+-- Seuls les emails dans admin_users peuvent écrire
 -- ============================================
 
 -- managers
 CREATE POLICY "Admin insert managers" ON managers
-  FOR INSERT WITH CHECK (auth.jwt() ->> 'email' IS NOT NULL);
+  FOR INSERT WITH CHECK (is_admin());
 CREATE POLICY "Admin update managers" ON managers
-  FOR UPDATE USING (auth.jwt() ->> 'email' IS NOT NULL);
+  FOR UPDATE USING (is_admin());
 CREATE POLICY "Admin delete managers" ON managers
-  FOR DELETE USING (auth.jwt() ->> 'email' IS NOT NULL);
+  FOR DELETE USING (is_admin());
 
 -- seasons
 CREATE POLICY "Admin insert seasons" ON seasons
-  FOR INSERT WITH CHECK (auth.jwt() ->> 'email' IS NOT NULL);
+  FOR INSERT WITH CHECK (is_admin());
 CREATE POLICY "Admin update seasons" ON seasons
-  FOR UPDATE USING (auth.jwt() ->> 'email' IS NOT NULL);
+  FOR UPDATE USING (is_admin());
 CREATE POLICY "Admin delete seasons" ON seasons
-  FOR DELETE USING (auth.jwt() ->> 'email' IS NOT NULL);
+  FOR DELETE USING (is_admin());
 
 -- matches
 CREATE POLICY "Admin insert matches" ON matches
-  FOR INSERT WITH CHECK (auth.jwt() ->> 'email' IS NOT NULL);
+  FOR INSERT WITH CHECK (is_admin());
 CREATE POLICY "Admin update matches" ON matches
-  FOR UPDATE USING (auth.jwt() ->> 'email' IS NOT NULL);
+  FOR UPDATE USING (is_admin());
 CREATE POLICY "Admin delete matches" ON matches
-  FOR DELETE USING (auth.jwt() ->> 'email' IS NOT NULL);
+  FOR DELETE USING (is_admin());
 
 -- champions
 CREATE POLICY "Admin insert champions" ON champions
-  FOR INSERT WITH CHECK (auth.jwt() ->> 'email' IS NOT NULL);
+  FOR INSERT WITH CHECK (is_admin());
 CREATE POLICY "Admin update champions" ON champions
-  FOR UPDATE USING (auth.jwt() ->> 'email' IS NOT NULL);
+  FOR UPDATE USING (is_admin());
 CREATE POLICY "Admin delete champions" ON champions
-  FOR DELETE USING (auth.jwt() ->> 'email' IS NOT NULL);
+  FOR DELETE USING (is_admin());
 
 -- pantheon
 CREATE POLICY "Admin insert pantheon" ON pantheon
-  FOR INSERT WITH CHECK (auth.jwt() ->> 'email' IS NOT NULL);
+  FOR INSERT WITH CHECK (is_admin());
 CREATE POLICY "Admin update pantheon" ON pantheon
-  FOR UPDATE USING (auth.jwt() ->> 'email' IS NOT NULL);
+  FOR UPDATE USING (is_admin());
 CREATE POLICY "Admin delete pantheon" ON pantheon
-  FOR DELETE USING (auth.jwt() ->> 'email' IS NOT NULL);
+  FOR DELETE USING (is_admin());
 
 -- penalties
 CREATE POLICY "Admin insert penalties" ON penalties
-  FOR INSERT WITH CHECK (auth.jwt() ->> 'email' IS NOT NULL);
+  FOR INSERT WITH CHECK (is_admin());
 CREATE POLICY "Admin update penalties" ON penalties
-  FOR UPDATE USING (auth.jwt() ->> 'email' IS NOT NULL);
+  FOR UPDATE USING (is_admin());
 CREATE POLICY "Admin delete penalties" ON penalties
-  FOR DELETE USING (auth.jwt() ->> 'email' IS NOT NULL);
+  FOR DELETE USING (is_admin());
 
 -- app_settings
 CREATE POLICY "Admin insert app_settings" ON app_settings
-  FOR INSERT WITH CHECK (auth.jwt() ->> 'email' IS NOT NULL);
+  FOR INSERT WITH CHECK (is_admin());
 CREATE POLICY "Admin update app_settings" ON app_settings
-  FOR UPDATE USING (auth.jwt() ->> 'email' IS NOT NULL);
+  FOR UPDATE USING (is_admin());
 CREATE POLICY "Admin delete app_settings" ON app_settings
-  FOR DELETE USING (auth.jwt() ->> 'email' IS NOT NULL);
+  FOR DELETE USING (is_admin());
+
+-- admin_users (seul un admin peut modifier la liste)
+CREATE POLICY "Admin insert admin_users" ON admin_users
+  FOR INSERT WITH CHECK (is_admin() OR NOT EXISTS (SELECT 1 FROM admin_users));
+CREATE POLICY "Admin delete admin_users" ON admin_users
+  FOR DELETE USING (is_admin());
 
 -- ============================================
 -- TRIGGERS: Mise à jour automatique updated_at
@@ -273,18 +289,31 @@ CREATE TRIGGER update_app_settings_updated_at
   EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================
+-- AJOUT DU PREMIER ADMINISTRATEUR
+-- ============================================
+-- IMPORTANT: Remplacez 'VOTRE_EMAIL@EXAMPLE.COM' par votre email
+-- C'est l'email que vous utiliserez pour vous connecter
+
+INSERT INTO admin_users (email) VALUES ('VOTRE_EMAIL@EXAMPLE.COM')
+ON CONFLICT (email) DO NOTHING;
+
+-- ============================================
 -- FIN DU SCRIPT
 -- ============================================
 --
 -- Après exécution, vous devriez avoir:
--- - 7 tables créées
+-- - 8 tables créées (7 données + 1 admin_users)
 -- - RLS activé sur toutes les tables
 -- - Lecture publique pour tous
--- - Écriture réservée aux utilisateurs authentifiés
+-- - Écriture réservée aux admins (table admin_users)
 --
 -- Pour tester:
--- 1. Créez un utilisateur dans Authentication > Users
--- 2. Connectez-vous dans votre app
--- 3. Essayez d'ajouter des données
+-- 1. Vérifiez que votre email est dans admin_users
+-- 2. Créez un compte dans Authentication > Users avec ce même email
+-- 3. Connectez-vous dans votre app
+-- 4. Essayez d'ajouter des données (seul admin peut)
+--
+-- Pour ajouter un autre admin plus tard:
+-- INSERT INTO admin_users (email) VALUES ('autre@email.com');
 --
 -- ============================================
