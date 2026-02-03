@@ -280,6 +280,84 @@ export async function saveManager(manager) {
 }
 
 /**
+ * Supprime un manager de la base de données
+ */
+export async function deleteManager(managerId) {
+  if (!supabase) throw new Error('Supabase non configure');
+  const { error } = await supabase
+    .from('managers')
+    .delete()
+    .eq('id', managerId);
+
+  if (error) throw error;
+  return { success: true };
+}
+
+/**
+ * Met à jour le nom d'un manager et propage le changement sur toutes les données associées
+ * - Table managers
+ * - Table matches (home_team, away_team, exempt_team)
+ * - Table champions (champion_name, runner_up_name)
+ * - Table pantheon (manager_name)
+ * - Table penalties (team_name)
+ */
+export async function updateManagerName(managerId, oldName, newName) {
+  if (!supabase) throw new Error('Supabase non configure');
+
+  // 1. Mettre à jour le nom dans la table managers
+  const { error: managerError } = await supabase
+    .from('managers')
+    .update({ name: newName })
+    .eq('id', managerId);
+
+  if (managerError) throw managerError;
+
+  // 2. Mettre à jour dans matches (home_team)
+  await supabase
+    .from('matches')
+    .update({ home_team: newName })
+    .eq('home_team', oldName);
+
+  // 3. Mettre à jour dans matches (away_team)
+  await supabase
+    .from('matches')
+    .update({ away_team: newName })
+    .eq('away_team', oldName);
+
+  // 4. Mettre à jour dans matches (exempt_team)
+  await supabase
+    .from('matches')
+    .update({ exempt_team: newName })
+    .eq('exempt_team', oldName);
+
+  // 5. Mettre à jour dans champions (champion_name)
+  await supabase
+    .from('champions')
+    .update({ champion_name: newName })
+    .eq('champion_name', oldName);
+
+  // 6. Mettre à jour dans champions (runner_up_name)
+  await supabase
+    .from('champions')
+    .update({ runner_up_name: newName })
+    .eq('runner_up_name', oldName);
+
+  // 7. Mettre à jour dans pantheon
+  await supabase
+    .from('pantheon')
+    .update({ manager_name: newName })
+    .eq('manager_name', oldName);
+
+  // 8. Mettre à jour dans penalties
+  await supabase
+    .from('penalties')
+    .update({ team_name: newName })
+    .eq('team_name', oldName);
+
+  return { success: true };
+}
+
+/**
  * Sauvegarde les donnees d'une saison
  */
 export async function saveSeason(championship, seasonNumber, standings) {
