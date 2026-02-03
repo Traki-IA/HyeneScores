@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { fetchAppData, importFromJSON, signIn, signOut, getSession, onAuthStateChange, checkIsAdmin, saveManager, saveMatches } from './lib/supabase';
+import { fetchAppData, importFromJSON, signIn, signOut, getSession, onAuthStateChange, checkIsAdmin, saveManager, saveMatches, deleteManager, updateManagerName } from './lib/supabase';
 
 export default function HyeneScores() {
   const [selectedTab, setSelectedTab] = useState('classement');
@@ -100,6 +100,9 @@ export default function HyeneScores() {
   const [newManagerName, setNewManagerName] = useState('');
   const [isAddingManager, setIsAddingManager] = useState(false);
   const [managerError, setManagerError] = useState('');
+  const [editingManagerId, setEditingManagerId] = useState(null);
+  const [editingManagerName, setEditingManagerName] = useState('');
+  const [isEditingManager, setIsEditingManager] = useState(false);
 
   // Fonction pour charger les données depuis appData v2.0
   const loadDataFromAppData = useCallback((data, championship, season, journee, currentPenalties = {}) => {
@@ -876,8 +879,8 @@ export default function HyeneScores() {
 
       if (managerEntry && isAdmin) {
         const [managerId] = managerEntry;
-        // Note: La suppression dans Supabase nécessite les politiques RLS appropriées
-        // Pour l'instant, on supprime uniquement localement
+        // Supprimer de Supabase
+        await deleteManager(managerId);
       }
 
       // Supprimer localement
@@ -899,6 +902,156 @@ export default function HyeneScores() {
       setAllTeams(prev => prev.filter(t => t !== managerName));
     } catch (error) {
       console.error('Erreur suppression manager:', error);
+      alert('Erreur lors de la suppression du manager');
+    }
+  };
+
+  // Fonction pour commencer l'édition d'un manager
+  const startEditingManager = (managerName) => {
+    const managers = appData?.entities?.managers || {};
+    const managerEntry = Object.entries(managers).find(([_, m]) => m.name === managerName);
+    if (managerEntry) {
+      const [managerId] = managerEntry;
+      setEditingManagerId(managerId);
+      setEditingManagerName(managerName);
+    }
+  };
+
+  // Fonction pour annuler l'édition
+  const cancelEditingManager = () => {
+    setEditingManagerId(null);
+    setEditingManagerName('');
+    setManagerError('');
+  };
+
+  // Fonction pour sauvegarder la modification du nom
+  const handleSaveManagerEdit = async () => {
+    if (!editingManagerName.trim()) {
+      setManagerError('Le nom ne peut pas être vide');
+      return;
+    }
+
+    // Vérifier si le nom existe déjà (sauf pour le manager actuel)
+    const managers = appData?.entities?.managers || {};
+    const currentManager = managers[editingManagerId];
+    const oldName = currentManager?.name;
+
+    if (oldName === editingManagerName.trim()) {
+      cancelEditingManager();
+      return;
+    }
+
+    const nameExists = Object.values(managers).some(
+      m => m.name.toLowerCase() === editingManagerName.trim().toLowerCase() && m.id !== editingManagerId
+    );
+
+    if (nameExists) {
+      setManagerError('Ce nom existe déjà');
+      return;
+    }
+
+    setIsEditingManager(true);
+    setManagerError('');
+
+    try {
+      const newName = editingManagerName.trim();
+
+      // Mettre à jour dans Supabase (propagation automatique)
+      if (isAdmin) {
+        await updateManagerName(editingManagerId, oldName, newName);
+      }
+
+      // Mettre à jour localement dans appData
+      setAppData(prev => {
+        const newData = { ...prev };
+
+        // Mettre à jour managers
+        if (newData.entities?.managers?.[editingManagerId]) {
+          newData.entities.managers[editingManagerId].name = newName;
+        }
+
+        // Mettre à jour matches
+        if (newData.entities?.matches) {
+          newData.entities.matches = newData.entities.matches.map(matchBlock => ({
+            ...matchBlock,
+            exempt: matchBlock.exempt === oldName ? newName : matchBlock.exempt,
+            games: matchBlock.games.map(game => ({
+              ...game,
+              homeTeam: game.homeTeam === oldName ? newName : game.homeTeam,
+              awayTeam: game.awayTeam === oldName ? newName : game.awayTeam
+            }))
+          }));
+        }
+
+        // Mettre à jour palmares
+        if (newData.palmares) {
+          Object.keys(newData.palmares).forEach(champ => {
+            newData.palmares[champ] = newData.palmares[champ].map(entry => ({
+              ...entry,
+              champion: entry.champion === oldName ? newName : entry.champion,
+              runnerUp: entry.runnerUp === oldName ? newName : entry.runnerUp
+            }));
+          });
+        }
+
+        // Mettre à jour pantheon
+        if (newData.pantheon) {
+          newData.pantheon = newData.pantheon.map(p => ({
+            ...p,
+            name: p.name === oldName ? newName : p.name
+          }));
+        }
+
+        // Mettre à jour penalties
+        if (newData.penalties) {
+          const newPenalties = {};
+          Object.entries(newData.penalties).forEach(([key, value]) => {
+            const parts = key.split('_');
+            if (parts.length >= 3) {
+              const teamName = parts.slice(2).join('_');
+              if (teamName === oldName) {
+                const newKey = `${parts[0]}_${parts[1]}_${newName}`;
+                newPenalties[newKey] = value;
+              } else {
+                newPenalties[key] = value;
+              }
+            } else {
+              newPenalties[key] = value;
+            }
+          });
+          newData.penalties = newPenalties;
+        }
+
+        return newData;
+      });
+
+      // Mettre à jour allTeams
+      setAllTeams(prev => prev.map(t => t === oldName ? newName : t));
+
+      // Mettre à jour matches affichés si nécessaire
+      setMatches(prev => prev.map(m => ({
+        ...m,
+        homeTeam: m.homeTeam === oldName ? newName : m.homeTeam,
+        awayTeam: m.awayTeam === oldName ? newName : m.awayTeam
+      })));
+
+      // Mettre à jour teams (classement)
+      setTeams(prev => prev.map(t => ({
+        ...t,
+        name: t.name === oldName ? newName : t.name
+      })));
+
+      // Mettre à jour exemptTeam si nécessaire
+      if (exemptTeam === oldName) {
+        setExemptTeam(newName);
+      }
+
+      cancelEditingManager();
+    } catch (error) {
+      console.error('Erreur modification manager:', error);
+      setManagerError('Erreur lors de la modification');
+    } finally {
+      setIsEditingManager(false);
     }
   };
 
@@ -3263,22 +3416,72 @@ export default function HyeneScores() {
                   {allTeams.length === 0 ? (
                     <p className="text-gray-500 text-xs text-center py-2">Aucun manager</p>
                   ) : (
-                    allTeams.map((manager, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 group"
-                      >
-                        <span className="text-white text-sm">{manager}</span>
-                        {isAdmin && (
-                          <button
-                            onClick={() => handleDeleteManager(manager)}
-                            className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 text-sm px-2 py-1"
-                          >
-                            ✕
-                          </button>
-                        )}
-                      </div>
-                    ))
+                    allTeams.map((manager, index) => {
+                      const managers = appData?.entities?.managers || {};
+                      const managerEntry = Object.entries(managers).find(([_, m]) => m.name === manager);
+                      const managerId = managerEntry ? managerEntry[0] : null;
+                      const isEditing = editingManagerId === managerId;
+
+                      return (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 group"
+                        >
+                          {isEditing ? (
+                            <div className="flex items-center gap-2 flex-1">
+                              <input
+                                type="text"
+                                value={editingManagerName}
+                                onChange={(e) => setEditingManagerName(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleSaveManagerEdit();
+                                  if (e.key === 'Escape') cancelEditingManager();
+                                }}
+                                className="flex-1 bg-white/10 border border-cyan-500/50 rounded-lg px-2 py-1 text-white text-sm focus:outline-none focus:border-cyan-400"
+                                autoFocus
+                                disabled={isEditingManager}
+                              />
+                              <button
+                                onClick={handleSaveManagerEdit}
+                                disabled={isEditingManager}
+                                className="text-green-400 hover:text-green-300 text-sm px-1"
+                              >
+                                {isEditingManager ? '⏳' : '✓'}
+                              </button>
+                              <button
+                                onClick={cancelEditingManager}
+                                disabled={isEditingManager}
+                                className="text-gray-400 hover:text-gray-300 text-sm px-1"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <span className="text-white text-sm">{manager}</span>
+                              {isAdmin && (
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
+                                  <button
+                                    onClick={() => startEditingManager(manager)}
+                                    className="text-cyan-400 hover:text-cyan-300 text-sm px-2 py-1"
+                                    title="Modifier"
+                                  >
+                                    ✏️
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteManager(manager)}
+                                    className="text-red-400 hover:text-red-300 text-sm px-2 py-1"
+                                    title="Supprimer"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      );
+                    })
                   )}
                 </div>
               </div>
