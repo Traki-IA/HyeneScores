@@ -760,18 +760,28 @@ export default function HyeneScores() {
     initAuth();
 
     // Écouter les changements d'authentification
-    const { data: { subscription } } = onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        setUser(session.user);
-        const adminStatus = await checkIsAdmin(session.user.email);
-        setIsAdmin(adminStatus);
-      } else {
-        setUser(null);
-        setIsAdmin(false);
-      }
-    });
+    let subscription = null;
+    try {
+      const result = onAuthStateChange(async (event, session) => {
+        if (session?.user) {
+          setUser(session.user);
+          const adminStatus = await checkIsAdmin(session.user.email);
+          setIsAdmin(adminStatus);
+        } else {
+          setUser(null);
+          setIsAdmin(false);
+        }
+      });
+      subscription = result?.data?.subscription;
+    } catch (error) {
+      console.error('Erreur onAuthStateChange:', error);
+    }
 
-    return () => subscription.unsubscribe();
+    return () => {
+      if (subscription?.unsubscribe) {
+        subscription.unsubscribe();
+      }
+    };
   }, []);
 
   // Fonction de connexion
