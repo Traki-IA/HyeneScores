@@ -1,9 +1,19 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { fetchAppData, importFromJSON } from './lib/supabase';
+import { fetchAppData, importFromJSON, signIn, signOut, getSession, onAuthStateChange, checkIsAdmin, saveManager, saveMatches } from './lib/supabase';
 
 export default function HyeneScores() {
   const [selectedTab, setSelectedTab] = useState('classement');
   const fileInputRef = useRef(null);
+
+  // États Authentification
+  const [user, setUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // États Supabase
   const [isLoadingFromSupabase, setIsLoadingFromSupabase] = useState(true);
@@ -85,6 +95,11 @@ export default function HyeneScores() {
   const [selectedPenaltyTeam, setSelectedPenaltyTeam] = useState('');
   const [penaltyPoints, setPenaltyPoints] = useState('');
   const [isPenaltyTeamDropdownOpen, setIsPenaltyTeamDropdownOpen] = useState(false);
+
+  // États pour la gestion des Managers
+  const [newManagerName, setNewManagerName] = useState('');
+  const [isAddingManager, setIsAddingManager] = useState(false);
+  const [managerError, setManagerError] = useState('');
 
   // Fonction pour charger les données depuis appData v2.0
   const loadDataFromAppData = useCallback((data, championship, season, journee, currentPenalties = {}) => {
@@ -725,6 +740,158 @@ export default function HyeneScores() {
 
   }, []);
 
+  // useEffect pour gérer l'authentification
+  useEffect(() => {
+    async function initAuth() {
+      try {
+        const session = await getSession();
+        if (session?.user) {
+          setUser(session.user);
+          const adminStatus = await checkIsAdmin(session.user.email);
+          setIsAdmin(adminStatus);
+        }
+      } catch (error) {
+        console.error('Erreur initialisation auth:', error);
+      } finally {
+        setIsAuthLoading(false);
+      }
+    }
+
+    initAuth();
+
+    // Écouter les changements d'authentification
+    const { data: { subscription } } = onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+        const adminStatus = await checkIsAdmin(session.user.email);
+        setIsAdmin(adminStatus);
+      } else {
+        setUser(null);
+        setIsAdmin(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Fonction de connexion
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginError('');
+    setIsLoggingIn(true);
+
+    try {
+      await signIn(loginEmail, loginPassword);
+      setShowLoginModal(false);
+      setLoginEmail('');
+      setLoginPassword('');
+    } catch (error) {
+      setLoginError('Email ou mot de passe incorrect');
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  // Fonction de déconnexion
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      setUser(null);
+      setIsAdmin(false);
+    } catch (error) {
+      console.error('Erreur déconnexion:', error);
+    }
+  };
+
+  // Fonction pour ajouter un manager
+  const handleAddManager = async () => {
+    const trimmedName = newManagerName.trim();
+    if (!trimmedName) {
+      setManagerError('Le nom ne peut pas être vide');
+      return;
+    }
+
+    // Vérifier si le manager existe déjà
+    if (allTeams.includes(trimmedName)) {
+      setManagerError('Ce manager existe déjà');
+      return;
+    }
+
+    setIsAddingManager(true);
+    setManagerError('');
+
+    try {
+      // Générer un ID unique pour le manager
+      const managerId = trimmedName.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+
+      // Sauvegarder dans Supabase si admin connecté
+      if (isAdmin) {
+        await saveManager({ id: managerId, name: trimmedName });
+      }
+
+      // Mettre à jour l'état local
+      const newManagers = {
+        ...(appData?.entities?.managers || {}),
+        [managerId]: { id: managerId, name: trimmedName }
+      };
+
+      setAppData(prev => ({
+        ...prev,
+        entities: {
+          ...prev?.entities,
+          managers: newManagers
+        }
+      }));
+
+      setAllTeams(prev => [...prev, trimmedName].sort());
+      setNewManagerName('');
+    } catch (error) {
+      console.error('Erreur ajout manager:', error);
+      setManagerError('Erreur lors de l\'ajout');
+    } finally {
+      setIsAddingManager(false);
+    }
+  };
+
+  // Fonction pour supprimer un manager
+  const handleDeleteManager = async (managerName) => {
+    if (!window.confirm(`Supprimer le manager "${managerName}" ?`)) {
+      return;
+    }
+
+    try {
+      // Trouver l'ID du manager
+      const managers = appData?.entities?.managers || {};
+      const managerEntry = Object.entries(managers).find(([_, m]) => m.name === managerName);
+
+      if (managerEntry && isAdmin) {
+        const [managerId] = managerEntry;
+        // Note: La suppression dans Supabase nécessite les politiques RLS appropriées
+        // Pour l'instant, on supprime uniquement localement
+      }
+
+      // Supprimer localement
+      const newManagers = { ...(appData?.entities?.managers || {}) };
+      Object.keys(newManagers).forEach(key => {
+        if (newManagers[key].name === managerName) {
+          delete newManagers[key];
+        }
+      });
+
+      setAppData(prev => ({
+        ...prev,
+        entities: {
+          ...prev?.entities,
+          managers: newManagers
+        }
+      }));
+
+      setAllTeams(prev => prev.filter(t => t !== managerName));
+    } catch (error) {
+      console.error('Erreur suppression manager:', error);
+    }
+  };
+
   // useEffect pour charger les données depuis Supabase au démarrage
   useEffect(() => {
     async function loadFromSupabase() {
@@ -792,7 +959,7 @@ export default function HyeneScores() {
         }
       } catch (error) {
         console.error('Erreur chargement Supabase:', error);
-        setSupabaseError(error.message);
+        setSupabaseError('Erreur de connexion au serveur');
       } finally {
         setIsLoadingFromSupabase(false);
       }
@@ -1121,7 +1288,7 @@ export default function HyeneScores() {
       }
     } catch (error) {
       console.error('Erreur sauvegarde Supabase:', error);
-      alert('Erreur lors de la sauvegarde vers Supabase: ' + error.message);
+      alert('Erreur lors de la sauvegarde. Veuillez réessayer.');
     } finally {
       setIsSavingToSupabase(false);
     }
@@ -1237,6 +1404,68 @@ export default function HyeneScores() {
     fileInputRef.current?.click();
   };
 
+  // Fonction de validation JSON pour sécuriser l'import
+  const validateJSONData = (data, fileSize) => {
+    const errors = [];
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB max
+
+    // Vérifier la taille du fichier
+    if (fileSize > MAX_FILE_SIZE) {
+      errors.push('Fichier trop volumineux (max 10 MB)');
+    }
+
+    // Vérifier que c'est un objet
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      errors.push('Format invalide');
+      return { valid: false, errors };
+    }
+
+    // Vérifier la version
+    const version = data.version;
+    if (version && !['1.0', '2.0'].includes(version)) {
+      errors.push('Version non supportée');
+    }
+
+    // Validation v2.0
+    if (version === '2.0') {
+      if (!data.entities || typeof data.entities !== 'object') {
+        errors.push('Structure entities manquante');
+      } else {
+        // Valider entities.managers
+        if (data.entities.managers && typeof data.entities.managers !== 'object') {
+          errors.push('Format managers invalide');
+        }
+        // Valider entities.seasons
+        if (data.entities.seasons && typeof data.entities.seasons !== 'object') {
+          errors.push('Format seasons invalide');
+        }
+        // Valider entities.matches
+        if (data.entities.matches && !Array.isArray(data.entities.matches)) {
+          errors.push('Format matches invalide');
+        }
+      }
+    }
+
+    // Vérification de sécurité : pas de contenu potentiellement dangereux
+    const jsonString = JSON.stringify(data);
+    const dangerousPatterns = [
+      /<script/i,
+      /javascript:/i,
+      /on\w+\s*=/i,
+      /eval\s*\(/i,
+      /Function\s*\(/i
+    ];
+
+    for (const pattern of dangerousPatterns) {
+      if (pattern.test(jsonString)) {
+        errors.push('Contenu non autorisé détecté');
+        break;
+      }
+    }
+
+    return { valid: errors.length === 0, errors };
+  };
+
   const handleFileChange = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -1244,7 +1473,15 @@ export default function HyeneScores() {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const data = JSON.parse(e.target?.result);
+        const rawContent = e.target?.result;
+        const data = JSON.parse(rawContent);
+
+        // Valider les données avant de les importer
+        const validation = validateJSONData(data, file.size);
+        if (!validation.valid) {
+          alert('❌ Fichier invalide : ' + validation.errors[0]);
+          return;
+        }
 
         // Détecter la version du fichier
         const version = data.version || '1.0';
@@ -1851,7 +2088,18 @@ export default function HyeneScores() {
     // Empêcher loadDataFromAppData d'écraser les matchs en cours de saisie
     skipNextMatchesLoadRef.current = true;
     setAppData(updatedAppData);
-  }, [appData, allTeams, selectedChampionship, selectedSeason, selectedJournee, exemptTeam, penalties]);
+
+    // Auto-save vers Supabase si admin connecté
+    if (isAdmin && newMatchBlock.games.some(g => g.homeTeam && g.awayTeam)) {
+      saveMatches(
+        championshipKey,
+        parseInt(selectedSeason),
+        parseInt(selectedJournee),
+        newMatchBlock.games,
+        exemptTeam || null
+      ).catch(err => console.error('Erreur auto-save Supabase:', err));
+    }
+  }, [appData, allTeams, selectedChampionship, selectedSeason, selectedJournee, exemptTeam, penalties, isAdmin]);
 
   return (
     <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden safe-top ios26-app">
@@ -2898,6 +3146,117 @@ export default function HyeneScores() {
           <div className="flex-1 px-2">
             <div className="space-y-2 mt-2">
 
+              {/* Compte Admin - iOS 26 Card */}
+              <div className="ios26-card rounded-xl p-3" style={{ borderColor: isAdmin ? 'rgba(16, 185, 129, 0.3)' : 'rgba(251, 146, 60, 0.3)' }}>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center backdrop-blur-sm ${isAdmin ? 'bg-emerald-500/20' : 'bg-orange-500/20'}`}>
+                    <span className="text-xl">{user ? '👤' : '🔒'}</span>
+                  </div>
+                  <h2 className={`text-base font-bold tracking-wide ${isAdmin ? 'text-emerald-400' : 'text-orange-400'}`}>COMPTE</h2>
+                  {isAuthLoading && (
+                    <span className="text-xs text-gray-400 animate-pulse">Vérification...</span>
+                  )}
+                </div>
+
+                {user ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-white/5">
+                      <span className="text-sm text-gray-300">{user.email}</span>
+                      {isAdmin && (
+                        <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-semibold">Admin</span>
+                      )}
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full ios26-btn rounded-xl px-4 py-2.5 text-white text-base font-semibold flex items-center justify-between group"
+                      style={{ borderColor: 'rgba(239, 68, 68, 0.2)' }}
+                    >
+                      <span className="group-hover:text-red-400">Se déconnecter</span>
+                      <span className="text-lg group-hover:scale-110">🚪</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-xs text-gray-400 text-center mb-2">
+                      Connectez-vous pour modifier les données
+                    </p>
+                    <button
+                      onClick={() => setShowLoginModal(true)}
+                      className="w-full ios26-btn rounded-xl px-4 py-2.5 text-white text-base font-semibold flex items-center justify-between group"
+                      style={{ borderColor: 'rgba(59, 130, 246, 0.2)' }}
+                    >
+                      <span className="group-hover:text-blue-400">Se connecter</span>
+                      <span className="text-lg group-hover:scale-110">🔑</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Managers - iOS 26 Card */}
+              <div className="ios26-card rounded-xl p-3" style={{ borderColor: 'rgba(168, 85, 247, 0.2)' }}>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-9 h-9 rounded-lg bg-purple-500/20 flex items-center justify-center backdrop-blur-sm">
+                    <span className="text-xl">👥</span>
+                  </div>
+                  <h2 className="text-purple-400 text-base font-bold tracking-wide">MANAGERS</h2>
+                  <span className="text-xs text-gray-400">({allTeams.length})</span>
+                </div>
+
+                {/* Formulaire d'ajout */}
+                <div className="mb-3">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newManagerName}
+                      onChange={(e) => { setNewManagerName(e.target.value); setManagerError(''); }}
+                      placeholder="Nouveau manager..."
+                      className="flex-1 ios26-input rounded-xl px-3 py-2 text-white text-sm font-medium outline-none"
+                      style={{ borderColor: 'rgba(168, 85, 247, 0.3)' }}
+                      onKeyPress={(e) => e.key === 'Enter' && handleAddManager()}
+                      disabled={!isAdmin}
+                    />
+                    <button
+                      onClick={handleAddManager}
+                      disabled={isAddingManager || !newManagerName.trim() || !isAdmin}
+                      className="ios26-btn rounded-xl px-4 py-2 text-purple-400 text-sm font-semibold disabled:opacity-50"
+                      style={{ borderColor: 'rgba(168, 85, 247, 0.3)' }}
+                    >
+                      {isAddingManager ? '...' : '+'}
+                    </button>
+                  </div>
+                  {managerError && (
+                    <p className="text-red-400 text-xs mt-1 ml-1">{managerError}</p>
+                  )}
+                  {!isAdmin && (
+                    <p className="text-gray-500 text-xs mt-1 ml-1">Connectez-vous pour ajouter des managers</p>
+                  )}
+                </div>
+
+                {/* Liste des managers */}
+                <div className="max-h-48 overflow-y-auto space-y-1 scrollbar-thin">
+                  {allTeams.length === 0 ? (
+                    <p className="text-gray-500 text-xs text-center py-2">Aucun manager</p>
+                  ) : (
+                    allTeams.map((manager, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 group"
+                      >
+                        <span className="text-white text-sm">{manager}</span>
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleDeleteManager(manager)}
+                            className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 text-sm px-2 py-1"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
               {/* Sauvegarde - iOS 26 Card */}
               <div className="ios26-card rounded-xl p-3">
                 <div className="flex items-center gap-3 mb-2">
@@ -3077,6 +3436,82 @@ export default function HyeneScores() {
                       Confirmer
                     </button>
                   </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Modal Connexion - iOS 26 Style */}
+          {showLoginModal && (
+            <>
+              <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50" onClick={() => { setShowLoginModal(false); setLoginError(''); }}></div>
+              <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
+                <div className="ios26-modal rounded-3xl p-6 max-w-md w-full">
+                  <div className="text-center mb-6">
+                    <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-blue-500/20 flex items-center justify-center">
+                      <span className="text-5xl">🔐</span>
+                    </div>
+                    <h3 className="text-blue-400 text-xl font-bold mb-2">CONNEXION ADMIN</h3>
+                    <p className="text-gray-400 text-sm">Connectez-vous pour modifier les données</p>
+                  </div>
+                  <form onSubmit={handleLogin}>
+                    <div className="space-y-4 mb-6">
+                      <div>
+                        <label className="block text-gray-400 text-xs font-medium mb-2 ml-1">Email</label>
+                        <input
+                          type="email"
+                          value={loginEmail}
+                          onChange={(e) => setLoginEmail(e.target.value)}
+                          placeholder="admin@example.com"
+                          className="w-full ios26-input rounded-xl px-4 py-3.5 text-white text-sm font-medium outline-none"
+                          style={{ borderColor: 'rgba(59, 130, 246, 0.3)' }}
+                          required
+                          autoComplete="email"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-400 text-xs font-medium mb-2 ml-1">Mot de passe</label>
+                        <input
+                          type="password"
+                          value={loginPassword}
+                          onChange={(e) => setLoginPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="w-full ios26-input rounded-xl px-4 py-3.5 text-white text-sm font-medium outline-none"
+                          style={{ borderColor: 'rgba(59, 130, 246, 0.3)' }}
+                          required
+                          autoComplete="current-password"
+                        />
+                      </div>
+                      {loginError && (
+                        <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3">
+                          <p className="text-red-400 text-sm text-center">{loginError}</p>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => { setShowLoginModal(false); setLoginError(''); setLoginEmail(''); setLoginPassword(''); }}
+                        className="flex-1 ios26-btn rounded-xl px-4 py-3.5 text-white text-sm font-semibold"
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isLoggingIn}
+                        className="flex-1 bg-blue-500/20 border border-blue-500/50 hover:bg-blue-500/30 disabled:opacity-50 rounded-xl px-4 py-3.5 text-blue-400 text-sm font-bold flex items-center justify-center gap-2"
+                      >
+                        {isLoggingIn ? (
+                          <>
+                            <span className="animate-spin">⏳</span>
+                            <span>Connexion...</span>
+                          </>
+                        ) : (
+                          <span>Se connecter</span>
+                        )}
+                      </button>
+                    </div>
+                  </form>
                 </div>
               </div>
             </>
