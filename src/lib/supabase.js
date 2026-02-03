@@ -15,6 +15,82 @@ export const supabase = isSupabaseConfigured
   : null;
 
 // ============================================
+// AUTHENTIFICATION
+// ============================================
+
+/**
+ * Connexion avec email/mot de passe
+ */
+export async function signIn(email, password) {
+  if (!supabase) throw new Error('Supabase non configure');
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Deconnexion
+ */
+export async function signOut() {
+  if (!supabase) throw new Error('Supabase non configure');
+
+  const { error } = await supabase.auth.signOut();
+  if (error) throw error;
+}
+
+/**
+ * Recuperer la session actuelle
+ */
+export async function getSession() {
+  if (!supabase) return null;
+
+  const { data: { session } } = await supabase.auth.getSession();
+  return session;
+}
+
+/**
+ * Recuperer l'utilisateur actuel
+ */
+export async function getUser() {
+  if (!supabase) return null;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  return user;
+}
+
+/**
+ * Ecouter les changements d'authentification
+ */
+export function onAuthStateChange(callback) {
+  if (!supabase) return { data: { subscription: { unsubscribe: () => {} } } };
+
+  return supabase.auth.onAuthStateChange((event, session) => {
+    callback(event, session);
+  });
+}
+
+/**
+ * Verifier si l'utilisateur est admin (email dans admin_users)
+ */
+export async function checkIsAdmin(email) {
+  if (!supabase || !email) return false;
+
+  const { data, error } = await supabase
+    .from('admin_users')
+    .select('email')
+    .eq('email', email)
+    .single();
+
+  if (error) return false;
+  return !!data;
+}
+
+// ============================================
 // SERVICES POUR LA BASE DE DONNEES
 // ============================================
 
