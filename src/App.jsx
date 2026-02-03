@@ -61,6 +61,7 @@ export default function HyeneScores() {
   const [exemptTeam, setExemptTeam] = useState('');
   const [isTeamDropdownOpen, setIsTeamDropdownOpen] = useState(false);
   const skipNextMatchesLoadRef = useRef(false);
+  const saveMatchesTimeoutRef = useRef(null);
 
   const [seasons, setSeasons] = useState([]);
 
@@ -783,6 +784,15 @@ export default function HyeneScores() {
     return () => {
       if (subscription?.unsubscribe) {
         subscription.unsubscribe();
+      }
+    };
+  }, []);
+
+  // Cleanup du timeout de sauvegarde au démontage
+  useEffect(() => {
+    return () => {
+      if (saveMatchesTimeoutRef.current) {
+        clearTimeout(saveMatchesTimeoutRef.current);
       }
     };
   }, []);
@@ -2252,15 +2262,23 @@ export default function HyeneScores() {
     skipNextMatchesLoadRef.current = true;
     setAppData(updatedAppData);
 
-    // Auto-save vers Supabase si admin connecté
+    // Auto-save vers Supabase si admin connecté (avec debounce pour éviter les doublons)
     if (isAdmin && newMatchBlock.games.some(g => g.homeTeam && g.awayTeam)) {
-      saveMatches(
-        championshipKey,
-        parseInt(selectedSeason),
-        parseInt(selectedJournee),
-        newMatchBlock.games,
-        exemptTeam || null
-      ).catch(err => console.error('Erreur auto-save Supabase:', err));
+      // Annuler le save précédent s'il est en attente
+      if (saveMatchesTimeoutRef.current) {
+        clearTimeout(saveMatchesTimeoutRef.current);
+      }
+
+      // Debounce: attendre 800ms avant de sauvegarder
+      saveMatchesTimeoutRef.current = setTimeout(() => {
+        saveMatches(
+          championshipKey,
+          parseInt(selectedSeason),
+          parseInt(selectedJournee),
+          newMatchBlock.games,
+          exemptTeam || null
+        ).catch(err => console.error('Erreur auto-save Supabase:', err));
+      }, 800);
     }
   }, [appData, allTeams, selectedChampionship, selectedSeason, selectedJournee, exemptTeam, penalties, isAdmin]);
 
