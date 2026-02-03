@@ -2548,23 +2548,27 @@ export default function HyeneScores() {
                           >
                             <span className="text-white text-sm font-medium">{teamName}</span>
                             <span className="text-orange-400 text-sm font-bold">-{points}</span>
-                            <button
-                              onClick={() => handleRemovePenalty(teamName)}
-                              className="text-gray-400 hover:text-red-400 ml-1"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
+                            {isAdmin && (
+                              <button
+                                onClick={() => handleRemovePenalty(teamName)}
+                                className="text-gray-400 hover:text-red-400 ml-1"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            )}
                           </div>
                         ))}
                       </div>
-                      <button
-                        onClick={() => setIsPenaltyModalOpen(true)}
-                        className="ios26-btn rounded-xl px-4 py-2 text-orange-400 text-sm font-bold border-orange-500/30"
-                      >
-                        + Ajouter
-                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={() => setIsPenaltyModalOpen(true)}
+                          className="ios26-btn rounded-xl px-4 py-2 text-orange-400 text-sm font-bold border-orange-500/30"
+                        >
+                          + Ajouter
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -2817,8 +2821,11 @@ export default function HyeneScores() {
                       {/* Home Team */}
                       <div className="col-span-5 relative flex justify-start">
                           <button
-                            onClick={(e) => toggleDropdown(match.id, 'home', e)}
-                            className={`w-full max-w-[135px] rounded-xl px-2.5 py-2 flex items-center justify-between group cursor-pointer ${
+                            onClick={(e) => isAdmin && toggleDropdown(match.id, 'home', e)}
+                            disabled={!isAdmin}
+                            className={`w-full max-w-[135px] rounded-xl px-2.5 py-2 flex items-center justify-between group ${
+                              !isAdmin ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
+                            } ${
                               match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
                                 ? 'bg-emerald-500/15 border border-emerald-500/40 shadow-lg shadow-emerald-500/10'
                                 : 'ios26-btn'
@@ -2870,13 +2877,16 @@ export default function HyeneScores() {
                             type="number"
                             value={match.homeScore !== null ? match.homeScore : ''}
                             onChange={(e) => {
+                              if (!isAdmin) return;
                               const value = e.target.value === '' ? null : parseInt(e.target.value);
                               const updatedMatches = matches.map(m => m.id === match.id ? { ...m, homeScore: value } : m);
                               setMatches(updatedMatches);
                               syncMatchesToAppData(updatedMatches);
                             }}
                             placeholder="-"
+                            disabled={!isAdmin}
                             className={`rounded-xl w-9 h-9 text-center text-base font-bold outline-none ${
+                              !isAdmin ? 'opacity-50 cursor-not-allowed' :
                               match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
                                 ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 shadow-lg shadow-emerald-500/10'
                                 : 'ios26-input text-cyan-400'
@@ -2887,13 +2897,16 @@ export default function HyeneScores() {
                             type="number"
                             value={match.awayScore !== null ? match.awayScore : ''}
                             onChange={(e) => {
+                              if (!isAdmin) return;
                               const value = e.target.value === '' ? null : parseInt(e.target.value);
                               const updatedMatches = matches.map(m => m.id === match.id ? { ...m, awayScore: value } : m);
                               setMatches(updatedMatches);
                               syncMatchesToAppData(updatedMatches);
                             }}
                             placeholder="-"
+                            disabled={!isAdmin}
                             className={`rounded-xl w-9 h-9 text-center text-base font-bold outline-none ${
+                              !isAdmin ? 'opacity-50 cursor-not-allowed' :
                               match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
                                 ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 shadow-lg shadow-emerald-500/10'
                                 : 'ios26-input text-cyan-400'
@@ -2904,8 +2917,11 @@ export default function HyeneScores() {
                       {/* Away Team */}
                       <div className="col-span-5 relative flex justify-end">
                           <button
-                            onClick={(e) => toggleDropdown(match.id, 'away', e)}
-                            className={`w-full max-w-[135px] rounded-xl px-2.5 py-2 flex items-center justify-between group cursor-pointer ${
+                            onClick={(e) => isAdmin && toggleDropdown(match.id, 'away', e)}
+                            disabled={!isAdmin}
+                            className={`w-full max-w-[135px] rounded-xl px-2.5 py-2 flex items-center justify-between group ${
+                              !isAdmin ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
+                            } ${
                               match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
                                 ? 'bg-emerald-500/15 border border-emerald-500/40 shadow-lg shadow-emerald-500/10'
                                 : 'ios26-btn'
@@ -3153,7 +3169,7 @@ export default function HyeneScores() {
             </div>
           </div>
 
-          <div className="flex-1 px-2">
+          <div className="flex-1 px-2 overflow-y-auto pb-4">
             <div className="space-y-2 mt-2">
 
               {/* Compte Admin - iOS 26 Card */}
@@ -3285,7 +3301,8 @@ export default function HyeneScores() {
                   </button>
                   <button
                     onClick={handleImportJSON}
-                    className="w-full ios26-btn rounded-xl px-4 py-2.5 text-white text-base font-semibold flex items-center justify-between group"
+                    disabled={!isAdmin}
+                    className={`w-full ios26-btn rounded-xl px-4 py-2.5 text-white text-base font-semibold flex items-center justify-between group ${!isAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <span className="group-hover:text-cyan-400">Importer (JSON)</span>
                     <span className="text-lg group-hover:scale-110">📤</span>
@@ -3314,9 +3331,9 @@ export default function HyeneScores() {
                 <div className="space-y-2">
                   <button
                     onClick={handleSaveToSupabase}
-                    disabled={isSavingToSupabase || (!pendingJsonData && !appData)}
+                    disabled={!isAdmin || isSavingToSupabase || (!pendingJsonData && !appData)}
                     className={`w-full ios26-btn rounded-xl px-4 py-2.5 text-white text-base font-semibold flex items-center justify-between group ${
-                      isSavingToSupabase ? 'opacity-50 cursor-not-allowed' : ''
+                      !isAdmin || isSavingToSupabase ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                     style={{ borderColor: 'rgba(59, 130, 246, 0.2)' }}
                   >
@@ -3325,6 +3342,9 @@ export default function HyeneScores() {
                     </span>
                     <span className="text-lg group-hover:scale-110">{isSavingToSupabase ? '⏳' : '☁️'}</span>
                   </button>
+                  {!isAdmin && (
+                    <p className="text-xs text-gray-500 text-center">Connexion admin requise</p>
+                  )}
                   {pendingJsonData && (
                     <p className="text-xs text-blue-300 text-center">
                       Données JSON en attente de sauvegarde
@@ -3372,16 +3392,21 @@ export default function HyeneScores() {
                       onChange={(e) => setNewSeasonNumber(e.target.value)}
                       placeholder="N° (ex: 11)"
                       min="1"
-                      className="flex-1 ios26-input rounded-xl px-4 py-2.5 text-white text-base font-medium outline-none placeholder-gray-500"
+                      disabled={!isAdmin}
+                      className={`flex-1 ios26-input rounded-xl px-4 py-2.5 text-white text-base font-medium outline-none placeholder-gray-500 ${!isAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
                       style={{ borderColor: 'rgba(168, 85, 247, 0.2)' }}
                     />
                     <button
                       onClick={handleCreateSeason}
-                      className="bg-purple-500/20 border border-purple-500/30 hover:bg-purple-500/30 rounded-xl px-4 py-2.5 text-purple-400 text-base font-bold"
+                      disabled={!isAdmin}
+                      className={`bg-purple-500/20 border border-purple-500/30 hover:bg-purple-500/30 rounded-xl px-4 py-2.5 text-purple-400 text-base font-bold ${!isAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       Créer
                     </button>
                   </div>
+                  {!isAdmin && (
+                    <p className="text-xs text-gray-500">Connexion admin requise pour créer une saison</p>
+                  )}
                   {seasons.length > 0 && (
                     <p className="text-gray-500 text-sm font-medium">
                       Saisons : {seasons.map(s => `S${s}`).join(', ')}
@@ -3400,7 +3425,8 @@ export default function HyeneScores() {
                 </div>
                 <button
                   onClick={() => setShowResetModal(true)}
-                  className="w-full bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 rounded-xl px-4 py-2.5 text-red-400 text-base font-bold flex items-center justify-between group"
+                  disabled={!isAdmin}
+                  className={`w-full bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 rounded-xl px-4 py-2.5 text-red-400 text-base font-bold flex items-center justify-between group ${!isAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <span className="group-hover:text-red-300">Réinitialiser</span>
                   <span className="text-lg group-hover:scale-110">🗑️</span>
