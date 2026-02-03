@@ -3042,8 +3042,8 @@ export default function HyeneScores() {
                       onClick={() => setSelectedChampionship(champ.id)}
                       className={`w-12 h-12 flex items-center justify-center rounded-xl text-2xl ${
                         selectedChampionship === champ.id
-                          ? 'ios26-tab-active scale-110'
-                          : 'ios26-btn hover:scale-105'
+                          ? 'ios26-tab-active'
+                          : 'ios26-btn'
                       }`}
                     >
                       {champ.icon}
@@ -3198,7 +3198,7 @@ export default function HyeneScores() {
                       style={{ borderColor: 'rgba(239, 68, 68, 0.2)' }}
                     >
                       <span className="group-hover:text-red-400">Se déconnecter</span>
-                      <span className="text-lg group-hover:scale-110">🚪</span>
+                      <span className="text-lg ">🚪</span>
                     </button>
                   </div>
                 ) : (
@@ -3212,7 +3212,7 @@ export default function HyeneScores() {
                       style={{ borderColor: 'rgba(59, 130, 246, 0.2)' }}
                     >
                       <span className="group-hover:text-blue-400">Se connecter</span>
-                      <span className="text-lg group-hover:scale-110">🔑</span>
+                      <span className="text-lg ">🔑</span>
                     </button>
                   </div>
                 )}
@@ -3294,10 +3294,11 @@ export default function HyeneScores() {
                 <div className="space-y-2">
                   <button
                     onClick={handleExportJSON}
-                    className="w-full ios26-btn rounded-xl px-4 py-2.5 text-white text-base font-semibold flex items-center justify-between group"
+                    disabled={!isAdmin}
+                    className={`w-full ios26-btn rounded-xl px-4 py-2.5 text-white text-base font-semibold flex items-center justify-between group ${!isAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <span className="group-hover:text-cyan-400">Exporter (JSON)</span>
-                    <span className="text-lg group-hover:scale-110">📥</span>
+                    <span className="text-lg ">📥</span>
                   </button>
                   <button
                     onClick={handleImportJSON}
@@ -3305,7 +3306,7 @@ export default function HyeneScores() {
                     className={`w-full ios26-btn rounded-xl px-4 py-2.5 text-white text-base font-semibold flex items-center justify-between group ${!isAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <span className="group-hover:text-cyan-400">Importer (JSON)</span>
-                    <span className="text-lg group-hover:scale-110">📤</span>
+                    <span className="text-lg ">📤</span>
                   </button>
                   <input
                     ref={fileInputRef}
@@ -3340,7 +3341,7 @@ export default function HyeneScores() {
                     <span className="group-hover:text-blue-400">
                       {isSavingToSupabase ? 'Sauvegarde en cours...' : 'Sauvegarder vers Supabase'}
                     </span>
-                    <span className="text-lg group-hover:scale-110">{isSavingToSupabase ? '⏳' : '☁️'}</span>
+                    <span className="text-lg ">{isSavingToSupabase ? '⏳' : '☁️'}</span>
                   </button>
                   {!isAdmin && (
                     <p className="text-xs text-gray-500 text-center">Connexion admin requise</p>
@@ -3429,7 +3430,7 @@ export default function HyeneScores() {
                   className={`w-full bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 rounded-xl px-4 py-2.5 text-red-400 text-base font-bold flex items-center justify-between group ${!isAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <span className="group-hover:text-red-300">Réinitialiser</span>
-                  <span className="text-lg group-hover:scale-110">🗑️</span>
+                  <span className="text-lg ">🗑️</span>
                 </button>
               </div>
             </div>
@@ -3576,8 +3577,8 @@ export default function HyeneScores() {
               onClick={() => setSelectedTab('classement')}
               className={`flex flex-col items-center gap-0.5 rounded-xl px-2 py-1 min-w-[48px] ${
                 selectedTab === 'classement'
-                  ? 'ios26-tab-active text-cyan-400 scale-105'
-                  : 'text-gray-500 hover:text-gray-400 active:scale-95'
+                  ? 'ios26-tab-active text-cyan-400'
+                  : 'text-gray-500 hover:text-gray-400'
               }`}
             >
               <div className="text-lg">{selectedTab === 'classement' ? '🏆' : '🏆'}</div>
@@ -3587,8 +3588,8 @@ export default function HyeneScores() {
               onClick={() => setSelectedTab('match')}
               className={`flex flex-col items-center gap-0.5 rounded-xl px-2 py-1 min-w-[48px] ${
                 selectedTab === 'match'
-                  ? 'ios26-tab-active text-cyan-400 scale-105'
-                  : 'text-gray-500 hover:text-gray-400 active:scale-95'
+                  ? 'ios26-tab-active text-cyan-400'
+                  : 'text-gray-500 hover:text-gray-400'
               }`}
             >
               <div className="text-lg">📅</div>
@@ -3598,8 +3599,8 @@ export default function HyeneScores() {
               onClick={() => setSelectedTab('palmares')}
               className={`flex flex-col items-center gap-0.5 rounded-xl px-2 py-1 min-w-[48px] ${
                 selectedTab === 'palmares'
-                  ? 'ios26-tab-active text-cyan-400 scale-105'
-                  : 'text-gray-500 hover:text-gray-400 active:scale-95'
+                  ? 'ios26-tab-active text-cyan-400'
+                  : 'text-gray-500 hover:text-gray-400'
               }`}
             >
               <div className="text-lg">🎯</div>
@@ -3609,8 +3610,8 @@ export default function HyeneScores() {
               onClick={() => setSelectedTab('pantheon')}
               className={`flex flex-col items-center gap-0.5 rounded-xl px-2 py-1 min-w-[48px] ${
                 selectedTab === 'pantheon'
-                  ? 'ios26-tab-active text-cyan-400 scale-105'
-                  : 'text-gray-500 hover:text-gray-400 active:scale-95'
+                  ? 'ios26-tab-active text-cyan-400'
+                  : 'text-gray-500 hover:text-gray-400'
               }`}
             >
               <div className="text-lg">🏅</div>
@@ -3620,8 +3621,8 @@ export default function HyeneScores() {
               onClick={() => setSelectedTab('stats')}
               className={`flex flex-col items-center gap-0.5 rounded-xl px-2 py-1 min-w-[48px] ${
                 selectedTab === 'stats'
-                  ? 'ios26-tab-active text-cyan-400 scale-105'
-                  : 'text-gray-500 hover:text-gray-400 active:scale-95'
+                  ? 'ios26-tab-active text-cyan-400'
+                  : 'text-gray-500 hover:text-gray-400'
               }`}
             >
               <div className="text-lg">📊</div>
@@ -3631,8 +3632,8 @@ export default function HyeneScores() {
               onClick={() => setSelectedTab('reglages')}
               className={`flex flex-col items-center gap-0.5 rounded-xl px-2 py-1 min-w-[48px] ${
                 selectedTab === 'reglages'
-                  ? 'ios26-tab-active text-cyan-400 scale-105'
-                  : 'text-gray-500 hover:text-gray-400 active:scale-95'
+                  ? 'ios26-tab-active text-cyan-400'
+                  : 'text-gray-500 hover:text-gray-400'
               }`}
             >
               <div className="text-lg">⚙️</div>
