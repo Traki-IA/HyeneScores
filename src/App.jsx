@@ -3153,7 +3153,7 @@ export default function HyeneScores() {
             </div>
           </div>
 
-          <div className="flex-1 px-2">
+          <div className="flex-1 px-2 overflow-y-auto pb-4">
             <div className="space-y-2 mt-2">
 
               {/* Compte Admin - iOS 26 Card */}
