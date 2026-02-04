@@ -2263,7 +2263,8 @@ export default function HyeneScores() {
     setAppData(updatedAppData);
 
     // Auto-save vers Supabase si admin connecté (avec debounce pour éviter les doublons)
-    if (isAdmin && newMatchBlock.games.some(g => g.homeTeam && g.awayTeam)) {
+    // Sauvegarder même si tous les matchs sont vides (pour supprimer les anciens matchs)
+    if (isAdmin) {
       // Annuler le save précédent s'il est en attente
       if (saveMatchesTimeoutRef.current) {
         clearTimeout(saveMatchesTimeoutRef.current);

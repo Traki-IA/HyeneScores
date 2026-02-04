@@ -384,17 +384,20 @@ export async function saveMatches(championship, season, matchday, games, exemptT
   // Filtrer les matchs vides (sans equipes)
   const validGames = games.filter(game => game.homeTeam && game.awayTeam);
 
-  if (validGames.length === 0) {
-    return []; // Pas de matchs valides a sauvegarder
-  }
-
-  // Supprimer les anciens matchs de cette journee
-  await supabase
+  // Toujours supprimer les anciens matchs de cette journee (meme si pas de nouveaux matchs)
+  const { error: deleteError } = await supabase
     .from('matches')
     .delete()
     .eq('championship', championship)
     .eq('season', season)
     .eq('matchday', matchday);
+
+  if (deleteError) throw deleteError;
+
+  // Si pas de matchs valides, retourner (la suppression a deja ete faite)
+  if (validGames.length === 0) {
+    return [];
+  }
 
   // Inserer les nouveaux matchs
   const matchesToInsert = validGames.map(game => ({
@@ -415,6 +418,23 @@ export async function saveMatches(championship, season, matchday, games, exemptT
 
   if (error) throw error;
   return data;
+}
+
+/**
+ * Supprime tous les matchs d'une journee specifique
+ */
+export async function deleteMatchesForMatchday(championship, season, matchday) {
+  if (!supabase) throw new Error('Supabase non configure');
+
+  const { error } = await supabase
+    .from('matches')
+    .delete()
+    .eq('championship', championship)
+    .eq('season', season)
+    .eq('matchday', matchday);
+
+  if (error) throw error;
+  return { success: true };
 }
 
 /**
