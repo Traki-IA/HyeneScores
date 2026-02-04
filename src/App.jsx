@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { fetchAppData, importFromJSON, signIn, signOut, getSession, onAuthStateChange, checkIsAdmin, saveManager, saveMatches, deleteManager, updateManagerName } from './lib/supabase';
+import { fetchAppData, importFromJSON, signIn, signOut, getSession, onAuthStateChange, checkIsAdmin, saveManager, saveMatches, deleteManager, updateManagerName, saveSeason } from './lib/supabase';
 
 export default function HyeneScores() {
   const [selectedTab, setSelectedTab] = useState('classement');
@@ -1246,7 +1246,7 @@ export default function HyeneScores() {
   };
 
   // === Création d'une nouvelle saison ===
-  const handleCreateSeason = () => {
+  const handleCreateSeason = async () => {
     const seasonNum = newSeasonNumber.trim();
     if (!seasonNum || isNaN(parseInt(seasonNum)) || parseInt(seasonNum) < 1) {
       alert('Veuillez entrer un numéro de saison valide (nombre positif).');
@@ -1268,6 +1268,20 @@ export default function HyeneScores() {
 
     // Créer les entrées de saison pour TOUS les championnats
     const championships = ['ligue_hyenes', 'france', 'espagne', 'italie', 'angleterre'];
+
+    // Sauvegarder dans Supabase si admin
+    if (isAdmin) {
+      try {
+        for (const champKey of championships) {
+          await saveSeason(champKey, parseInt(seasonNum), []);
+        }
+      } catch (error) {
+        console.error('Erreur sauvegarde saison Supabase:', error);
+        alert('Erreur lors de la création de la saison dans Supabase.');
+        return;
+      }
+    }
+
     championships.forEach(champKey => {
       const seasonKey = `${champKey}_s${seasonNum}`;
       if (!updatedAppData.entities.seasons[seasonKey]) {
