@@ -270,7 +270,7 @@ export default function HyeneScores() {
         p: team.p,
         bp: team.bp,
         bc: team.bc,
-        diff: team.diff,
+        diff: team.diff >= 0 ? `+${team.diff}` : `${team.diff}`,
         record: `${team.g}-${team.n}-${team.p}`,
         goalDiff: `${team.bp}-${team.bc}`,
         details: team.details
@@ -2625,7 +2625,7 @@ export default function HyeneScores() {
                     {isChampOpen && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setIsChampOpen(false)}></div>
-                        <div className="absolute left-0 right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 max-h-64 overflow-y-auto">
+                        <div className="absolute left-0 right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 overflow-hidden">
                           {championships.map(champ => (
                             <button
                               key={champ.id}
@@ -2909,7 +2909,7 @@ export default function HyeneScores() {
                     {isChampOpen && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setIsChampOpen(false)}></div>
-                        <div className="absolute left-0 right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 max-h-64 overflow-y-auto">
+                        <div className="absolute left-0 right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 overflow-hidden">
                           {championships.filter(c => c.id !== 'hyenes').map(champ => (
                             <button
                               key={champ.id}
