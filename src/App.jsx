@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { fetchAppData, importFromJSON, signIn, signOut, getSession, onAuthStateChange, checkIsAdmin, saveManager, saveMatches, deleteManager, updateManagerName, saveSeason } from './lib/supabase';
+import { fetchAppData, importFromJSON, signIn, signOut, getSession, onAuthStateChange, checkIsAdmin, saveManager, saveMatches, deleteManager, updateManagerName, saveSeason, savePenalty, deletePenalty } from './lib/supabase';
 
 export default function HyeneScores() {
   const [selectedTab, setSelectedTab] = useState('classement');
@@ -1215,13 +1215,24 @@ export default function HyeneScores() {
     return penalties[key] || 0;
   };
 
-  const handleApplyPenalty = () => {
+  const handleApplyPenalty = async () => {
     if (!selectedPenaltyTeam || !penaltyPoints) return;
 
     const points = parseInt(penaltyPoints);
     if (isNaN(points) || points < 0) {
       alert('Veuillez entrer un nombre de points valide (positif)');
       return;
+    }
+
+    // Sauvegarder dans Supabase si admin
+    if (isAdmin) {
+      try {
+        await savePenalty(selectedChampionship, parseInt(selectedSeason), selectedPenaltyTeam, points);
+      } catch (error) {
+        console.error('Erreur sauvegarde pénalité:', error);
+        alert('Erreur lors de la sauvegarde de la pénalité');
+        return;
+      }
     }
 
     const key = getPenaltyKey(selectedPenaltyTeam);
@@ -1236,7 +1247,18 @@ export default function HyeneScores() {
     setIsPenaltyModalOpen(false);
   };
 
-  const handleRemovePenalty = (teamName) => {
+  const handleRemovePenalty = async (teamName) => {
+    // Supprimer de Supabase si admin
+    if (isAdmin) {
+      try {
+        await deletePenalty(selectedChampionship, parseInt(selectedSeason), teamName);
+      } catch (error) {
+        console.error('Erreur suppression pénalité:', error);
+        alert('Erreur lors de la suppression de la pénalité');
+        return;
+      }
+    }
+
     const key = getPenaltyKey(teamName);
     setPenalties(prev => {
       const newPenalties = { ...prev };
