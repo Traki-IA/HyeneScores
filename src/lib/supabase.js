@@ -495,6 +495,22 @@ export async function savePenalty(championship, season, teamName, points) {
 }
 
 /**
+ * Supprime une penalite
+ */
+export async function deletePenalty(championship, season, teamName) {
+  if (!supabase) throw new Error('Supabase non configure');
+  const { error } = await supabase
+    .from('penalties')
+    .delete()
+    .eq('championship', championship)
+    .eq('season', season)
+    .eq('team_name', teamName);
+
+  if (error) throw error;
+  return { success: true };
+}
+
+/**
  * Importe les donnees JSON v2.0 dans Supabase
  * Utile pour la migration initiale
  */
