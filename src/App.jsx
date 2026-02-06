@@ -3261,7 +3261,7 @@ export default function HyeneScores() {
                     <button
                       key={champ.id}
                       onClick={() => setSelectedChampionship(champ.id)}
-                      className={`w-12 h-12 flex items-center justify-center rounded-xl text-2xl ${
+                      className={`px-5 py-2 flex items-center justify-center rounded-xl text-2xl ${
                         selectedChampionship === champ.id
                           ? 'ios26-tab-active'
                           : 'ios26-btn'
