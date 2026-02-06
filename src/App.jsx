@@ -500,10 +500,21 @@ export default function HyeneScores() {
         });
 
         // Limiter à 5 matchs max par journée (10 équipes qui jouent)
-        const finalMatches = deduplicatedMatches.slice(0, 5);
+        // et compléter avec des matchs vides si moins de 5
+        const limitedMatches = deduplicatedMatches.slice(0, 5);
+        const finalMatches = [...limitedMatches];
+        while (finalMatches.length < 5) {
+          finalMatches.push({
+            id: finalMatches.length + 1,
+            homeTeam: '',
+            awayTeam: '',
+            homeScore: null,
+            awayScore: null
+          });
+        }
 
-        if (normalizedMatches.length !== finalMatches.length) {
-          console.warn(`Matchs dédupliqués: ${normalizedMatches.length} -> ${finalMatches.length}`);
+        if (normalizedMatches.length !== limitedMatches.length) {
+          console.warn(`Matchs dédupliqués: ${normalizedMatches.length} -> ${limitedMatches.length}`);
         }
         // Ne pas écraser les matchs si c'est un auto-sync (l'utilisateur est en train de saisir)
         if (skipNextMatchesLoadRef.current) {
@@ -3094,10 +3105,11 @@ export default function HyeneScores() {
                             placeholder="-"
                             disabled={!isAdmin}
                             className={`rounded-xl w-9 h-9 text-center text-base font-bold outline-none ${
-                              !isAdmin ? 'opacity-50 cursor-not-allowed' :
-                              match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
-                                ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 shadow-lg shadow-emerald-500/10'
-                                : 'ios26-input text-cyan-400'
+                              !isAdmin
+                                ? 'ios26-input text-gray-400 cursor-not-allowed'
+                                : match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
+                                  ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 shadow-lg shadow-emerald-500/10'
+                                  : 'ios26-input text-cyan-400'
                             }`}
                           />
                           <span className="text-gray-500 font-bold text-sm px-0">-</span>
@@ -3114,10 +3126,11 @@ export default function HyeneScores() {
                             placeholder="-"
                             disabled={!isAdmin}
                             className={`rounded-xl w-9 h-9 text-center text-base font-bold outline-none ${
-                              !isAdmin ? 'opacity-50 cursor-not-allowed' :
-                              match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
-                                ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 shadow-lg shadow-emerald-500/10'
-                                : 'ios26-input text-cyan-400'
+                              !isAdmin
+                                ? 'ios26-input text-gray-400 cursor-not-allowed'
+                                : match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
+                                  ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 shadow-lg shadow-emerald-500/10'
+                                  : 'ios26-input text-cyan-400'
                             }`}
                           />
                       </div>
