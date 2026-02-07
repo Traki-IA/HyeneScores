@@ -201,6 +201,7 @@ export default function HyeneScores() {
   const [exemptTeam, setExemptTeam] = useState('');
   const [isTeamDropdownOpen, setIsTeamDropdownOpen] = useState(false);
   const skipNextMatchesLoadRef = useRef(false);
+  const skipNextExemptLoadRef = useRef(false);
   const saveMatchesTimeoutRef = useRef(null);
 
   const [seasons, setSeasons] = useState([]);
@@ -252,9 +253,6 @@ export default function HyeneScores() {
       const key = `${champ}_${seas}_${teamName}`;
       return currentPenalties[key] || 0;
     };
-
-    // Réinitialiser l'équipe exemptée au début (sera mise à jour si trouvée)
-    setExemptTeam('');
 
     // Extraire teams[] depuis entities.seasons
     // Mapper les IDs de championnat vers les clés du fichier v2.0
@@ -621,29 +619,9 @@ export default function HyeneScores() {
           setMatches(finalMatches);
         }
 
-        // Extraire l'équipe exemptée depuis le bloc match (format v2.0)
-        const exemptFromMatch = matchesForContext.exempt || matchesForContext.ex || '';
-        if (exemptFromMatch) {
-          setExemptTeam(exemptFromMatch);
-        } else {
-          // Pas d'exempt sur cette journée : hériter depuis n'importe quel championnat de la saison
-          const inheritedExempt = data.entities.matches.find(
-            block => block.season === parseInt(season) && block.exempt
-          );
-          if (inheritedExempt) {
-            setExemptTeam(inheritedExempt.exempt);
-          }
-        }
       } else {
         // Pas de données de matches pour cette journée - réinitialiser
         setMatches(DEFAULT_MATCHES);
-        // Hériter l'exempt depuis n'importe quel championnat de la saison
-        const inheritedExempt = (data.entities.matches || []).find(
-          block => block.season === parseInt(season) && block.exempt
-        );
-        if (inheritedExempt) {
-          setExemptTeam(inheritedExempt.exempt);
-        }
       }
     } else {
       // entities.matches n'existe pas dans ce fichier v2.0
@@ -651,12 +629,39 @@ export default function HyeneScores() {
       setMatches(DEFAULT_MATCHES);
     }
 
-    // Charger l'équipe exemptée pour cette saison (depuis indexes.exemptTeams)
-    if (data.indexes?.exemptTeams) {
-      const exemptFromIndex = data.indexes.exemptTeams[season];
-      if (exemptFromIndex) {
-        setExemptTeam(exemptFromIndex);
+    // === Résolution de l'équipe exemptée (un seul setState, pas de flicker) ===
+    if (!skipNextExemptLoadRef.current) {
+      let resolvedExempt = '';
+      const seasonNum = parseInt(season);
+
+      if (data.entities.matches && Array.isArray(data.entities.matches)) {
+        // 1. Depuis le bloc match de la journée courante
+        const currentBlock = data.entities.matches.find(
+          block => block.championship?.toLowerCase() === championshipKey.toLowerCase() &&
+                   block.season === seasonNum &&
+                   block.matchday === parseInt(journee)
+        );
+        if (currentBlock?.exempt || currentBlock?.ex) {
+          resolvedExempt = currentBlock.exempt || currentBlock.ex;
+        } else {
+          // 2. Hériter depuis n'importe quel championnat de la même saison
+          const anyBlock = data.entities.matches.find(
+            block => block.season === seasonNum && block.exempt
+          );
+          if (anyBlock) {
+            resolvedExempt = anyBlock.exempt;
+          }
+        }
       }
+
+      // 3. Override legacy (indexes.exemptTeams)
+      if (data.indexes?.exemptTeams?.[season]) {
+        resolvedExempt = data.indexes.exemptTeams[season];
+      }
+
+      setExemptTeam(resolvedExempt);
+    } else {
+      skipNextExemptLoadRef.current = false;
     }
 
     // Extraire champions[] pour le championnat sélectionné
@@ -1321,18 +1326,22 @@ export default function HyeneScores() {
   const handleExemptTeamChange = (team) => {
     setExemptTeam(team);
 
-    if (appData && appData.version === '2.0' && appData.entities.matches) {
+    if (appData && appData.version === '2.0') {
       const updatedAppData = structuredClone(appData);
       const seasonNum = parseInt(selectedSeason);
       const euroChampionships = ['france', 'espagne', 'italie', 'angleterre'];
 
-      updatedAppData.entities.matches.forEach(block => {
-        if (block.season === seasonNum &&
-            euroChampionships.includes(block.championship?.toLowerCase())) {
-          block.exempt = team || '';
-        }
-      });
+      if (updatedAppData.entities.matches) {
+        updatedAppData.entities.matches.forEach(block => {
+          if (block.season === seasonNum &&
+              euroChampionships.includes(block.championship?.toLowerCase())) {
+            block.exempt = team || '';
+          }
+        });
+      }
 
+      // Empêcher loadDataFromAppData d'écraser l'exempt qu'on vient de définir
+      skipNextExemptLoadRef.current = true;
       setAppData(updatedAppData);
     }
 
