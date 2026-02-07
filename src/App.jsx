@@ -163,6 +163,7 @@ export default function HyeneScores() {
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // États Supabase
   const [isLoadingFromSupabase, setIsLoadingFromSupabase] = useState(true);
@@ -902,14 +903,18 @@ export default function HyeneScores() {
     }
   };
 
-  // Fonction de déconnexion
+  // Fonction de déconnexion (mise à jour optimiste de l'UI)
   const handleLogout = async () => {
+    setIsLoggingOut(true);
+    // Mise à jour optimiste : on nettoie l'UI immédiatement
+    setUser(null);
+    setIsAdmin(false);
     try {
       await signOut();
-      setUser(null);
-      setIsAdmin(false);
     } catch (error) {
       console.error('Erreur déconnexion:', error);
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -2983,11 +2988,21 @@ export default function HyeneScores() {
                     </div>
                     <button
                       onClick={handleLogout}
-                      className="w-full ios26-btn rounded-xl px-4 py-2.5 text-white text-base font-semibold flex items-center justify-between group"
+                      disabled={isLoggingOut}
+                      className="w-full ios26-btn rounded-xl px-4 py-2.5 text-white text-base font-semibold flex items-center justify-between group disabled:opacity-50"
                       style={{ borderColor: 'rgba(239, 68, 68, 0.2)' }}
                     >
-                      <span className="group-hover:text-red-400">Se déconnecter</span>
-                      <span className="text-lg ">🚪</span>
+                      {isLoggingOut ? (
+                        <>
+                          <span className="text-gray-400">Déconnexion...</span>
+                          <span className="text-lg animate-spin">⏳</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="group-hover:text-red-400">Se déconnecter</span>
+                          <span className="text-lg">🚪</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 ) : (
