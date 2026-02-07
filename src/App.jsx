@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { fetchAppData, importFromJSON, signIn, signOut, getSession, onAuthStateChange, checkIsAdmin, saveManager, saveMatches, deleteManager, updateManagerName, saveSeason, savePenalty, deletePenalty } from './lib/supabase';
+import { fetchAppData, importFromJSON, signIn, signOut, getSession, onAuthStateChange, checkIsAdmin, saveManager, saveMatches, deleteManager, updateManagerName, saveSeason, savePenalty, deletePenalty, updateSeasonExempt } from './lib/supabase';
 
 // === CONSTANTES DE CONFIGURATION ===
 const MAX_SCORE = 99;
@@ -625,10 +625,29 @@ export default function HyeneScores() {
         const exemptFromMatch = matchesForContext.exempt || matchesForContext.ex || '';
         if (exemptFromMatch) {
           setExemptTeam(exemptFromMatch);
+        } else {
+          // Pas d'exempt sur cette journée : hériter depuis une autre journée de la saison
+          const inheritedExempt = data.entities.matches.find(
+            block => block.championship?.toLowerCase() === championshipKeyLower &&
+                     block.season === parseInt(season) &&
+                     block.exempt
+          );
+          if (inheritedExempt) {
+            setExemptTeam(inheritedExempt.exempt);
+          }
         }
       } else {
         // Pas de données de matches pour cette journée - réinitialiser
         setMatches(DEFAULT_MATCHES);
+        // Hériter l'exempt depuis une autre journée de la saison
+        const inheritedExempt = (data.entities.matches || []).find(
+          block => block.championship?.toLowerCase() === championshipKeyLower &&
+                   block.season === parseInt(season) &&
+                   block.exempt
+        );
+        if (inheritedExempt) {
+          setExemptTeam(inheritedExempt.exempt);
+        }
       }
     } else {
       // entities.matches n'existe pas dans ce fichier v2.0
@@ -1302,6 +1321,31 @@ export default function HyeneScores() {
     return allTeams.filter(team => !selectedTeams.includes(team));
   };
 
+  // Propager l'exemption à tous les championnats et toutes les journées de la saison
+  const handleExemptTeamChange = (team) => {
+    setExemptTeam(team);
+
+    if (appData && appData.version === '2.0' && appData.entities.matches) {
+      const updatedAppData = structuredClone(appData);
+      const seasonNum = parseInt(selectedSeason);
+      const euroChampionships = ['france', 'espagne', 'italie', 'angleterre'];
+
+      updatedAppData.entities.matches.forEach(block => {
+        if (block.season === seasonNum &&
+            euroChampionships.includes(block.championship?.toLowerCase())) {
+          block.exempt = team || '';
+        }
+      });
+
+      setAppData(updatedAppData);
+    }
+
+    // Sync vers Supabase
+    if (isAdmin) {
+      updateSeasonExempt(parseInt(selectedSeason), team || null)
+        .catch(err => console.error('Erreur sync exempt Supabase:', err));
+    }
+  };
 
   const handleTeamSelect = (matchId, type, team) => {
     const updatedMatches = matches.map(m =>
@@ -2802,7 +2846,7 @@ export default function HyeneScores() {
                             <div className="absolute left-0 right-0 bottom-full mb-2 ios26-dropdown rounded-2xl z-50 max-h-[420px] overflow-y-auto">
                               <button
                                 onClick={() => {
-                                  setExemptTeam('');
+                                  handleExemptTeamChange('');
                                   setIsTeamDropdownOpen(false);
                                 }}
                                 className="w-full px-4 py-3 text-base font-semibold text-left text-white hover:bg-white/10"
@@ -2813,7 +2857,7 @@ export default function HyeneScores() {
                                 <button
                                   key={team}
                                   onClick={() => {
-                                    setExemptTeam(team);
+                                    handleExemptTeamChange(team);
                                     setIsTeamDropdownOpen(false);
                                   }}
                                   className="w-full px-4 py-3 text-base font-semibold text-left text-white hover:bg-white/10"
