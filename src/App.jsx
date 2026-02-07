@@ -837,6 +837,32 @@ export default function HyeneScores() {
     }
   };
 
+  // Déconnexion automatique après 15 minutes d'inactivité
+  useEffect(() => {
+    if (!user) return;
+
+    const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes
+    let timeoutId = null;
+
+    const resetTimer = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        handleLogout();
+      }, INACTIVITY_TIMEOUT);
+    };
+
+    const activityEvents = ['mousedown', 'keydown', 'touchstart', 'scroll'];
+    activityEvents.forEach(event => window.addEventListener(event, resetTimer));
+
+    // Démarrer le timer initial
+    resetTimer();
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      activityEvents.forEach(event => window.removeEventListener(event, resetTimer));
+    };
+  }, [user]);
+
   // Fonction pour ajouter un manager
   const handleAddManager = async () => {
     const trimmedName = newManagerName.trim();
