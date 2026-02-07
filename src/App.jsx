@@ -626,11 +626,9 @@ export default function HyeneScores() {
         if (exemptFromMatch) {
           setExemptTeam(exemptFromMatch);
         } else {
-          // Pas d'exempt sur cette journée : hériter depuis une autre journée de la saison
+          // Pas d'exempt sur cette journée : hériter depuis n'importe quel championnat de la saison
           const inheritedExempt = data.entities.matches.find(
-            block => block.championship?.toLowerCase() === championshipKeyLower &&
-                     block.season === parseInt(season) &&
-                     block.exempt
+            block => block.season === parseInt(season) && block.exempt
           );
           if (inheritedExempt) {
             setExemptTeam(inheritedExempt.exempt);
@@ -639,11 +637,9 @@ export default function HyeneScores() {
       } else {
         // Pas de données de matches pour cette journée - réinitialiser
         setMatches(DEFAULT_MATCHES);
-        // Hériter l'exempt depuis une autre journée de la saison
+        // Hériter l'exempt depuis n'importe quel championnat de la saison
         const inheritedExempt = (data.entities.matches || []).find(
-          block => block.championship?.toLowerCase() === championshipKeyLower &&
-                   block.season === parseInt(season) &&
-                   block.exempt
+          block => block.season === parseInt(season) && block.exempt
         );
         if (inheritedExempt) {
           setExemptTeam(inheritedExempt.exempt);
