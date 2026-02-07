@@ -171,8 +171,10 @@ CREATE TABLE IF NOT EXISTS admin_users (
 -- RLS pour admin_users (seul un admin existant peut ajouter d'autres admins)
 ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Lecture admin_users" ON admin_users
-  FOR SELECT USING (true);
+-- SÉCURITÉ: Restreindre la lecture de admin_users aux utilisateurs authentifiés uniquement
+-- (empêche l'exposition publique des emails d'admin)
+CREATE POLICY "Lecture admin_users authentifié" ON admin_users
+  FOR SELECT USING (auth.role() = 'authenticated');
 
 -- ============================================
 -- FONCTION: Vérifier si l'utilisateur est admin
