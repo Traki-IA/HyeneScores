@@ -1,7 +1,19 @@
-const CACHE_NAME = 'hyenescores-v1';
+const CACHE_NAME = 'hyenescores-v2';
 const urlsToCache = [
   '/',
   '/index.html'
+];
+
+// Types MIME autorisés pour le cache (sécurité)
+const CACHEABLE_CONTENT_TYPES = [
+  'text/html',
+  'text/css',
+  'application/javascript',
+  'application/json',
+  'image/png',
+  'image/svg+xml',
+  'font/woff2',
+  'font/woff'
 ];
 
 // Installation : mise en cache et prise de contrôle immédiate
@@ -41,15 +53,24 @@ self.addEventListener('fetch', (event) => {
   // Ne pas cacher les requêtes non-GET
   if (event.request.method !== 'GET') return;
 
+  // Ne pas cacher les URLs avec des paramètres de requête (évite le cache poisoning)
+  if (url.search) return;
+
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        if (response && response.status === 200) {
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME)
-            .then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
+        // Vérifier que la réponse est valide et a un type MIME autorisé
+        if (response && response.status === 200 && response.type === 'basic') {
+          const contentType = response.headers.get('content-type') || '';
+          const isCacheable = CACHEABLE_CONTENT_TYPES.some(type => contentType.includes(type));
+
+          if (isCacheable) {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME)
+              .then((cache) => {
+                cache.put(event.request, responseToCache);
+              });
+          }
         }
         return response;
       })

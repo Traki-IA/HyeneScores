@@ -1,6 +1,21 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { fetchAppData, importFromJSON, signIn, signOut, getSession, onAuthStateChange, checkIsAdmin, saveManager, saveMatches, deleteManager, updateManagerName, saveSeason, savePenalty, deletePenalty } from './lib/supabase';
 
+// === CONSTANTES DE CONFIGURATION ===
+const MAX_SCORE = 99;
+const MIN_SCORE = 0;
+const MAX_MANAGER_NAME_LENGTH = 50;
+const MANAGER_NAME_PATTERN = /^[\p{L}\p{N}\s\-'.]+$/u; // Lettres, chiffres, espaces, tirets, apostrophes, points
+const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+const AUTOSAVE_DEBOUNCE_MS = 800;
+const SUPABASE_PAGE_SIZE = 1000;
+const MAX_IMPORT_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+const HYENES_MATCHDAYS = 72;
+const STANDARD_MATCHDAYS = 18;
+const HYENES_S6_MATCHDAYS = 62;
+const FRANCE_S6_MATCHDAYS = 8;
+const MATCHES_PER_MATCHDAY = 5;
+
 // Constantes extraites au niveau module (évite les recréations à chaque render)
 const CHAMPIONSHIPS = [
   { id: 'hyenes', icon: '🏆', name: 'Ligue des Hyènes' },
@@ -42,6 +57,97 @@ function normalizeMatch(match) {
                (match.as !== undefined ? match.as :
                (match.scoreAway !== undefined ? match.scoreAway : null))
   };
+}
+
+/**
+ * Calcule les statistiques d'un ensemble de matchs pour chaque équipe.
+ * Fonction utilitaire partagée pour éviter la duplication du calcul standings.
+ * @param {Array} matchBlocks - Blocs de matchs [{games: [...], ...}]
+ * @param {string[]} teamList - Liste des noms d'équipes
+ * @returns {Object} teamStats - { teamName: { name, pts, j, g, n, p, bp, bc, diff } }
+ */
+function calculateTeamStats(matchBlocks, teamList) {
+  const teamStats = {};
+  teamList.forEach(team => {
+    teamStats[team] = { name: team, pts: 0, j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0, diff: 0 };
+  });
+
+  matchBlocks.forEach(matchBlock => {
+    if (!matchBlock.games || !Array.isArray(matchBlock.games)) return;
+
+    matchBlock.games.forEach(match => {
+      const { homeTeam: home, awayTeam: away, homeScore: hs, awayScore: as2 } = normalizeMatch(match);
+
+      if (hs === null || hs === undefined || as2 === null || as2 === undefined) return;
+
+      const homeScore = parseInt(hs);
+      const awayScore = parseInt(as2);
+
+      if (isNaN(homeScore) || isNaN(awayScore)) return;
+      if (!teamStats[home]) teamStats[home] = { name: home, pts: 0, j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0, diff: 0 };
+      if (!teamStats[away]) teamStats[away] = { name: away, pts: 0, j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0, diff: 0 };
+
+      teamStats[home].j++;
+      teamStats[away].j++;
+      teamStats[home].bp += homeScore;
+      teamStats[home].bc += awayScore;
+      teamStats[away].bp += awayScore;
+      teamStats[away].bc += homeScore;
+
+      if (homeScore > awayScore) {
+        teamStats[home].pts += 3;
+        teamStats[home].g++;
+        teamStats[away].p++;
+      } else if (homeScore < awayScore) {
+        teamStats[away].pts += 3;
+        teamStats[away].g++;
+        teamStats[home].p++;
+      } else {
+        teamStats[home].pts++;
+        teamStats[away].pts++;
+        teamStats[home].n++;
+        teamStats[away].n++;
+      }
+
+      teamStats[home].diff = teamStats[home].bp - teamStats[home].bc;
+      teamStats[away].diff = teamStats[away].bp - teamStats[away].bc;
+    });
+  });
+
+  return teamStats;
+}
+
+/**
+ * Trie les équipes par points effectifs (pts - pénalité), diff de buts, puis buts marqués.
+ * @param {Object} teamStats - Résultat de calculateTeamStats
+ * @param {Function} getPenalty - (teamName) => number de points de pénalité
+ * @returns {Array} Classement trié [{pos, mgr, pts, j, g, n, p, bp, bc, diff}, ...]
+ */
+function sortTeamsToStandings(teamStats, getPenalty = () => 0) {
+  return Object.values(teamStats)
+    .filter(team => team.j > 0)
+    .map(team => ({
+      ...team,
+      penalty: getPenalty(team.name),
+      effectivePts: team.pts - getPenalty(team.name)
+    }))
+    .sort((a, b) => {
+      if (b.effectivePts !== a.effectivePts) return b.effectivePts - a.effectivePts;
+      if (b.diff !== a.diff) return b.diff - a.diff;
+      return b.bp - a.bp;
+    })
+    .map((team, index) => ({
+      pos: index + 1,
+      mgr: team.name,
+      pts: team.pts,
+      j: team.j,
+      g: team.g,
+      n: team.n,
+      p: team.p,
+      bp: team.bp,
+      bc: team.bc,
+      diff: team.diff
+    }));
 }
 
 export default function HyeneScores() {
@@ -99,9 +205,7 @@ export default function HyeneScores() {
 
   // Nombre de journées dynamique selon le championnat
   const getJourneesForChampionship = (championship) => {
-    // Ligue des Hyènes : 72 journées (10 équipes × 2 × 3.6 = 72)
-    // Autres championnats : 18 journées
-    const count = championship === 'hyenes' ? 72 : 18;
+    const count = championship === 'hyenes' ? HYENES_MATCHDAYS : STANDARD_MATCHDAYS;
     return Array.from({ length: count }, (_, i) => (i + 1).toString());
   };
 
@@ -817,7 +921,7 @@ export default function HyeneScores() {
   useEffect(() => {
     if (!user) return;
 
-    const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes
+    const INACTIVITY_TIMEOUT = INACTIVITY_TIMEOUT_MS;
     let timeoutId = null;
 
     const resetTimer = () => {
@@ -844,6 +948,16 @@ export default function HyeneScores() {
     const trimmedName = newManagerName.trim();
     if (!trimmedName) {
       setManagerError('Le nom ne peut pas être vide');
+      return;
+    }
+
+    if (trimmedName.length > MAX_MANAGER_NAME_LENGTH) {
+      setManagerError(`Le nom ne peut pas dépasser ${MAX_MANAGER_NAME_LENGTH} caractères`);
+      return;
+    }
+
+    if (!MANAGER_NAME_PATTERN.test(trimmedName)) {
+      setManagerError('Le nom contient des caractères non autorisés');
       return;
     }
 
@@ -1293,7 +1407,7 @@ export default function HyeneScores() {
       return;
     }
 
-    const updatedAppData = JSON.parse(JSON.stringify(appData));
+    const updatedAppData = structuredClone(appData);
 
     // Créer les entrées de saison pour TOUS les championnats
     const championships = ['ligue_hyenes', 'france', 'espagne', 'italie', 'angleterre'];
@@ -1510,7 +1624,7 @@ export default function HyeneScores() {
       // Si on a des données v2.0, les exporter avec les matchs modifiés et pénalités
       if (appData && appData.version === '2.0') {
         // Créer une copie profonde de appData
-        const exportData = JSON.parse(JSON.stringify(appData));
+        const exportData = structuredClone(appData);
 
         const championshipKey = CHAMPIONSHIP_MAPPING[selectedChampionship] || selectedChampionship;
 
@@ -1607,10 +1721,9 @@ export default function HyeneScores() {
   // Fonction de validation JSON pour sécuriser l'import
   const validateJSONData = (data, fileSize) => {
     const errors = [];
-    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB max
 
     // Vérifier la taille du fichier
-    if (fileSize > MAX_FILE_SIZE) {
+    if (fileSize > MAX_IMPORT_FILE_SIZE) {
       errors.push('Fichier trop volumineux (max 10 MB)');
     }
 
@@ -1647,20 +1760,35 @@ export default function HyeneScores() {
     }
 
     // Vérification de sécurité : pas de contenu potentiellement dangereux
-    const jsonString = JSON.stringify(data);
-    const dangerousPatterns = [
-      /<script/i,
-      /javascript:/i,
-      /on\w+\s*=/i,
-      /eval\s*\(/i,
-      /Function\s*\(/i
-    ];
-
-    for (const pattern of dangerousPatterns) {
-      if (pattern.test(jsonString)) {
-        errors.push('Contenu non autorisé détecté');
-        break;
+    // Vérifier récursivement les valeurs string uniquement (évite les faux positifs sur les clés)
+    const checkDangerousStrings = (obj) => {
+      if (typeof obj === 'string') {
+        if (/<script/i.test(obj) || /javascript:/i.test(obj) ||
+            /eval\s*\(/i.test(obj) || /Function\s*\(/i.test(obj)) {
+          return true;
+        }
+      } else if (Array.isArray(obj)) {
+        return obj.some(checkDangerousStrings);
+      } else if (obj && typeof obj === 'object') {
+        return Object.values(obj).some(checkDangerousStrings);
       }
+      return false;
+    };
+
+    if (checkDangerousStrings(data)) {
+      errors.push('Contenu non autorisé détecté');
+    }
+
+    // Vérifier la profondeur maximale d'imbrication (protection DoS)
+    const checkDepth = (obj, depth = 0) => {
+      if (depth > 10) return true;
+      if (Array.isArray(obj)) return obj.some(v => checkDepth(v, depth + 1));
+      if (obj && typeof obj === 'object') return Object.values(obj).some(v => checkDepth(v, depth + 1));
+      return false;
+    };
+
+    if (checkDepth(data)) {
+      errors.push('Structure trop profonde (max 10 niveaux)');
     }
 
     return { valid: errors.length === 0, errors };
@@ -1942,7 +2070,7 @@ export default function HyeneScores() {
       const seasonKey = `${championshipKey}_s${selectedSeason}`;
 
       // Créer une copie mise à jour de appData
-      const updatedAppData = JSON.parse(JSON.stringify(appData));
+      const updatedAppData = structuredClone(appData);
 
       // Initialiser entities.matches si nécessaire
       if (!updatedAppData.entities.matches) {
@@ -2135,7 +2263,7 @@ export default function HyeneScores() {
     const championshipKey = CHAMPIONSHIP_MAPPING[selectedChampionship] || selectedChampionship;
     const seasonKey = `${championshipKey}_s${selectedSeason}`;
 
-    const updatedAppData = JSON.parse(JSON.stringify(appData));
+    const updatedAppData = structuredClone(appData);
 
     if (!updatedAppData.entities.matches) {
       updatedAppData.entities.matches = [];
@@ -2263,7 +2391,7 @@ export default function HyeneScores() {
         clearTimeout(saveMatchesTimeoutRef.current);
       }
 
-      // Debounce: attendre 800ms avant de sauvegarder
+      // Debounce pour éviter les sauvegardes multiples rapides
       saveMatchesTimeoutRef.current = setTimeout(() => {
         saveMatches(
           championshipKey,
@@ -2272,7 +2400,7 @@ export default function HyeneScores() {
           newMatchBlock.games,
           exemptTeam || null
         ).catch(err => console.error('Erreur auto-save Supabase:', err));
-      }, 800);
+      }, AUTOSAVE_DEBOUNCE_MS);
     }
   }, [appData, allTeams, selectedChampionship, selectedSeason, selectedJournee, exemptTeam, penalties, isAdmin]);
 
@@ -2769,10 +2897,13 @@ export default function HyeneScores() {
                       <div className="col-span-2 flex items-center justify-center gap-0.5">
                           <input
                             type="number"
+                            min={MIN_SCORE}
+                            max={MAX_SCORE}
                             value={match.homeScore !== null ? match.homeScore : ''}
                             onChange={(e) => {
                               if (!isAdmin) return;
-                              const value = e.target.value === '' ? null : parseInt(e.target.value);
+                              const raw = e.target.value === '' ? null : parseInt(e.target.value);
+                              const value = raw !== null ? Math.max(MIN_SCORE, Math.min(MAX_SCORE, raw)) : null;
                               const updatedMatches = matches.map(m => m.id === match.id ? { ...m, homeScore: value } : m);
                               setMatches(updatedMatches);
                               syncMatchesToAppData(updatedMatches);
@@ -2790,10 +2921,13 @@ export default function HyeneScores() {
                           <span className="text-gray-500 font-bold text-sm px-0">-</span>
                           <input
                             type="number"
+                            min={MIN_SCORE}
+                            max={MAX_SCORE}
                             value={match.awayScore !== null ? match.awayScore : ''}
                             onChange={(e) => {
                               if (!isAdmin) return;
-                              const value = e.target.value === '' ? null : parseInt(e.target.value);
+                              const raw = e.target.value === '' ? null : parseInt(e.target.value);
+                              const value = raw !== null ? Math.max(MIN_SCORE, Math.min(MAX_SCORE, raw)) : null;
                               const updatedMatches = matches.map(m => m.id === match.id ? { ...m, awayScore: value } : m);
                               setMatches(updatedMatches);
                               syncMatchesToAppData(updatedMatches);

@@ -103,10 +103,11 @@ export async function fetchAppData() {
 
   try {
     // Fonction pour récupérer tous les matchs avec pagination
-    // Supabase limite à 1000 lignes par requête par défaut
+    // Supabase limite le nombre de lignes par requête par défaut
+    const SUPABASE_PAGE_SIZE = 1000;
     const fetchAllMatches = async () => {
       const allMatches = [];
-      const pageSize = 1000;
+      const pageSize = SUPABASE_PAGE_SIZE;
       let offset = 0;
       let hasMore = true;
 
