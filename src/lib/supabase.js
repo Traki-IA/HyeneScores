@@ -4,13 +4,13 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Verifier si Supabase est configure
-export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey);
+const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey);
 
 if (!isSupabaseConfigured) {
   console.warn('Supabase credentials missing. Check your .env file.');
 }
 
-export const supabase = isSupabaseConfigured
+const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
 
@@ -389,7 +389,7 @@ export async function saveMatches(championship, season, matchday, games, exemptT
 /**
  * Sauvegarde un champion
  */
-export async function saveChampion(championship, season, championName, runnerUpName = null) {
+async function saveChampion(championship, season, championName, runnerUpName = null) {
   if (!supabase) throw new Error('Supabase non configure');
   const { data, error } = await supabase
     .from('champions')
@@ -408,7 +408,7 @@ export async function saveChampion(championship, season, championName, runnerUpN
 /**
  * Met a jour le pantheon
  */
-export async function updatePantheon(managerName, totalPoints, titles, runnerUps) {
+async function updatePantheon(managerName, totalPoints, titles, runnerUps) {
   if (!supabase) throw new Error('Supabase non configure');
   const { data, error } = await supabase
     .from('pantheon')
@@ -555,7 +555,11 @@ export async function importFromJSON(jsonData) {
   // Import penalties
   if (penalties) {
     for (const [key, points] of Object.entries(penalties)) {
-      const [championship, season, teamName] = key.split('_');
+      const firstSep = key.indexOf('_');
+      const secondSep = key.indexOf('_', firstSep + 1);
+      const championship = key.substring(0, firstSep);
+      const season = key.substring(firstSep + 1, secondSep);
+      const teamName = key.substring(secondSep + 1);
       await savePenalty(championship, parseInt(season), teamName, points);
     }
   }
