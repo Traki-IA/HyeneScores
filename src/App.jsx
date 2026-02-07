@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { fetchAppData, importFromJSON, signIn, signOut, getSession, onAuthStateChange, checkIsAdmin, saveManager, saveMatches, deleteManager, updateManagerName, saveSeason, savePenalty, deletePenalty } from './lib/supabase';
 
 // Constantes extraites au niveau module (évite les recréations à chaque render)
@@ -158,7 +158,6 @@ export default function HyeneScores() {
     // === CAS SPÉCIAL: LIGUE DES HYÈNES ===
     // La Ligue des Hyènes n'a pas de matchs propres - c'est une agrégation des 4 championnats
     if (championship === 'hyenes' || championshipKey === 'ligue_hyenes') {
-      console.log('=== Calcul Ligue des Hyènes (agrégation) ===');
 
       // Les 4 championnats à agréger
       const euroChampionships = ['france', 'espagne', 'italie', 'angleterre'];
@@ -278,7 +277,6 @@ export default function HyeneScores() {
         details: team.details
       }));
 
-      console.log('Classement Ligue des Hyènes calculé:', hyenesStandings.length, 'équipes');
 
       // Mettre à jour les équipes et le classement
       // Inclure tous les champs nécessaires pour l'affichage (record, goalDiff)
@@ -319,7 +317,6 @@ export default function HyeneScores() {
 
     if (data.entities.seasons && data.entities.seasons[seasonKey]) {
       const savedStandings = data.entities.seasons[seasonKey].standings || [];
-      const seasonData = data.entities.seasons[seasonKey];
 
       // === RECALCULER le classement depuis TOUS les matchs de la saison ===
       // (les standings sauvegardés peuvent être obsolètes si de nouvelles journées existent)
@@ -467,16 +464,6 @@ export default function HyeneScores() {
     // Extraire matches[] depuis entities.matches (si disponible)
     // Note: Le format v2.0 pourrait ne pas inclure les matches, seulement les standings finaux
     if (data.entities.matches && Array.isArray(data.entities.matches)) {
-      // Debug: afficher les infos de recherche
-      console.log('Recherche matchs:', { championshipKey, season: parseInt(season), journee: parseInt(journee) });
-      console.log('Nombre de blocs de matchs:', data.entities.matches.length);
-
-      // Debug: afficher les valeurs uniques de championship dans les blocs
-      const uniqueChampionships = [...new Set(data.entities.matches.map(b => b.championship))];
-      console.log('Championships uniques dans les blocs:', uniqueChampionships);
-
-      // Utiliser le championshipKey mappé au lieu de championship
-      // Comparaison insensible à la casse pour éviter les problèmes de format
       const championshipKeyLower = championshipKey.toLowerCase();
       const matchesForContext = data.entities.matches.find(
         block =>
@@ -484,8 +471,6 @@ export default function HyeneScores() {
           block.season === parseInt(season) &&
           block.matchday === parseInt(journee)
       );
-
-      console.log('Bloc trouvé:', matchesForContext ? 'OUI' : 'NON', matchesForContext);
 
       if (matchesForContext && matchesForContext.games) {
         // Normaliser les matches pour s'assurer que les champs sont corrects
@@ -542,13 +527,7 @@ export default function HyeneScores() {
     } else {
       // entities.matches n'existe pas dans ce fichier v2.0
       // Les matches devront être saisis manuellement
-      setMatches([
-        { id: 1, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null },
-        { id: 2, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null },
-        { id: 3, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null },
-        { id: 4, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null },
-        { id: 5, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null }
-      ]);
+      setMatches(DEFAULT_MATCHES);
     }
 
     // Charger l'équipe exemptée pour cette saison (depuis indexes.exemptTeams)
@@ -1160,9 +1139,7 @@ export default function HyeneScores() {
             setPantheonTeams(transformedPantheon);
           }
 
-          console.log('Données chargées depuis Supabase');
         } else {
-          console.log('Aucune donnée dans Supabase - en attente d\'import JSON');
         }
       } catch (error) {
         console.error('Erreur chargement Supabase:', error);
@@ -1420,15 +1397,7 @@ export default function HyeneScores() {
     allSeasonMatches.forEach(block => {
       if (block.games && Array.isArray(block.games)) {
         block.games.forEach(game => {
-          // Normaliser les noms de champs (formats multiples selon la source)
-          const home = game.homeTeam || game.home || game.h || game.equipe1 || '';
-          const away = game.awayTeam || game.away || game.a || game.equipe2 || '';
-          const hsVal = game.homeScore !== undefined ? game.homeScore :
-                        (game.hs !== undefined ? game.hs :
-                        (game.scoreHome !== undefined ? game.scoreHome : null));
-          const asVal = game.awayScore !== undefined ? game.awayScore :
-                        (game.as !== undefined ? game.as :
-                        (game.scoreAway !== undefined ? game.scoreAway : null));
+          const { homeTeam: home, awayTeam: away, homeScore: hsVal, awayScore: asVal } = normalizeMatch(game);
 
           if (home && away && hsVal !== null && hsVal !== undefined &&
               asVal !== null && asVal !== undefined) {
@@ -1989,10 +1958,6 @@ export default function HyeneScores() {
                  block.matchday === parseInt(selectedJournee)
       );
 
-      // Récupérer les anciens matchs de cette journée (pour calculer la différence)
-      const oldMatchBlock = existingBlockIndex >= 0
-        ? updatedAppData.entities.matches[existingBlockIndex]
-        : null;
 
       // Préparer le bloc de matchs avec les données actuelles
       const newMatchBlock = {
