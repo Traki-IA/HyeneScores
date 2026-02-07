@@ -1412,23 +1412,7 @@ export default function HyeneScores() {
 
     setIsCreatingSeason(true);
 
-    // Sauvegarder dans Supabase si admin (en parallèle)
-    if (isAdmin) {
-      try {
-        await Promise.all(
-          championshipKeys.map(champKey =>
-            saveSeason(champKey, parseInt(seasonNum), [])
-          )
-        );
-      } catch (error) {
-        console.error('Erreur sauvegarde saison Supabase:', error);
-        alert(`Erreur lors de la création de la saison dans Supabase : ${error.message || error}`);
-        setIsCreatingSeason(false);
-        return;
-      }
-    }
-
-    // Mettre à jour appData localement (l'initialiser en v2.0 si nécessaire)
+    // Mettre à jour appData localement d'abord (UI réactive)
     const baseAppData = appData && appData.version === '2.0'
       ? structuredClone(appData)
       : { version: '2.0', entities: { managers: {}, seasons: {}, matches: [] } };
@@ -1440,20 +1424,29 @@ export default function HyeneScores() {
       }
     });
 
-    // Mettre à jour la liste des saisons
     const updatedSeasons = [...seasons, seasonNum].sort((a, b) => parseInt(a) - parseInt(b));
     setSeasons(updatedSeasons);
-
-    // Sélectionner la nouvelle saison
     setSelectedSeason(seasonNum);
-
-    // Sauvegarder dans appData
     setAppData(baseAppData);
-
-    // Réinitialiser le formulaire
     setNewSeasonNumber('');
-    setIsCreatingSeason(false);
 
+    // Sauvegarder dans Supabase si admin (en parallèle, non-bloquant)
+    if (isAdmin) {
+      try {
+        await Promise.all(
+          championshipKeys.map(champKey =>
+            saveSeason(champKey, parseInt(seasonNum), [])
+          )
+        );
+      } catch (error) {
+        console.error('Erreur sauvegarde saison Supabase:', error);
+        alert(`Saison ${seasonNum} créée localement, mais la synchronisation Supabase a échoué (${error.message || error}). Utilisez "Sauvegarder vers Supabase" pour réessayer.`);
+        setIsCreatingSeason(false);
+        return;
+      }
+    }
+
+    setIsCreatingSeason(false);
     alert(`Saison ${seasonNum} créée avec succès pour tous les championnats.`);
   };
 
