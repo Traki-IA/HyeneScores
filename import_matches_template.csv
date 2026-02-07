@@ -1,0 +1,16 @@
+championship,season,matchday,home_team,away_team,home_score,away_score
+france,7,1,Warnaque,BimBam,2,1
+france,7,1,Traki,Viper,0,3
+france,7,1,Neyko,Zidane,1,1
+france,7,1,LeBron,Messi,4,0
+france,7,1,Ronaldo,Mbappé,2,2
+france,7,2,BimBam,Traki,1,0
+france,7,2,Viper,Warnaque,3,2
+france,7,2,Zidane,LeBron,0,1
+france,7,2,Messi,Ronaldo,2,3
+france,7,2,Mbappé,Neyko,1,1
+espagne,7,1,Warnaque,Traki,1,0
+espagne,7,1,BimBam,Viper,2,2
+espagne,7,1,Neyko,LeBron,3,1
+espagne,7,1,Zidane,Messi,0,0
+espagne,7,1,Ronaldo,Mbappé,1,2
