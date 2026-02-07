@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS seasons (
   championship TEXT NOT NULL,
   season_number INTEGER NOT NULL,
   standings JSONB DEFAULT '[]',
+  exempt_team TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(championship, season_number)
@@ -55,7 +56,6 @@ CREATE TABLE IF NOT EXISTS matches (
   away_team TEXT NOT NULL,
   home_score INTEGER,
   away_score INTEGER,
-  exempt_team TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -298,6 +298,13 @@ CREATE TRIGGER update_app_settings_updated_at
 
 INSERT INTO admin_users (email) VALUES ('VOTRE_EMAIL@EXAMPLE.COM')
 ON CONFLICT (email) DO NOTHING;
+
+-- ============================================
+-- MIGRATION: exempt_team de matches vers seasons
+-- ============================================
+-- Si vous mettez à jour une base existante, exécutez :
+--   ALTER TABLE seasons ADD COLUMN IF NOT EXISTS exempt_team TEXT;
+--   ALTER TABLE matches DROP COLUMN IF EXISTS exempt_team;
 
 -- ============================================
 -- FIN DU SCRIPT

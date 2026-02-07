@@ -201,6 +201,7 @@ export default function HyeneScores() {
   const [exemptTeam, setExemptTeam] = useState('');
   const [isTeamDropdownOpen, setIsTeamDropdownOpen] = useState(false);
   const skipNextMatchesLoadRef = useRef(false);
+  const skipNextExemptLoadRef = useRef(false);
   const saveMatchesTimeoutRef = useRef(null);
 
   const [seasons, setSeasons] = useState([]);
@@ -252,9 +253,6 @@ export default function HyeneScores() {
       const key = `${champ}_${seas}_${teamName}`;
       return currentPenalties[key] || 0;
     };
-
-    // Réinitialiser l'équipe exemptée au début (sera mise à jour si trouvée)
-    setExemptTeam('');
 
     // Extraire teams[] depuis entities.seasons
     // Mapper les IDs de championnat vers les clés du fichier v2.0
@@ -621,29 +619,9 @@ export default function HyeneScores() {
           setMatches(finalMatches);
         }
 
-        // Extraire l'équipe exemptée depuis le bloc match (format v2.0)
-        const exemptFromMatch = matchesForContext.exempt || matchesForContext.ex || '';
-        if (exemptFromMatch) {
-          setExemptTeam(exemptFromMatch);
-        } else {
-          // Pas d'exempt sur cette journée : hériter depuis n'importe quel championnat de la saison
-          const inheritedExempt = data.entities.matches.find(
-            block => block.season === parseInt(season) && block.exempt
-          );
-          if (inheritedExempt) {
-            setExemptTeam(inheritedExempt.exempt);
-          }
-        }
       } else {
         // Pas de données de matches pour cette journée - réinitialiser
         setMatches(DEFAULT_MATCHES);
-        // Hériter l'exempt depuis n'importe quel championnat de la saison
-        const inheritedExempt = (data.entities.matches || []).find(
-          block => block.season === parseInt(season) && block.exempt
-        );
-        if (inheritedExempt) {
-          setExemptTeam(inheritedExempt.exempt);
-        }
       }
     } else {
       // entities.matches n'existe pas dans ce fichier v2.0
@@ -651,12 +629,34 @@ export default function HyeneScores() {
       setMatches(DEFAULT_MATCHES);
     }
 
-    // Charger l'équipe exemptée pour cette saison (depuis indexes.exemptTeams)
-    if (data.indexes?.exemptTeams) {
-      const exemptFromIndex = data.indexes.exemptTeams[season];
-      if (exemptFromIndex) {
-        setExemptTeam(exemptFromIndex);
+    // === Résolution de l'équipe exemptée depuis la table seasons ===
+    if (!skipNextExemptLoadRef.current) {
+      let resolvedExempt = '';
+
+      // Lire l'exempt depuis entities.seasons (source unique de vérité)
+      if (data.entities.seasons) {
+        const currentSeason = data.entities.seasons[seasonKey];
+        if (currentSeason?.exemptTeam) {
+          resolvedExempt = currentSeason.exemptTeam;
+        } else {
+          // Hériter depuis n'importe quel championnat de la même saison
+          const anySeasonEntry = Object.values(data.entities.seasons).find(
+            s => s.season === parseInt(season) && s.exemptTeam
+          );
+          if (anySeasonEntry) {
+            resolvedExempt = anySeasonEntry.exemptTeam;
+          }
+        }
       }
+
+      // Override legacy (indexes.exemptTeams)
+      if (data.indexes?.exemptTeams?.[season]) {
+        resolvedExempt = data.indexes.exemptTeams[season];
+      }
+
+      setExemptTeam(resolvedExempt);
+    } else {
+      skipNextExemptLoadRef.current = false;
     }
 
     // Extraire champions[] pour le championnat sélectionné
@@ -1132,13 +1132,19 @@ export default function HyeneScores() {
         if (newData.entities?.matches) {
           newData.entities.matches = newData.entities.matches.map(matchBlock => ({
             ...matchBlock,
-            exempt: matchBlock.exempt === oldName ? newName : matchBlock.exempt,
             games: matchBlock.games.map(game => ({
               ...game,
               homeTeam: game.homeTeam === oldName ? newName : game.homeTeam,
               awayTeam: game.awayTeam === oldName ? newName : game.awayTeam
             }))
           }));
+        }
+
+        // Mettre à jour exempt dans seasons
+        if (newData.entities?.seasons) {
+          Object.values(newData.entities.seasons).forEach(s => {
+            if (s.exemptTeam === oldName) s.exemptTeam = newName;
+          });
         }
 
         // Mettre à jour palmares
@@ -1321,18 +1327,20 @@ export default function HyeneScores() {
   const handleExemptTeamChange = (team) => {
     setExemptTeam(team);
 
-    if (appData && appData.version === '2.0' && appData.entities.matches) {
+    if (appData && appData.version === '2.0' && appData.entities.seasons) {
       const updatedAppData = structuredClone(appData);
-      const seasonNum = parseInt(selectedSeason);
       const euroChampionships = ['france', 'espagne', 'italie', 'angleterre'];
 
-      updatedAppData.entities.matches.forEach(block => {
-        if (block.season === seasonNum &&
-            euroChampionships.includes(block.championship?.toLowerCase())) {
-          block.exempt = team || '';
+      // Mettre à jour exempt dans chaque entrée seasons de cette saison
+      euroChampionships.forEach(champ => {
+        const key = `${champ}_s${selectedSeason}`;
+        if (updatedAppData.entities.seasons[key]) {
+          updatedAppData.entities.seasons[key].exemptTeam = team || '';
         }
       });
 
+      // Empêcher loadDataFromAppData d'écraser l'exempt qu'on vient de définir
+      skipNextExemptLoadRef.current = true;
       setAppData(updatedAppData);
     }
 
@@ -1631,8 +1639,7 @@ export default function HyeneScores() {
             awayTeam: m.awayTeam || '',
             homeScore: m.homeScore,
             awayScore: m.awayScore
-          })),
-          exempt: exemptTeam || ''
+          }))
         };
 
         // Mettre à jour ou ajouter le bloc
@@ -2076,8 +2083,7 @@ export default function HyeneScores() {
           awayTeam: m.awayTeam || '',
           homeScore: m.homeScore,
           awayScore: m.awayScore
-        })),
-        exempt: exemptTeam || ''
+        }))
       };
 
       // Mettre à jour ou ajouter le bloc
@@ -2162,8 +2168,7 @@ export default function HyeneScores() {
         awayTeam: m.awayTeam || '',
         homeScore: m.homeScore,
         awayScore: m.awayScore
-      })),
-      exempt: exemptTeam || ''
+      }))
     };
 
     // Mettre à jour ou ajouter le bloc
@@ -2214,12 +2219,11 @@ export default function HyeneScores() {
           championshipKey,
           parseInt(selectedSeason),
           parseInt(selectedJournee),
-          newMatchBlock.games,
-          exemptTeam || null
+          newMatchBlock.games
         ).catch(err => console.error('Erreur auto-save Supabase:', err));
       }, AUTOSAVE_DEBOUNCE_MS);
     }
-  }, [appData, allTeams, selectedChampionship, selectedSeason, selectedJournee, exemptTeam, penalties, isAdmin]);
+  }, [appData, allTeams, selectedChampionship, selectedSeason, selectedJournee, penalties, isAdmin]);
 
   return (
     <div className="h-screen bg-black text-white font-sans flex flex-col overflow-hidden safe-top ios26-app">

@@ -171,7 +171,8 @@ export async function fetchAppData() {
       seasonsMap[key] = {
         championship: s.championship,
         season: s.season_number,
-        standings: s.standings || []
+        standings: s.standings || [],
+        exemptTeam: s.exempt_team || ''
       };
     });
 
@@ -189,7 +190,6 @@ export async function fetchAppData() {
           championship: m.championship,
           season: m.season,
           matchday: m.matchday,
-          exempt: m.exempt_team || '',
           games: []
         };
       }
@@ -287,7 +287,8 @@ export async function deleteManager(managerId) {
 /**
  * Met à jour le nom d'un manager et propage le changement sur toutes les données associées
  * - Table managers
- * - Table matches (home_team, away_team, exempt_team)
+ * - Table matches (home_team, away_team)
+ * - Table seasons (exempt_team)
  * - Table champions (champion_name, runner_up_name)
  * - Table pantheon (manager_name)
  * - Table penalties (team_name)
@@ -307,7 +308,7 @@ export async function updateManagerName(managerId, oldName, newName) {
   const cascadeUpdates = [
     supabase.from('matches').update({ home_team: newName }).eq('home_team', oldName),
     supabase.from('matches').update({ away_team: newName }).eq('away_team', oldName),
-    supabase.from('matches').update({ exempt_team: newName }).eq('exempt_team', oldName),
+    supabase.from('seasons').update({ exempt_team: newName }).eq('exempt_team', oldName),
     supabase.from('champions').update({ champion_name: newName }).eq('champion_name', oldName),
     supabase.from('champions').update({ runner_up_name: newName }).eq('runner_up_name', oldName),
     supabase.from('pantheon').update({ manager_name: newName }).eq('manager_name', oldName),
@@ -345,7 +346,7 @@ export async function saveSeason(championship, seasonNumber, standings) {
 /**
  * Sauvegarde les matchs d'une journee
  */
-export async function saveMatches(championship, season, matchday, games, exemptTeam = null) {
+export async function saveMatches(championship, season, matchday, games) {
   if (!supabase) throw new Error('Supabase non configure');
 
   // Filtrer les matchs vides (sans equipes)
@@ -374,8 +375,7 @@ export async function saveMatches(championship, season, matchday, games, exemptT
     home_team: game.homeTeam,
     away_team: game.awayTeam,
     home_score: game.homeScore,
-    away_score: game.awayScore,
-    exempt_team: exemptTeam
+    away_score: game.awayScore
   }));
 
   const { data, error } = await supabase
@@ -461,14 +461,14 @@ export async function deletePenalty(championship, season, teamName) {
 }
 
 /**
- * Met à jour l'équipe exemptée pour tous les matchs d'une saison
+ * Met à jour l'équipe exemptée pour toutes les entrées d'une saison
  */
 export async function updateSeasonExempt(season, exemptTeam) {
   if (!supabase) throw new Error('Supabase non configure');
   const { error } = await supabase
-    .from('matches')
+    .from('seasons')
     .update({ exempt_team: exemptTeam || null })
-    .eq('season', season);
+    .eq('season_number', season);
 
   if (error) throw error;
 }
@@ -531,8 +531,7 @@ export async function importFromJSON(jsonData) {
           matchBlock.championship,
           matchBlock.season,
           matchBlock.matchday,
-          normalizedGames,
-          matchBlock.exempt
+          normalizedGames
         );
 
         importedCount++;
