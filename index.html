@@ -35,36 +35,8 @@
 <body>
   <div id="root"></div>
   
-  <!-- Service Worker Registration avec détection de mise à jour -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      let refreshing = false;
-
-      // Détecte quand le nouveau service worker prend le contrôle
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (refreshing) return;
-        refreshing = true;
-        console.log('🔄 Nouvelle version détectée, rechargement...');
-        window.location.reload();
-      });
-
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then(reg => {
-            console.log('✅ Service Worker enregistré');
-
-            // Vérifie régulièrement les mises à jour (toutes les 60 secondes)
-            setInterval(() => {
-              reg.update();
-            }, 60000);
-
-            // Vérifie immédiatement s'il y a une mise à jour
-            reg.update();
-          })
-          .catch(err => console.log('❌ Service Worker:', err));
-      });
-    }
-  </script>
+  <!-- Service Worker Registration (fichier externe pour compatibilité CSP) -->
+  <script src="/register-sw.js"></script>
   
   <script type="module" src="/src/main.jsx"></script>
 </body>

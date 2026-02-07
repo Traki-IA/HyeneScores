@@ -1491,95 +1491,15 @@ export default function HyeneScores() {
   const recalculateStandingsForExport = (exportData, championshipKey, season) => {
     const seasonKey = `${championshipKey}_s${season}`;
 
-    // Récupérer tous les matchs de cette saison/championnat
-    // Comparaison insensible à la casse
     const championshipKeyLower = championshipKey.toLowerCase();
     const allSeasonMatches = (exportData.entities.matches || []).filter(
       block => block.championship?.toLowerCase() === championshipKeyLower &&
                block.season === parseInt(season)
     );
 
-    // Initialiser les stats pour chaque équipe
-    const teamStats = {};
-    allTeams.forEach(team => {
-      teamStats[team] = {
-        name: team, pts: 0, j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0, diff: 0
-      };
-    });
+    const teamStats = calculateTeamStats(allSeasonMatches, allTeams);
+    const newStandings = sortTeamsToStandings(teamStats);
 
-    // Calculer les stats à partir de tous les matchs
-    allSeasonMatches.forEach(block => {
-      if (block.games && Array.isArray(block.games)) {
-        block.games.forEach(game => {
-          const { homeTeam: home, awayTeam: away, homeScore: hsVal, awayScore: asVal } = normalizeMatch(game);
-
-          if (home && away && hsVal !== null && hsVal !== undefined &&
-              asVal !== null && asVal !== undefined) {
-            const homeScore = parseInt(hsVal);
-            const awayScore = parseInt(asVal);
-
-            if (!isNaN(homeScore) && !isNaN(awayScore)) {
-              if (!teamStats[home]) {
-                teamStats[home] = { name: home, pts: 0, j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0, diff: 0 };
-              }
-              if (!teamStats[away]) {
-                teamStats[away] = { name: away, pts: 0, j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0, diff: 0 };
-              }
-
-              teamStats[home].j++;
-              teamStats[away].j++;
-              teamStats[home].bp += homeScore;
-              teamStats[home].bc += awayScore;
-              teamStats[away].bp += awayScore;
-              teamStats[away].bc += homeScore;
-
-              if (homeScore > awayScore) {
-                teamStats[home].g++;
-                teamStats[home].pts += 3;
-                teamStats[away].p++;
-              } else if (homeScore < awayScore) {
-                teamStats[away].g++;
-                teamStats[away].pts += 3;
-                teamStats[home].p++;
-              } else {
-                teamStats[home].n++;
-                teamStats[away].n++;
-                teamStats[home].pts += 1;
-                teamStats[away].pts += 1;
-              }
-            }
-          }
-        });
-      }
-    });
-
-    // Calculer diff et trier
-    Object.values(teamStats).forEach(team => {
-      team.diff = team.bp - team.bc;
-    });
-
-    const sortedTeams = Object.values(teamStats)
-      .filter(team => team.j > 0)
-      .sort((a, b) => {
-        if (b.pts !== a.pts) return b.pts - a.pts;
-        if (b.diff !== a.diff) return b.diff - a.diff;
-        return b.bp - a.bp;
-      });
-
-    const newStandings = sortedTeams.map((team, index) => ({
-      pos: index + 1,
-      mgr: team.name,
-      pts: team.pts,
-      j: team.j,
-      g: team.g,
-      n: team.n,
-      p: team.p,
-      bp: team.bp,
-      bc: team.bc,
-      diff: team.diff
-    }));
-
-    // Mettre à jour les standings
     if (!exportData.entities.seasons[seasonKey]) {
       exportData.entities.seasons[seasonKey] = { standings: [] };
     }
@@ -2110,111 +2030,15 @@ export default function HyeneScores() {
       }
 
       // === RECALCULER LE CLASSEMENT DEPUIS TOUS LES MATCHS DE LA SAISON ===
-      // Récupérer TOUS les matchs de ce championnat/saison (toutes les journées)
-      // Comparaison insensible à la casse
       const championshipKeyLowerRecalc = championshipKey.toLowerCase();
       const allSeasonMatches = updatedAppData.entities.matches.filter(
         block => block.championship?.toLowerCase() === championshipKeyLowerRecalc &&
                  block.season === parseInt(selectedSeason)
       );
 
-      // Initialiser les stats pour TOUTES les équipes à zéro
-      const teamStats = {};
-      allTeams.forEach(team => {
-        teamStats[team] = {
-          name: team,
-          pts: 0,
-          j: 0,
-          g: 0,
-          n: 0,
-          p: 0,
-          bp: 0,
-          bc: 0,
-          diff: 0
-        };
-      });
-
-      // Parcourir TOUS les blocs de matchs de la saison (toutes les journées)
-      allSeasonMatches.forEach(matchBlock => {
-        if (matchBlock.games && Array.isArray(matchBlock.games)) {
-          matchBlock.games.forEach(match => {
-            const { homeTeam: home, awayTeam: away, homeScore: hs, awayScore: as2 } = normalizeMatch(match);
-
-            if (hs !== null && hs !== undefined && as2 !== null && as2 !== undefined) {
-              const homeScore = parseInt(hs);
-              const awayScore = parseInt(as2);
-
-              // S'assurer que les équipes existent dans teamStats
-              if (!isNaN(homeScore) && !isNaN(awayScore) && teamStats[home] && teamStats[away]) {
-                // Incrémenter les matchs joués
-                teamStats[home].j++;
-                teamStats[away].j++;
-
-                // Enregistrer les buts
-                teamStats[home].bp += homeScore;
-                teamStats[home].bc += awayScore;
-                teamStats[away].bp += awayScore;
-                teamStats[away].bc += homeScore;
-
-                // Déterminer le résultat et attribuer les points
-                if (homeScore > awayScore) {
-                  // Victoire domicile
-                  teamStats[home].pts += 3;
-                  teamStats[home].g++;
-                  teamStats[away].p++;
-                } else if (homeScore < awayScore) {
-                  // Victoire extérieur
-                  teamStats[away].pts += 3;
-                  teamStats[away].g++;
-                  teamStats[home].p++;
-                } else {
-                  // Match nul
-                  teamStats[home].pts++;
-                  teamStats[away].pts++;
-                  teamStats[home].n++;
-                  teamStats[away].n++;
-                }
-
-                // Calculer la différence de buts
-                teamStats[home].diff = teamStats[home].bp - teamStats[home].bc;
-                teamStats[away].diff = teamStats[away].bp - teamStats[away].bc;
-              }
-            }
-          });
-        }
-      });
-
-      // Appliquer les pénalités et trier
-      const sortedTeams = Object.values(teamStats)
-        .filter(team => team.j > 0)
-        .map(team => {
-          const penaltyKey = `${selectedChampionship}_${selectedSeason}_${team.name}`;
-          const penalty = penalties[penaltyKey] || 0;
-          return {
-            ...team,
-            penalty: penalty,
-            effectivePts: team.pts - penalty
-          };
-        })
-        .sort((a, b) => {
-          if (b.effectivePts !== a.effectivePts) return b.effectivePts - a.effectivePts;
-          if (b.diff !== a.diff) return b.diff - a.diff;
-          return b.bp - a.bp;
-        });
-
-      // Créer le nouveau classement avec rangs
-      const newStandings = sortedTeams.map((team, index) => ({
-        pos: index + 1,
-        mgr: team.name,
-        pts: team.pts,
-        j: team.j,
-        g: team.g,
-        n: team.n,
-        p: team.p,
-        bp: team.bp,
-        bc: team.bc,
-        diff: team.diff
-      }));
+      const teamStats = calculateTeamStats(allSeasonMatches, allTeams);
+      const getPenalty = (name) => penalties[`${selectedChampionship}_${selectedSeason}_${name}`] || 0;
+      const newStandings = sortTeamsToStandings(teamStats, getPenalty);
 
       // Mettre à jour les standings dans appData
       if (!updatedAppData.entities.seasons[seasonKey]) {
@@ -2299,79 +2123,14 @@ export default function HyeneScores() {
     }
 
     // Recalculer le classement depuis TOUS les matchs de la saison
-    // Comparaison insensible à la casse
     const allSeasonMatches = updatedAppData.entities.matches.filter(
       block => block.championship?.toLowerCase() === championshipKeyLowerSync &&
                block.season === parseInt(selectedSeason)
     );
 
-    const teamStats = {};
-    allTeams.forEach(team => {
-      teamStats[team] = {
-        name: team, pts: 0, j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0, diff: 0
-      };
-    });
-
-    allSeasonMatches.forEach(matchBlock => {
-      if (matchBlock.games && Array.isArray(matchBlock.games)) {
-        matchBlock.games.forEach(match => {
-          const { homeTeam: home, awayTeam: away, homeScore: hs, awayScore: as2 } = normalizeMatch(match);
-
-          if (hs !== null && hs !== undefined && as2 !== null && as2 !== undefined) {
-            const homeScore = parseInt(hs);
-            const awayScore = parseInt(as2);
-
-            if (!isNaN(homeScore) && !isNaN(awayScore) && teamStats[home] && teamStats[away]) {
-              teamStats[home].j++;
-              teamStats[away].j++;
-              teamStats[home].bp += homeScore;
-              teamStats[home].bc += awayScore;
-              teamStats[away].bp += awayScore;
-              teamStats[away].bc += homeScore;
-
-              if (homeScore > awayScore) {
-                teamStats[home].pts += 3;
-                teamStats[home].g++;
-                teamStats[away].p++;
-              } else if (homeScore < awayScore) {
-                teamStats[away].pts += 3;
-                teamStats[away].g++;
-                teamStats[home].p++;
-              } else {
-                teamStats[home].pts++;
-                teamStats[away].pts++;
-                teamStats[home].n++;
-                teamStats[away].n++;
-              }
-              teamStats[home].diff = teamStats[home].bp - teamStats[home].bc;
-              teamStats[away].diff = teamStats[away].bp - teamStats[away].bc;
-            }
-          }
-        });
-      }
-    });
-
-    // Trier avec pénalités
-    const sortedTeams = Object.values(teamStats)
-      .filter(team => team.j > 0)
-      .map(team => {
-        const penaltyKey = `${selectedChampionship}_${selectedSeason}_${team.name}`;
-        const penalty = penalties[penaltyKey] || 0;
-        return { ...team, penalty, effectivePts: team.pts - penalty };
-      })
-      .sort((a, b) => {
-        if (b.effectivePts !== a.effectivePts) return b.effectivePts - a.effectivePts;
-        if (b.diff !== a.diff) return b.diff - a.diff;
-        return b.bp - a.bp;
-      });
-
-    const newStandings = sortedTeams.map((team, index) => ({
-      pos: index + 1,
-      mgr: team.name,
-      pts: team.pts,
-      j: team.j, g: team.g, n: team.n, p: team.p,
-      bp: team.bp, bc: team.bc, diff: team.diff
-    }));
+    const teamStats = calculateTeamStats(allSeasonMatches, allTeams);
+    const getPenalty = (name) => penalties[`${selectedChampionship}_${selectedSeason}_${name}`] || 0;
+    const newStandings = sortTeamsToStandings(teamStats, getPenalty);
 
     // Sauvegarder les standings recalculés dans appData
     if (!updatedAppData.entities.seasons[seasonKey]) {
