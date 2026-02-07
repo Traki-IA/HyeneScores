@@ -1317,11 +1317,27 @@ export default function HyeneScores() {
       setOpenDropdown(null);
     } else {
       const rect = event.currentTarget.getBoundingClientRect();
+      const NAV_BAR_HEIGHT = 80;
+      const DROPDOWN_MAX = 420;
+      const spaceBelow = window.innerHeight - rect.bottom - NAV_BAR_HEIGHT;
+      const spaceAbove = rect.top;
+      const openUpward = spaceBelow < 200 && spaceAbove > spaceBelow;
+
       const position = {
-        top: rect.bottom + 4,
         left: type === 'home' ? rect.left : 'auto',
         right: type === 'away' ? (window.innerWidth - rect.right) : 'auto'
       };
+
+      if (openUpward) {
+        position.top = 'auto';
+        position.bottom = window.innerHeight - rect.top + 4;
+        position.maxHeight = Math.min(DROPDOWN_MAX, spaceAbove - 10);
+      } else {
+        position.top = rect.bottom + 4;
+        position.bottom = 'auto';
+        position.maxHeight = Math.min(DROPDOWN_MAX, spaceBelow - 4);
+      }
+
       setDropdownPosition(position);
       setOpenDropdown({ matchId, type });
     }
@@ -2627,11 +2643,13 @@ export default function HyeneScores() {
                             <>
                               <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)}></div>
                               <div
-                                className="fixed ios26-dropdown rounded-2xl z-50 max-h-[420px] overflow-y-auto w-[150px] "
+                                className="fixed ios26-dropdown rounded-2xl z-50 overflow-y-auto w-[150px]"
                                 style={{
-                                  top: `${dropdownPosition.top}px`,
+                                  top: dropdownPosition.top !== 'auto' ? `${dropdownPosition.top}px` : 'auto',
+                                  bottom: dropdownPosition.bottom !== 'auto' ? `${dropdownPosition.bottom}px` : 'auto',
                                   left: dropdownPosition.left !== 'auto' ? `${dropdownPosition.left}px` : 'auto',
-                                  right: dropdownPosition.right !== 'auto' ? `${dropdownPosition.right}px` : 'auto'
+                                  right: dropdownPosition.right !== 'auto' ? `${dropdownPosition.right}px` : 'auto',
+                                  maxHeight: `${dropdownPosition.maxHeight || 420}px`
                                 }}
                               >
                                 <button
@@ -2731,11 +2749,13 @@ export default function HyeneScores() {
                             <>
                               <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)}></div>
                               <div
-                                className="fixed ios26-dropdown rounded-2xl z-50 max-h-[420px] overflow-y-auto w-[150px] "
+                                className="fixed ios26-dropdown rounded-2xl z-50 overflow-y-auto w-[150px]"
                                 style={{
-                                  top: `${dropdownPosition.top}px`,
+                                  top: dropdownPosition.top !== 'auto' ? `${dropdownPosition.top}px` : 'auto',
+                                  bottom: dropdownPosition.bottom !== 'auto' ? `${dropdownPosition.bottom}px` : 'auto',
                                   left: dropdownPosition.left !== 'auto' ? `${dropdownPosition.left}px` : 'auto',
-                                  right: dropdownPosition.right !== 'auto' ? `${dropdownPosition.right}px` : 'auto'
+                                  right: dropdownPosition.right !== 'auto' ? `${dropdownPosition.right}px` : 'auto',
+                                  maxHeight: `${dropdownPosition.maxHeight || 420}px`
                                 }}
                               >
                                 <button
@@ -2779,7 +2799,7 @@ export default function HyeneScores() {
                         {isTeamDropdownOpen && (
                           <>
                             <div className="fixed inset-0 z-40" onClick={() => setIsTeamDropdownOpen(false)}></div>
-                            <div className="absolute left-0 right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 max-h-[420px] overflow-y-auto ">
+                            <div className="absolute left-0 right-0 bottom-full mb-2 ios26-dropdown rounded-2xl z-50 max-h-[420px] overflow-y-auto">
                               <button
                                 onClick={() => {
                                   setExemptTeam('');
