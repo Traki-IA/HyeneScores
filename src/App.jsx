@@ -1407,20 +1407,12 @@ export default function HyeneScores() {
       return;
     }
 
-    if (!appData || appData.version !== '2.0') {
-      alert('Veuillez d\'abord importer un fichier de données v2.0.');
-      return;
-    }
-
-    const updatedAppData = structuredClone(appData);
-
-    // Créer les entrées de saison pour TOUS les championnats
-    const championships = ['ligue_hyenes', 'france', 'espagne', 'italie', 'angleterre'];
+    const championshipKeys = ['ligue_hyenes', 'france', 'espagne', 'italie', 'angleterre'];
 
     // Sauvegarder dans Supabase si admin
     if (isAdmin) {
       try {
-        for (const champKey of championships) {
+        for (const champKey of championshipKeys) {
           await saveSeason(champKey, parseInt(seasonNum), []);
         }
       } catch (error) {
@@ -1430,10 +1422,15 @@ export default function HyeneScores() {
       }
     }
 
-    championships.forEach(champKey => {
+    // Mettre à jour appData localement (l'initialiser en v2.0 si nécessaire)
+    const baseAppData = appData && appData.version === '2.0'
+      ? structuredClone(appData)
+      : { version: '2.0', entities: { managers: {}, seasons: {}, matches: [] } };
+
+    championshipKeys.forEach(champKey => {
       const seasonKey = `${champKey}_s${seasonNum}`;
-      if (!updatedAppData.entities.seasons[seasonKey]) {
-        updatedAppData.entities.seasons[seasonKey] = { standings: [] };
+      if (!baseAppData.entities.seasons[seasonKey]) {
+        baseAppData.entities.seasons[seasonKey] = { standings: [] };
       }
     });
 
@@ -1445,7 +1442,7 @@ export default function HyeneScores() {
     setSelectedSeason(seasonNum);
 
     // Sauvegarder dans appData
-    setAppData(updatedAppData);
+    setAppData(baseAppData);
 
     // Réinitialiser le formulaire
     setNewSeasonNumber('');
