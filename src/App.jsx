@@ -2832,8 +2832,9 @@ export default function HyeneScores() {
                       <span className="text-gray-300 text-base font-semibold">Exempt :</span>
                       <div className="relative w-48">
                         <button
-                          onClick={() => setIsTeamDropdownOpen(!isTeamDropdownOpen)}
-                          className="w-full bg-red-500/15 border border-red-500/30 hover:bg-red-500/20 rounded-xl px-4 py-2.5 text-white text-base font-semibold cursor-pointer flex items-center justify-between backdrop-blur-sm"
+                          onClick={() => isAdmin && setIsTeamDropdownOpen(!isTeamDropdownOpen)}
+                          disabled={!isAdmin}
+                          className={`w-full bg-red-500/15 border border-red-500/30 rounded-xl px-4 py-2.5 text-white text-base font-semibold flex items-center justify-between backdrop-blur-sm ${!isAdmin ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:bg-red-500/20'}`}
                         >
                           <span className="truncate">{exemptTeam || 'Aucune'}</span>
                           <svg className={`w-4 h-4 text-red-400 flex-shrink-0 ml-2 ${isTeamDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
