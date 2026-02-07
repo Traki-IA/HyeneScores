@@ -461,6 +461,19 @@ export async function deletePenalty(championship, season, teamName) {
 }
 
 /**
+ * Met à jour l'équipe exemptée pour tous les matchs d'une saison
+ */
+export async function updateSeasonExempt(season, exemptTeam) {
+  if (!supabase) throw new Error('Supabase non configure');
+  const { error } = await supabase
+    .from('matches')
+    .update({ exempt_team: exemptTeam || null })
+    .eq('season', season);
+
+  if (error) throw error;
+}
+
+/**
  * Importe les donnees JSON v2.0 dans Supabase
  * Utile pour la migration initiale
  */
