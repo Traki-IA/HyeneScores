@@ -170,6 +170,7 @@ export default function HyeneScores() {
   const [supabaseError, setSupabaseError] = useState(null);
   const [isSavingToSupabase, setIsSavingToSupabase] = useState(false);
   const [pendingJsonData, setPendingJsonData] = useState(null);
+  const [isCreatingSeason, setIsCreatingSeason] = useState(false);
 
   // États Classement
   const [selectedChampionship, setSelectedChampionship] = useState('hyenes');
@@ -1409,15 +1410,20 @@ export default function HyeneScores() {
 
     const championshipKeys = ['ligue_hyenes', 'france', 'espagne', 'italie', 'angleterre'];
 
-    // Sauvegarder dans Supabase si admin
+    setIsCreatingSeason(true);
+
+    // Sauvegarder dans Supabase si admin (en parallèle)
     if (isAdmin) {
       try {
-        for (const champKey of championshipKeys) {
-          await saveSeason(champKey, parseInt(seasonNum), []);
-        }
+        await Promise.all(
+          championshipKeys.map(champKey =>
+            saveSeason(champKey, parseInt(seasonNum), [])
+          )
+        );
       } catch (error) {
         console.error('Erreur sauvegarde saison Supabase:', error);
-        alert('Erreur lors de la création de la saison dans Supabase.');
+        alert(`Erreur lors de la création de la saison dans Supabase : ${error.message || error}`);
+        setIsCreatingSeason(false);
         return;
       }
     }
@@ -1446,6 +1452,7 @@ export default function HyeneScores() {
 
     // Réinitialiser le formulaire
     setNewSeasonNumber('');
+    setIsCreatingSeason(false);
 
     alert(`Saison ${seasonNum} créée avec succès pour tous les championnats.`);
   };
@@ -3250,10 +3257,18 @@ export default function HyeneScores() {
                     />
                     <button
                       onClick={handleCreateSeason}
-                      disabled={!isAdmin}
-                      className={`bg-purple-500/20 border border-purple-500/30 hover:bg-purple-500/30 rounded-xl px-4 py-2.5 text-purple-400 text-base font-bold ${!isAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      disabled={!isAdmin || isCreatingSeason}
+                      className={`bg-purple-500/20 border border-purple-500/30 hover:bg-purple-500/30 rounded-xl px-4 py-2.5 text-purple-400 text-base font-bold ${!isAdmin || isCreatingSeason ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                      Créer
+                      {isCreatingSeason ? (
+                        <span className="flex items-center gap-2">
+                          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                          </svg>
+                          Création...
+                        </span>
+                      ) : 'Créer'}
                     </button>
                   </div>
                   {!isAdmin && (
