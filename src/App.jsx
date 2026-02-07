@@ -1,6 +1,49 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { fetchAppData, importFromJSON, signIn, signOut, getSession, onAuthStateChange, checkIsAdmin, saveManager, saveMatches, deleteManager, updateManagerName, saveSeason, savePenalty, deletePenalty } from './lib/supabase';
 
+// Constantes extraites au niveau module (évite les recréations à chaque render)
+const CHAMPIONSHIPS = [
+  { id: 'hyenes', icon: '🏆', name: 'Ligue des Hyènes' },
+  { id: 'france', icon: '🇫🇷', name: 'France' },
+  { id: 'spain', icon: '🇪🇸', name: 'Espagne' },
+  { id: 'italy', icon: '🇮🇹', name: 'Italie' },
+  { id: 'england', icon: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', name: 'Angleterre' }
+];
+
+const CHAMPIONSHIP_MAPPING = {
+  'hyenes': 'ligue_hyenes',
+  'france': 'france',
+  'spain': 'espagne',
+  'italy': 'italie',
+  'england': 'angleterre'
+};
+
+const REVERSE_CHAMPIONSHIP_MAPPING = Object.fromEntries(
+  Object.entries(CHAMPIONSHIP_MAPPING).map(([k, v]) => [v, k])
+);
+
+const DEFAULT_MATCHES = [
+  { id: 1, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null },
+  { id: 2, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null },
+  { id: 3, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null },
+  { id: 4, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null },
+  { id: 5, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null }
+];
+
+// Normalise un objet match brut vers un format uniforme
+function normalizeMatch(match) {
+  return {
+    homeTeam: match.homeTeam || match.home || match.h || match.equipe1 || '',
+    awayTeam: match.awayTeam || match.away || match.a || match.equipe2 || '',
+    homeScore: match.homeScore !== undefined ? match.homeScore :
+               (match.hs !== undefined ? match.hs :
+               (match.scoreHome !== undefined ? match.scoreHome : null)),
+    awayScore: match.awayScore !== undefined ? match.awayScore :
+               (match.as !== undefined ? match.as :
+               (match.scoreAway !== undefined ? match.scoreAway : null))
+  };
+}
+
 export default function HyeneScores() {
   const [selectedTab, setSelectedTab] = useState('classement');
   const fileInputRef = useRef(null);
@@ -19,7 +62,7 @@ export default function HyeneScores() {
   const [isLoadingFromSupabase, setIsLoadingFromSupabase] = useState(true);
   const [supabaseError, setSupabaseError] = useState(null);
   const [isSavingToSupabase, setIsSavingToSupabase] = useState(false);
-  const [pendingJsonData, setPendingJsonData] = useState(null); // Données JSON en attente de sauvegarde
+  const [pendingJsonData, setPendingJsonData] = useState(null);
 
   // États Classement
   const [selectedChampionship, setSelectedChampionship] = useState('hyenes');
@@ -27,13 +70,8 @@ export default function HyeneScores() {
   const [isSeasonOpen, setIsSeasonOpen] = useState(false);
   const [isChampOpen, setIsChampOpen] = useState(false);
 
-  const championships = [
-    { id: 'hyenes', icon: '🏆', name: 'Ligue des Hyènes' },
-    { id: 'france', icon: '🇫🇷', name: 'France' },
-    { id: 'spain', icon: '🇪🇸', name: 'Espagne' },
-    { id: 'italy', icon: '🇮🇹', name: 'Italie' },
-    { id: 'england', icon: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', name: 'Angleterre' }
-  ];
+  // Alias pour compatibilité avec le JSX existant
+  const championships = CHAMPIONSHIPS;
 
   const [teams, setTeams] = useState([]);
 
@@ -46,13 +84,7 @@ export default function HyeneScores() {
   // États Match
   const [selectedJournee, setSelectedJournee] = useState('1');
   const [isJourneeOpen, setIsJourneeOpen] = useState(false);
-  const [matches, setMatches] = useState([
-    { id: 1, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null },
-    { id: 2, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null },
-    { id: 3, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null },
-    { id: 4, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null },
-    { id: 5, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null }
-  ]);
+  const [matches, setMatches] = useState(DEFAULT_MATCHES);
 
   const [allTeams, setAllTeams] = useState([]);
 
@@ -120,14 +152,7 @@ export default function HyeneScores() {
 
     // Extraire teams[] depuis entities.seasons
     // Mapper les IDs de championnat vers les clés du fichier v2.0
-    const championshipMapping = {
-      'hyenes': 'ligue_hyenes',
-      'france': 'france',
-      'spain': 'espagne',
-      'italy': 'italie',
-      'england': 'angleterre'
-    };
-    const championshipKey = championshipMapping[championship] || championship;
+    const championshipKey = CHAMPIONSHIP_MAPPING[championship] || championship;
     const seasonKey = `${championshipKey}_s${season}`;
 
     // === CAS SPÉCIAL: LIGUE DES HYÈNES ===
@@ -170,10 +195,7 @@ export default function HyeneScores() {
         euroMatches.forEach(matchBlock => {
           if (matchBlock.games && Array.isArray(matchBlock.games)) {
             matchBlock.games.forEach(match => {
-              const home = match.homeTeam || match.home || match.h || '';
-              const away = match.awayTeam || match.away || match.a || '';
-              const hs = match.homeScore ?? match.hs ?? null;
-              const as2 = match.awayScore ?? match.as ?? null;
+              const { homeTeam: home, awayTeam: away, homeScore: hs, awayScore: as2 } = normalizeMatch(match);
 
               if (hs !== null && as2 !== null && champStats[home] && champStats[away]) {
                 const homeScore = parseInt(hs);
@@ -328,15 +350,7 @@ export default function HyeneScores() {
         allSeasonMatches.forEach(matchBlock => {
           if (matchBlock.games && Array.isArray(matchBlock.games)) {
             matchBlock.games.forEach(match => {
-              // Normaliser les noms de champs (formats multiples selon la source)
-              const home = match.homeTeam || match.home || match.h || match.equipe1 || '';
-              const away = match.awayTeam || match.away || match.a || match.equipe2 || '';
-              const hs = match.homeScore !== undefined ? match.homeScore :
-                         (match.hs !== undefined ? match.hs :
-                         (match.scoreHome !== undefined ? match.scoreHome : null));
-              const as2 = match.awayScore !== undefined ? match.awayScore :
-                          (match.as !== undefined ? match.as :
-                          (match.scoreAway !== undefined ? match.scoreAway : null));
+              const { homeTeam: home, awayTeam: away, homeScore: hs, awayScore: as2 } = normalizeMatch(match);
 
               if (hs !== null && hs !== undefined && as2 !== null && as2 !== undefined) {
                 const homeScore = parseInt(hs);
@@ -477,14 +491,7 @@ export default function HyeneScores() {
         // Normaliser les matches pour s'assurer que les champs sont corrects
         const normalizedMatches = matchesForContext.games.map((match, index) => ({
           id: match.id || (index + 1),
-          homeTeam: match.homeTeam || match.home || match.h || match.equipe1 || '',
-          awayTeam: match.awayTeam || match.away || match.a || match.equipe2 || '',
-          homeScore: match.homeScore !== undefined ? match.homeScore :
-                     (match.hs !== undefined ? match.hs :
-                     (match.scoreHome !== undefined ? match.scoreHome : null)),
-          awayScore: match.awayScore !== undefined ? match.awayScore :
-                     (match.as !== undefined ? match.as :
-                     (match.scoreAway !== undefined ? match.scoreAway : null))
+          ...normalizeMatch(match)
         }));
 
         // Dédupliquer les matchs (garder le premier de chaque paire d'équipes)
@@ -530,13 +537,7 @@ export default function HyeneScores() {
         }
       } else {
         // Pas de données de matches pour cette journée - réinitialiser
-        setMatches([
-          { id: 1, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null },
-          { id: 2, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null },
-          { id: 3, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null },
-          { id: 4, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null },
-          { id: 5, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null }
-        ]);
+        setMatches(DEFAULT_MATCHES);
       }
     } else {
       // entities.matches n'existe pas dans ce fichier v2.0
@@ -560,21 +561,12 @@ export default function HyeneScores() {
 
     // Extraire champions[] pour le championnat sélectionné
     if (data.entities.seasons) {
-      // Mapping inverse pour comparer les clés du fichier avec le championship sélectionné
-      const reverseMapping = {
-        'ligue_hyenes': 'hyenes',
-        'france': 'france',
-        'espagne': 'spain',
-        'italie': 'italy',
-        'angleterre': 'england'
-      };
-
       const championsList = [];
       Object.keys(data.entities.seasons).forEach(seasonKey => {
         const parts = seasonKey.split('_');
         const seasonNum = parts[parts.length - 1].replace('s', '');
         const championshipName = parts.slice(0, -1).join('_');
-        const championshipId = reverseMapping[championshipName] || championshipName;
+        const championshipId = REVERSE_CHAMPIONSHIP_MAPPING[championshipName] || championshipName;
 
         if (championshipId === championship) {
           const seasonData = data.entities.seasons[seasonKey];
@@ -821,6 +813,7 @@ export default function HyeneScores() {
       setLoginPassword('');
     } catch (error) {
       setLoginError('Email ou mot de passe incorrect');
+      setLoginPassword('');
     } finally {
       setIsLoggingIn(false);
     }
@@ -837,6 +830,10 @@ export default function HyeneScores() {
     }
   };
 
+  // Ref pour éviter une closure périmée dans le timer d'inactivité
+  const handleLogoutRef = useRef(handleLogout);
+  handleLogoutRef.current = handleLogout;
+
   // Déconnexion automatique après 15 minutes d'inactivité
   useEffect(() => {
     if (!user) return;
@@ -847,7 +844,7 @@ export default function HyeneScores() {
     const resetTimer = () => {
       if (timeoutId) clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
-        handleLogout();
+        handleLogoutRef.current();
       }, INACTIVITY_TIMEOUT);
     };
 
@@ -1208,10 +1205,6 @@ export default function HyeneScores() {
     return allTeams.filter(team => !selectedTeams.includes(team));
   };
 
-  const getAvailableTeamsForExempt = () => {
-    // L'équipe exemptée est fixe pour toute la saison, afficher toutes les équipes
-    return allTeams;
-  };
 
   const handleTeamSelect = (matchId, type, team) => {
     const updatedMatches = matches.map(m =>
@@ -1550,15 +1543,7 @@ export default function HyeneScores() {
         // Créer une copie profonde de appData
         const exportData = JSON.parse(JSON.stringify(appData));
 
-        // Mapping des IDs de championnat vers les clés du fichier v2.0
-        const championshipMapping = {
-          'hyenes': 'ligue_hyenes',
-          'france': 'france',
-          'spain': 'espagne',
-          'italy': 'italie',
-          'england': 'angleterre'
-        };
-        const championshipKey = championshipMapping[selectedChampionship] || selectedChampionship;
+        const championshipKey = CHAMPIONSHIP_MAPPING[selectedChampionship] || selectedChampionship;
 
         // Initialiser entities.matches si nécessaire
         if (!exportData.entities.matches) {
@@ -1984,15 +1969,7 @@ export default function HyeneScores() {
   const handleRefreshData = () => {
     // Synchroniser les matchs modifiés avec appData et recalculer le classement
     if (appData && appData.version === '2.0') {
-      // Mapping des IDs de championnat vers les clés du fichier v2.0
-      const championshipMapping = {
-        'hyenes': 'ligue_hyenes',
-        'france': 'france',
-        'spain': 'espagne',
-        'italy': 'italie',
-        'england': 'angleterre'
-      };
-      const championshipKey = championshipMapping[selectedChampionship] || selectedChampionship;
+      const championshipKey = CHAMPIONSHIP_MAPPING[selectedChampionship] || selectedChampionship;
       const seasonKey = `${championshipKey}_s${selectedSeason}`;
 
       // Créer une copie mise à jour de appData
@@ -2068,15 +2045,7 @@ export default function HyeneScores() {
       allSeasonMatches.forEach(matchBlock => {
         if (matchBlock.games && Array.isArray(matchBlock.games)) {
           matchBlock.games.forEach(match => {
-            // Normaliser les noms de champs (formats multiples selon la source)
-            const home = match.homeTeam || match.home || match.h || match.equipe1 || '';
-            const away = match.awayTeam || match.away || match.a || match.equipe2 || '';
-            const hs = match.homeScore !== undefined ? match.homeScore :
-                       (match.hs !== undefined ? match.hs :
-                       (match.scoreHome !== undefined ? match.scoreHome : null));
-            const as2 = match.awayScore !== undefined ? match.awayScore :
-                        (match.as !== undefined ? match.as :
-                        (match.scoreAway !== undefined ? match.scoreAway : null));
+            const { homeTeam: home, awayTeam: away, homeScore: hs, awayScore: as2 } = normalizeMatch(match);
 
             if (hs !== null && hs !== undefined && as2 !== null && as2 !== undefined) {
               const homeScore = parseInt(hs);
@@ -2198,14 +2167,7 @@ export default function HyeneScores() {
   const syncMatchesToAppData = useCallback((updatedMatches) => {
     if (!appData || appData.version !== '2.0' || allTeams.length === 0) return;
 
-    const championshipMapping = {
-      'hyenes': 'ligue_hyenes',
-      'france': 'france',
-      'spain': 'espagne',
-      'italy': 'italie',
-      'england': 'angleterre'
-    };
-    const championshipKey = championshipMapping[selectedChampionship] || selectedChampionship;
+    const championshipKey = CHAMPIONSHIP_MAPPING[selectedChampionship] || selectedChampionship;
     const seasonKey = `${championshipKey}_s${selectedSeason}`;
 
     const updatedAppData = JSON.parse(JSON.stringify(appData));
@@ -2260,14 +2222,7 @@ export default function HyeneScores() {
     allSeasonMatches.forEach(matchBlock => {
       if (matchBlock.games && Array.isArray(matchBlock.games)) {
         matchBlock.games.forEach(match => {
-          const home = match.homeTeam || match.home || match.h || match.equipe1 || '';
-          const away = match.awayTeam || match.away || match.a || match.equipe2 || '';
-          const hs = match.homeScore !== undefined ? match.homeScore :
-                     (match.hs !== undefined ? match.hs :
-                     (match.scoreHome !== undefined ? match.scoreHome : null));
-          const as2 = match.awayScore !== undefined ? match.awayScore :
-                      (match.as !== undefined ? match.as :
-                      (match.scoreAway !== undefined ? match.scoreAway : null));
+          const { homeTeam: home, awayTeam: away, homeScore: hs, awayScore: as2 } = normalizeMatch(match);
 
           if (hs !== null && hs !== undefined && as2 !== null && as2 !== undefined) {
             const homeScore = parseInt(hs);
@@ -2974,7 +2929,7 @@ export default function HyeneScores() {
                               >
                                 Aucune
                               </button>
-                              {getAvailableTeamsForExempt().map(team => (
+                              {allTeams.map(team => (
                                 <button
                                   key={team}
                                   onClick={() => {
@@ -3214,7 +3169,7 @@ export default function HyeneScores() {
                       placeholder="Nouveau manager..."
                       className="flex-1 ios26-input rounded-xl px-3 py-2 text-white text-sm font-medium outline-none"
                       style={{ borderColor: 'rgba(168, 85, 247, 0.3)' }}
-                      onKeyPress={(e) => e.key === 'Enter' && handleAddManager()}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddManager()}
                       disabled={!isAdmin}
                     />
                     <button
@@ -3247,7 +3202,7 @@ export default function HyeneScores() {
 
                       return (
                         <div
-                          key={index}
+                          key={managerId || manager}
                           className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 group"
                         >
                           {isEditing ? (
@@ -3607,7 +3562,7 @@ export default function HyeneScores() {
                   : 'text-gray-500 hover:text-gray-400'
               }`}
             >
-              <div className="text-lg">{selectedTab === 'classement' ? '🏆' : '🏆'}</div>
+              <div className="text-lg">{'🏆'}</div>
               <span className="text-[10px] font-bold tracking-wide">Classement</span>
             </button>
             <button

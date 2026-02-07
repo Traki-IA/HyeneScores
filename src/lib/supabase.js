@@ -54,16 +54,6 @@ export async function getSession() {
 }
 
 /**
- * Recuperer l'utilisateur actuel
- */
-export async function getUser() {
-  if (!supabase) return null;
-
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
-}
-
-/**
  * Ecouter les changements d'authentification
  */
 export function onAuthStateChange(callback) {
@@ -312,47 +302,23 @@ export async function updateManagerName(managerId, oldName, newName) {
 
   if (managerError) throw managerError;
 
-  // 2. Mettre à jour dans matches (home_team)
-  await supabase
-    .from('matches')
-    .update({ home_team: newName })
-    .eq('home_team', oldName);
+  // 2-8. Propager le renommage dans toutes les tables liées
+  const cascadeUpdates = [
+    supabase.from('matches').update({ home_team: newName }).eq('home_team', oldName),
+    supabase.from('matches').update({ away_team: newName }).eq('away_team', oldName),
+    supabase.from('matches').update({ exempt_team: newName }).eq('exempt_team', oldName),
+    supabase.from('champions').update({ champion_name: newName }).eq('champion_name', oldName),
+    supabase.from('champions').update({ runner_up_name: newName }).eq('runner_up_name', oldName),
+    supabase.from('pantheon').update({ manager_name: newName }).eq('manager_name', oldName),
+    supabase.from('penalties').update({ team_name: newName }).eq('team_name', oldName),
+  ];
 
-  // 3. Mettre à jour dans matches (away_team)
-  await supabase
-    .from('matches')
-    .update({ away_team: newName })
-    .eq('away_team', oldName);
-
-  // 4. Mettre à jour dans matches (exempt_team)
-  await supabase
-    .from('matches')
-    .update({ exempt_team: newName })
-    .eq('exempt_team', oldName);
-
-  // 5. Mettre à jour dans champions (champion_name)
-  await supabase
-    .from('champions')
-    .update({ champion_name: newName })
-    .eq('champion_name', oldName);
-
-  // 6. Mettre à jour dans champions (runner_up_name)
-  await supabase
-    .from('champions')
-    .update({ runner_up_name: newName })
-    .eq('runner_up_name', oldName);
-
-  // 7. Mettre à jour dans pantheon
-  await supabase
-    .from('pantheon')
-    .update({ manager_name: newName })
-    .eq('manager_name', oldName);
-
-  // 8. Mettre à jour dans penalties
-  await supabase
-    .from('penalties')
-    .update({ team_name: newName })
-    .eq('team_name', oldName);
+  const results = await Promise.all(cascadeUpdates);
+  const errors = results.filter(r => r.error).map(r => r.error);
+  if (errors.length > 0) {
+    console.error('Erreurs lors du renommage en cascade:', errors);
+    throw new Error(`Renommage partiel: ${errors.length} table(s) en erreur`);
+  }
 
   return { success: true };
 }
@@ -418,23 +384,6 @@ export async function saveMatches(championship, season, matchday, games, exemptT
 
   if (error) throw error;
   return data;
-}
-
-/**
- * Supprime tous les matchs d'une journee specifique
- */
-export async function deleteMatchesForMatchday(championship, season, matchday) {
-  if (!supabase) throw new Error('Supabase non configure');
-
-  const { error } = await supabase
-    .from('matches')
-    .delete()
-    .eq('championship', championship)
-    .eq('season', season)
-    .eq('matchday', matchday);
-
-  if (error) throw error;
-  return { success: true };
 }
 
 /**
