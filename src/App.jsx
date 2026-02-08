@@ -8,6 +8,7 @@ const MAX_MANAGER_NAME_LENGTH = 50;
 const MANAGER_NAME_PATTERN = /^[\p{L}\p{N}\s\-'.]+$/u; // Lettres, chiffres, espaces, tirets, apostrophes, points
 const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
 const AUTOSAVE_DEBOUNCE_MS = 800;
+const AUTO_REFRESH_INTERVAL_MS = 30 * 1000; // 30 secondes
 const SUPABASE_PAGE_SIZE = 1000;
 const MAX_IMPORT_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 const HYENES_MATCHDAYS = 72;
@@ -431,6 +432,14 @@ export default function HyeneScores() {
       }));
       setTeams(normalizedTeams);
 
+      // Sauvegarder les standings Hyènes dans data.entities.seasons
+      // pour que le Palmarès et le Panthéon puissent les trouver
+      if (!data.entities.seasons) data.entities.seasons = {};
+      if (!data.entities.seasons[seasonKey]) {
+        data.entities.seasons[seasonKey] = { season: parseInt(season) };
+      }
+      data.entities.seasons[seasonKey].standings = hyenesStandings;
+
       // Calculer la progression de la saison (somme des journées jouées par championnat)
       const isS6 = season === '6';
       let currentMatchday = 0;
@@ -661,6 +670,75 @@ export default function HyeneScores() {
       // entities.matches n'existe pas dans ce fichier v2.0
       // Les matches devront être saisis manuellement
       setMatches(DEFAULT_MATCHES);
+    }
+
+    // === Pré-calculer les standings Ligue des Hyènes pour TOUTES les saisons ===
+    // Nécessaire pour que le Palmarès et le Panthéon trouvent les entrées ligue_hyenes_s{N}
+    if (data.entities.matches && data.entities.managers) {
+      const managerListAll = Object.values(data.entities.managers)
+        .map(m => m.name || '?').filter(n => n !== '?');
+      const euroChamps = ['france', 'espagne', 'italie', 'angleterre'];
+
+      // Trouver toutes les saisons disponibles dans les matchs
+      const allSeasonNums = new Set();
+      data.entities.matches.forEach(block => {
+        if (block.season) allSeasonNums.add(block.season);
+      });
+
+      allSeasonNums.forEach(seasonNum => {
+        const hyenesKey = `ligue_hyenes_s${seasonNum}`;
+
+        // Agréger les stats des 4 championnats pour cette saison
+        const aggStats = {};
+        managerListAll.forEach(mgr => {
+          aggStats[mgr] = { name: mgr, pts: 0, j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0, diff: 0 };
+        });
+
+        euroChamps.forEach(champ => {
+          const champMatches = data.entities.matches.filter(
+            block => block.championship?.toLowerCase() === champ && block.season === seasonNum
+          );
+          champMatches.forEach(matchBlock => {
+            if (!matchBlock.games || !Array.isArray(matchBlock.games)) return;
+            matchBlock.games.forEach(match => {
+              const { homeTeam: home, awayTeam: away, homeScore: hs, awayScore: as2 } = normalizeMatch(match);
+              if (hs === null || hs === undefined || as2 === null || as2 === undefined) return;
+              const hScore = parseInt(hs), aScore = parseInt(as2);
+              if (isNaN(hScore) || isNaN(aScore)) return;
+              if (!aggStats[home]) aggStats[home] = { name: home, pts: 0, j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0, diff: 0 };
+              if (!aggStats[away]) aggStats[away] = { name: away, pts: 0, j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0, diff: 0 };
+              aggStats[home].j++; aggStats[away].j++;
+              aggStats[home].bp += hScore; aggStats[home].bc += aScore;
+              aggStats[away].bp += aScore; aggStats[away].bc += hScore;
+              if (hScore > aScore) { aggStats[home].pts += 3; aggStats[home].g++; aggStats[away].p++; }
+              else if (hScore < aScore) { aggStats[away].pts += 3; aggStats[away].g++; aggStats[home].p++; }
+              else { aggStats[home].pts++; aggStats[away].pts++; aggStats[home].n++; aggStats[away].n++; }
+              aggStats[home].diff = aggStats[home].bp - aggStats[home].bc;
+              aggStats[away].diff = aggStats[away].bp - aggStats[away].bc;
+            });
+          });
+        });
+
+        const hyenesStandingsAll = Object.values(aggStats)
+          .filter(t => t.j > 0)
+          .sort((a, b) => {
+            const penA = getTeamPenaltyLocal(a.name, 'hyenes', String(seasonNum));
+            const penB = getTeamPenaltyLocal(b.name, 'hyenes', String(seasonNum));
+            const effA = a.pts - penA, effB = b.pts - penB;
+            if (effB !== effA) return effB - effA;
+            if (b.diff !== a.diff) return b.diff - a.diff;
+            return b.bp - a.bp;
+          })
+          .map((t, i) => ({ pos: i + 1, mgr: t.name, pts: t.pts, j: t.j, g: t.g, n: t.n, p: t.p, bp: t.bp, bc: t.bc, diff: t.diff }));
+
+        if (hyenesStandingsAll.length > 0) {
+          if (!data.entities.seasons) data.entities.seasons = {};
+          if (!data.entities.seasons[hyenesKey]) {
+            data.entities.seasons[hyenesKey] = { season: seasonNum };
+          }
+          data.entities.seasons[hyenesKey].standings = hyenesStandingsAll;
+        }
+      });
     }
 
     // Extraire champions[] pour le championnat sélectionné
@@ -1223,78 +1301,81 @@ export default function HyeneScores() {
     }
   };
 
-  // useEffect pour charger les données depuis Supabase au démarrage
+  // useEffect pour charger les données depuis Supabase au démarrage + auto-refresh périodique
   useEffect(() => {
-    async function loadFromSupabase() {
-      try {
-        setIsLoadingFromSupabase(true);
-        setSupabaseError(null);
-        const data = await fetchAppData();
+    function applySupabaseData(data) {
+      if (data && data.entities && (
+        Object.keys(data.entities.managers || {}).length > 0 ||
+        Object.keys(data.entities.seasons || {}).length > 0 ||
+        (data.entities.matches || []).length > 0
+      )) {
+        setAppData(data);
 
-        // Vérifier si des données existent dans Supabase
-        if (data && data.entities && (
-          Object.keys(data.entities.managers || {}).length > 0 ||
-          Object.keys(data.entities.seasons || {}).length > 0 ||
-          (data.entities.matches || []).length > 0
-        )) {
-          // Charger les données depuis Supabase
-          setAppData(data);
-
-          // Extraire allTeams depuis managers
-          if (data.entities.managers) {
-            const managerNames = Object.values(data.entities.managers)
-              .map(manager => manager.name || '?')
-              .filter(name => name !== '?');
-            setAllTeams(managerNames);
-          }
-
-          // Extraire les saisons disponibles
-          if (data.entities.seasons) {
-            const seasonNumbers = new Set();
-            Object.keys(data.entities.seasons).forEach(seasonKey => {
-              const match = seasonKey.match(/_s(\d+)$/);
-              if (match) {
-                seasonNumbers.add(match[1]);
-              }
-            });
-            const sortedSeasons = Array.from(seasonNumbers).sort((a, b) => parseInt(a) - parseInt(b));
-            setSeasons(sortedSeasons);
-            if (sortedSeasons.length > 0) {
-              setSelectedSeason(sortedSeasons[sortedSeasons.length - 1]);
-            }
-          }
-
-          // Charger les pénalités
-          if (data.penalties) {
-            setPenalties(data.penalties);
-          }
-
-          // Charger le panthéon
-          if (data.pantheon && Array.isArray(data.pantheon)) {
-            const transformedPantheon = data.pantheon.map((team, index) => ({
-              rank: index + 1,
-              name: team.name,
-              trophies: team.titles || 0,
-              france: 0,
-              spain: 0,
-              italy: 0,
-              england: 0,
-              total: team.titles || 0
-            }));
-            setPantheonTeams(transformedPantheon);
-          }
-
-        } else {
+        if (data.entities.managers) {
+          const managerNames = Object.values(data.entities.managers)
+            .map(manager => manager.name || '?')
+            .filter(name => name !== '?');
+          setAllTeams(managerNames);
         }
-      } catch (error) {
-        console.error('Erreur chargement Supabase:', error);
-        setSupabaseError('Erreur de connexion au serveur');
-      } finally {
-        setIsLoadingFromSupabase(false);
+
+        if (data.entities.seasons) {
+          const seasonNumbers = new Set();
+          Object.keys(data.entities.seasons).forEach(seasonKey => {
+            const match = seasonKey.match(/_s(\d+)$/);
+            if (match) {
+              seasonNumbers.add(match[1]);
+            }
+          });
+          const sortedSeasons = Array.from(seasonNumbers).sort((a, b) => parseInt(a) - parseInt(b));
+          setSeasons(sortedSeasons);
+          if (sortedSeasons.length > 0) {
+            setSelectedSeason(prev => prev || sortedSeasons[sortedSeasons.length - 1]);
+          }
+        }
+
+        if (data.penalties) {
+          setPenalties(data.penalties);
+        }
+
+        if (data.pantheon && Array.isArray(data.pantheon)) {
+          const transformedPantheon = data.pantheon.map((team, index) => ({
+            rank: index + 1,
+            name: team.name,
+            trophies: team.titles || 0,
+            france: 0,
+            spain: 0,
+            italy: 0,
+            england: 0,
+            total: team.titles || 0
+          }));
+          setPantheonTeams(transformedPantheon);
+        }
       }
     }
 
-    loadFromSupabase();
+    async function loadFromSupabase(isInitial) {
+      try {
+        if (isInitial) {
+          setIsLoadingFromSupabase(true);
+          setSupabaseError(null);
+        }
+        const data = await fetchAppData();
+        applySupabaseData(data);
+        if (isInitial) setSupabaseError(null);
+      } catch (error) {
+        console.error('Erreur chargement Supabase:', error);
+        if (isInitial) setSupabaseError('Erreur de connexion au serveur');
+      } finally {
+        if (isInitial) setIsLoadingFromSupabase(false);
+      }
+    }
+
+    // Chargement initial
+    loadFromSupabase(true);
+
+    // Auto-refresh périodique (silencieux, pas de loader)
+    const refreshInterval = setInterval(() => loadFromSupabase(false), AUTO_REFRESH_INTERVAL_MS);
+    return () => clearInterval(refreshInterval);
   }, []);
 
   // useEffect pour recharger les données quand le contexte change ou les pénalités
