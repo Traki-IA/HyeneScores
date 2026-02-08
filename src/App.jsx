@@ -431,17 +431,21 @@ export default function HyeneScores() {
       }));
       setTeams(normalizedTeams);
 
-      // Calculer la progression de la saison (basé sur les matchs France par exemple)
-      const franceMatches = (data.entities.matches || []).filter(
-        block => block.championship?.toLowerCase() === 'france' &&
-                 block.season === parseInt(season)
-      );
-      const maxMatchday = franceMatches.length > 0
-        ? Math.max(...franceMatches.map(b => b.matchday))
-        : 0;
-      const totalMatchdays = 18; // Ligue des Hyènes = 18 journées
-      const percentage = totalMatchdays > 0 ? Math.round((maxMatchday / totalMatchdays) * 100) : 0;
-      setSeasonProgress({ currentMatchday: maxMatchday, totalMatchdays, percentage });
+      // Calculer la progression de la saison (somme des journées jouées par championnat)
+      const isS6 = season === '6';
+      let currentMatchday = 0;
+      euroChampionships.forEach(champ => {
+        const champMatches = (data.entities.matches || []).filter(
+          block => block.championship?.toLowerCase() === champ.toLowerCase() &&
+                   block.season === parseInt(season)
+        );
+        if (champMatches.length > 0) {
+          currentMatchday += Math.max(...champMatches.map(b => b.matchday));
+        }
+      });
+      const totalMatchdays = isS6 ? HYENES_S6_MATCHDAYS : HYENES_MATCHDAYS;
+      const percentage = totalMatchdays > 0 ? Math.round((currentMatchday / totalMatchdays) * 100) : 0;
+      setSeasonProgress({ currentMatchday, totalMatchdays, percentage });
 
       // Pas de matchs à afficher pour la Ligue des Hyènes (c'est une agrégation)
       setMatches([]);
