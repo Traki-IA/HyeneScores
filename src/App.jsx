@@ -246,7 +246,7 @@ export default function HyeneScores() {
   const [isEditingManager, setIsEditingManager] = useState(false);
 
   // Fonction pour charger les données depuis appData v2.0
-  const loadDataFromAppData = useCallback((data, championship, season, journee, currentPenalties = {}) => {
+  const loadDataFromAppData = useCallback((data, championship, season, journee, currentPenalties = {}, isAdminUser = false) => {
     if (!data || !data.entities) return;
 
     // Fonction locale pour obtenir la pénalité d'une équipe
@@ -1036,15 +1036,17 @@ export default function HyeneScores() {
 
       setPantheonTeams(pantheon);
 
-      // Persister les champions et le Panthéon vers Supabase (fire-and-forget)
-      Promise.allSettled([
-        ...allChampionsForDb.map(c =>
-          saveChampion(c.championship, c.season, c.champion, c.runnerUp).catch(() => {})
-        ),
-        ...pantheon.filter(p => p.total > 0).map(p =>
-          updatePantheon(p.name, 0, p.total, 0).catch(() => {})
-        )
-      ]).catch(() => {});
+      // Persister les champions et le Panthéon vers Supabase (fire-and-forget, admin uniquement)
+      if (isAdminUser) {
+        Promise.allSettled([
+          ...allChampionsForDb.map(c =>
+            saveChampion(c.championship, c.season, c.champion, c.runnerUp).catch(err => console.error('Erreur saveChampion:', err))
+          ),
+          ...pantheon.filter(p => p.total > 0).map(p =>
+            updatePantheon(p.name, 0, p.total, 0).catch(err => console.error('Erreur updatePantheon:', err))
+          )
+        ]).catch(err => console.error('Erreur persistence Panthéon:', err));
+      }
     }
 
   }, []);
@@ -1491,9 +1493,9 @@ export default function HyeneScores() {
   // useEffect pour recharger les données quand le contexte change ou les pénalités
   useEffect(() => {
     if (appData && appData.version === '2.0') {
-      loadDataFromAppData(appData, selectedChampionship, selectedSeason, selectedJournee, penalties);
+      loadDataFromAppData(appData, selectedChampionship, selectedSeason, selectedJournee, penalties, isAdmin);
     }
-  }, [selectedChampionship, selectedSeason, selectedJournee, appData, penalties, loadDataFromAppData]);
+  }, [selectedChampionship, selectedSeason, selectedJournee, appData, penalties, loadDataFromAppData, isAdmin]);
 
   // useEffect pour forcer un championnat valide sur l'onglet Match (exclure Ligue des Hyènes)
   useEffect(() => {
@@ -2034,7 +2036,7 @@ export default function HyeneScores() {
 
           // Charger les données pour le contexte actuel (avec pénalités du fichier si disponibles)
           const filePenalties = data.penalties && typeof data.penalties === 'object' ? data.penalties : {};
-          loadDataFromAppData(data, selectedChampionship, selectedSeason, selectedJournee, filePenalties);
+          loadDataFromAppData(data, selectedChampionship, selectedSeason, selectedJournee, filePenalties, isAdmin);
 
           // Extraire pantheonTeams[] - calcul DYNAMIQUE depuis les standings de toutes les saisons
           if (data.entities.seasons && data.entities.managers) {
