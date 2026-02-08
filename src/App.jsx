@@ -459,10 +459,7 @@ export default function HyeneScores() {
       // Pas de matchs à afficher pour la Ligue des Hyènes (c'est une agrégation)
       setMatches([]);
 
-      return; // Sortir de la fonction - le cas Ligue des Hyènes est traité
-    }
-
-    if (data.entities.seasons && data.entities.seasons[seasonKey]) {
+    } else if (data.entities.seasons && data.entities.seasons[seasonKey]) {
       const savedStandings = data.entities.seasons[seasonKey].standings || [];
 
       // === RECALCULER le classement depuis TOUS les matchs de la saison ===
@@ -567,6 +564,10 @@ export default function HyeneScores() {
       // Mettre à jour les standings dans data pour que Palmarès/Panthéon voient les données recalculées
       if (data.entities.seasons[seasonKey]) {
         data.entities.seasons[seasonKey].standings = standings;
+        // Stocker le nombre de journées jouées (basé sur les matchdays, pas sur j)
+        if (allSeasonMatches.length > 0) {
+          data.entities.seasons[seasonKey].playedMatchdays = Math.max(...allSeasonMatches.map(b => b.matchday));
+        }
       }
 
       // Normaliser les données pour l'affichage (même transformation que v1.0)
@@ -610,7 +611,8 @@ export default function HyeneScores() {
 
     // Extraire matches[] depuis entities.matches (si disponible)
     // Note: Le format v2.0 pourrait ne pas inclure les matches, seulement les standings finaux
-    if (data.entities.matches && Array.isArray(data.entities.matches)) {
+    // La Ligue des Hyènes n'a pas de matchs propres (setMatches([]) déjà appelé)
+    if (championship !== 'hyenes' && data.entities.matches && Array.isArray(data.entities.matches)) {
       const championshipKeyLower = championshipKey.toLowerCase();
       const matchesForContext = data.entities.matches.find(
         block =>
@@ -694,10 +696,14 @@ export default function HyeneScores() {
           aggStats[mgr] = { name: mgr, pts: 0, j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0, diff: 0 };
         });
 
+        let playedMatchdays = 0;
         euroChamps.forEach(champ => {
           const champMatches = data.entities.matches.filter(
             block => block.championship?.toLowerCase() === champ && block.season === seasonNum
           );
+          if (champMatches.length > 0) {
+            playedMatchdays += Math.max(...champMatches.map(b => b.matchday));
+          }
           champMatches.forEach(matchBlock => {
             if (!matchBlock.games || !Array.isArray(matchBlock.games)) return;
             matchBlock.games.forEach(match => {
@@ -737,6 +743,7 @@ export default function HyeneScores() {
             data.entities.seasons[hyenesKey] = { season: seasonNum };
           }
           data.entities.seasons[hyenesKey].standings = hyenesStandingsAll;
+          data.entities.seasons[hyenesKey].playedMatchdays = playedMatchdays;
         }
       });
     }
@@ -762,12 +769,12 @@ export default function HyeneScores() {
             const isFranceS6 = championshipName === 'france' && isS6;
             const isHyenesS6 = championshipName === 'ligue_hyenes' && isS6;
             const totalMatchdays = championshipId === 'hyenes'
-              ? (isHyenesS6 ? 62 : 72)
-              : 18;
-            const firstTeam = standings[0];
-            const currentMatchday = firstTeam?.j || 0;
+              ? (isHyenesS6 ? HYENES_S6_MATCHDAYS : HYENES_MATCHDAYS)
+              : (isFranceS6 ? FRANCE_S6_MATCHDAYS : STANDARD_MATCHDAYS);
+            // Utiliser playedMatchdays (journées disputées) plutôt que j (matchs joués par équipe)
+            // car avec le système d'équipe exemptée, j < totalMatchdays même pour une saison terminée
+            const currentMatchday = seasonData.playedMatchdays || standings[0]?.j || 0;
 
-            // France S6 et Hyènes S6 sont considérées comme terminées
             const isSeasonComplete = isFranceS6 || currentMatchday >= totalMatchdays;
 
             // N'ajouter au palmarès que si la saison est terminée
@@ -863,7 +870,8 @@ export default function HyeneScores() {
         const isS6 = seasonNum === '6';
         const isFranceS6 = championshipName === 'france' && isS6;
         const totalMatchdays = isS6 ? config.s6Matchdays : config.totalMatchdays;
-        const currentMatchday = standings[0]?.j || 0;
+        // Utiliser playedMatchdays (journées disputées) plutôt que j (matchs joués par équipe)
+        const currentMatchday = seasonData.playedMatchdays || standings[0]?.j || 0;
         const isSeasonComplete = isFranceS6 || currentMatchday >= totalMatchdays;
 
         if (!isSeasonComplete) return;
