@@ -1345,19 +1345,9 @@ export default function HyeneScores() {
           setPenalties(data.penalties);
         }
 
-        if (data.pantheon && Array.isArray(data.pantheon)) {
-          const transformedPantheon = data.pantheon.map((team, index) => ({
-            rank: index + 1,
-            name: team.name,
-            trophies: team.titles || 0,
-            france: 0,
-            spain: 0,
-            italy: 0,
-            england: 0,
-            total: team.titles || 0
-          }));
-          setPantheonTeams(transformedPantheon);
-        }
+        // Note: le Panthéon est calculé dynamiquement par loadDataFromAppData()
+        // à partir des standings de chaque saison. Ne pas utiliser data.pantheon
+        // (format legacy incomplet : pas de détail par championnat).
       }
     }
 
