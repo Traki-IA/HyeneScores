@@ -390,7 +390,7 @@ export async function saveMatches(championship, season, matchday, games) {
 /**
  * Sauvegarde un champion
  */
-async function saveChampion(championship, season, championName, runnerUpName = null) {
+export async function saveChampion(championship, season, championName, runnerUpName = null) {
   if (!supabase) throw new Error('Supabase non configure');
   const { data, error } = await supabase
     .from('champions')
@@ -409,7 +409,7 @@ async function saveChampion(championship, season, championName, runnerUpName = n
 /**
  * Met a jour le pantheon
  */
-async function updatePantheon(managerName, totalPoints, titles, runnerUps) {
+export async function updatePantheon(managerName, totalPoints, titles, runnerUps) {
   if (!supabase) throw new Error('Supabase non configure');
   const { data, error } = await supabase
     .from('pantheon')

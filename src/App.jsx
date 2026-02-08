@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { fetchAppData, importFromJSON, signIn, signOut, getSession, onAuthStateChange, checkIsAdmin, saveManager, saveMatches, deleteManager, updateManagerName, saveSeason, savePenalty, deletePenalty, updateSeasonExempt } from './lib/supabase';
+import { fetchAppData, importFromJSON, signIn, signOut, getSession, onAuthStateChange, checkIsAdmin, saveManager, saveMatches, deleteManager, updateManagerName, saveSeason, savePenalty, deletePenalty, updateSeasonExempt, saveChampion, updatePantheon } from './lib/supabase';
 
 // === CONSTANTES DE CONFIGURATION ===
 const MAX_SCORE = 99;
@@ -941,6 +941,9 @@ export default function HyeneScores() {
         'angleterre': { field: 'england', totalMatchdays: 18, s6Matchdays: 18 }
       };
 
+      // Collecter tous les champions pour la persistance Supabase
+      const allChampionsForDb = [];
+
       // Parcourir toutes les saisons pour comptabiliser les trophées
       Object.keys(data.entities.seasons).forEach(seasonKey => {
         const parts = seasonKey.split('_');
@@ -975,6 +978,7 @@ export default function HyeneScores() {
             trophyCount['Warnaque'].france += 1;
             trophyCount['Warnaque'].total += 1;
           }
+          allChampionsForDb.push({ championship: championshipName, season: parseInt(seasonNum), champion: 'BimBam / Warnaque' });
           return;
         }
 
@@ -1007,9 +1011,18 @@ export default function HyeneScores() {
         });
 
         const champion = teamsWithEffectivePts[0];
+        const runnerUp = teamsWithEffectivePts[1];
         if (champion && trophyCount[champion.name]) {
           trophyCount[champion.name][config.field] += 1;
           trophyCount[champion.name].total += 1;
+        }
+        if (champion) {
+          allChampionsForDb.push({
+            championship: championshipName,
+            season: parseInt(seasonNum),
+            champion: champion.name,
+            runnerUp: runnerUp?.name || null
+          });
         }
       });
 
@@ -1022,6 +1035,16 @@ export default function HyeneScores() {
         }));
 
       setPantheonTeams(pantheon);
+
+      // Persister les champions et le Panthéon vers Supabase (fire-and-forget)
+      Promise.allSettled([
+        ...allChampionsForDb.map(c =>
+          saveChampion(c.championship, c.season, c.champion, c.runnerUp).catch(() => {})
+        ),
+        ...pantheon.filter(p => p.total > 0).map(p =>
+          updatePantheon(p.name, 0, p.total, 0).catch(() => {})
+        )
+      ]).catch(() => {});
     }
 
   }, []);
