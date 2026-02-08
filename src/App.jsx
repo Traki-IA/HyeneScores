@@ -748,29 +748,92 @@ export default function HyeneScores() {
       });
     }
 
-    // === Synchroniser playedMatchdays pour TOUS les championnats individuels ===
-    // Le pré-calcul ci-dessus ne couvre que la Ligue des Hyènes.
-    // Les championnats individuels n'ont playedMatchdays que pour la saison sélectionnée.
-    // Le Panthéon itère TOUTES les entrées → il faut playedMatchdays partout.
-    if (data.entities.matches && data.entities.seasons) {
-      Object.keys(data.entities.seasons).forEach(sk => {
-        // Ne pas recalculer si déjà présent (Hyènes ou saison sélectionnée)
-        if (data.entities.seasons[sk].playedMatchdays !== undefined) return;
+    // === Pré-calculer les standings pour les championnats individuels (TOUTES les saisons) ===
+    // Même logique que le pré-calcul Hyènes : créer/mettre à jour les entrées dans
+    // data.entities.seasons pour que le Palmarès et le Panthéon aient des données complètes.
+    // Sans cela, les entrées comme france_s7, espagne_s7 n'existent pas si elles
+    // n'ont jamais été sauvegardées en base → le Panthéon affiche 0 trophées.
+    if (data.entities.matches && data.entities.managers) {
+      const managerListAll = Object.values(data.entities.managers)
+        .map(m => m.name || '?').filter(n => n !== '?');
+      const individualChamps = ['france', 'espagne', 'italie', 'angleterre'];
 
-        const parts = sk.split('_');
-        const sNum = parts[parts.length - 1].replace('s', '');
-        const cName = parts.slice(0, -1).join('_');
-
-        // Les entrées ligue_hyenes sont déjà traitées par le pré-calcul Hyènes
-        if (cName === 'ligue_hyenes') return;
-
-        const champMatches = data.entities.matches.filter(
-          block => block.championship?.toLowerCase() === cName.toLowerCase() &&
-                   block.season === parseInt(sNum)
-        );
-        if (champMatches.length > 0) {
-          data.entities.seasons[sk].playedMatchdays = Math.max(...champMatches.map(b => b.matchday));
+      // Trouver toutes les saisons par championnat depuis les matchs
+      const champSeasons = {};
+      data.entities.matches.forEach(block => {
+        const champ = block.championship?.toLowerCase();
+        if (champ && block.season && individualChamps.includes(champ)) {
+          if (!champSeasons[champ]) champSeasons[champ] = new Set();
+          champSeasons[champ].add(block.season);
         }
+      });
+
+      individualChamps.forEach(champ => {
+        const seasonNums = champSeasons[champ];
+        if (!seasonNums) return;
+
+        seasonNums.forEach(seasonNum => {
+          const champKey = `${champ}_s${seasonNum}`;
+
+          // Calculer les stats depuis les matchs
+          const champStats = {};
+          managerListAll.forEach(mgr => {
+            champStats[mgr] = { name: mgr, pts: 0, j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0, diff: 0 };
+          });
+
+          const champMatches = data.entities.matches.filter(
+            block => block.championship?.toLowerCase() === champ && block.season === seasonNum
+          );
+
+          let playedMatchdays = 0;
+          if (champMatches.length > 0) {
+            playedMatchdays = Math.max(...champMatches.map(b => b.matchday));
+          }
+
+          champMatches.forEach(matchBlock => {
+            if (!matchBlock.games || !Array.isArray(matchBlock.games)) return;
+            matchBlock.games.forEach(match => {
+              const { homeTeam: home, awayTeam: away, homeScore: hs, awayScore: as2 } = normalizeMatch(match);
+              if (hs === null || hs === undefined || as2 === null || as2 === undefined) return;
+              const hScore = parseInt(hs), aScore = parseInt(as2);
+              if (isNaN(hScore) || isNaN(aScore)) return;
+              if (!champStats[home]) champStats[home] = { name: home, pts: 0, j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0, diff: 0 };
+              if (!champStats[away]) champStats[away] = { name: away, pts: 0, j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0, diff: 0 };
+              champStats[home].j++; champStats[away].j++;
+              champStats[home].bp += hScore; champStats[home].bc += aScore;
+              champStats[away].bp += aScore; champStats[away].bc += hScore;
+              if (hScore > aScore) { champStats[home].pts += 3; champStats[home].g++; champStats[away].p++; }
+              else if (hScore < aScore) { champStats[away].pts += 3; champStats[away].g++; champStats[home].p++; }
+              else { champStats[home].pts++; champStats[away].pts++; champStats[home].n++; champStats[away].n++; }
+              champStats[home].diff = champStats[home].bp - champStats[home].bc;
+              champStats[away].diff = champStats[away].bp - champStats[away].bc;
+            });
+          });
+
+          // Mapper le nom de championnat vers l'ID pour getTeamPenaltyLocal
+          const champId = champ === 'espagne' ? 'spain' : champ === 'italie' ? 'italy' : champ === 'angleterre' ? 'england' : champ;
+
+          const champStandingsAll = Object.values(champStats)
+            .filter(t => t.j > 0)
+            .sort((a, b) => {
+              const penA = getTeamPenaltyLocal(a.name, champId, String(seasonNum));
+              const penB = getTeamPenaltyLocal(b.name, champId, String(seasonNum));
+              const effA = a.pts - penA, effB = b.pts - penB;
+              if (effB !== effA) return effB - effA;
+              if (b.diff !== a.diff) return b.diff - a.diff;
+              return b.bp - a.bp;
+            })
+            .map((t, i) => ({ pos: i + 1, mgr: t.name, pts: t.pts, j: t.j, g: t.g, n: t.n, p: t.p, bp: t.bp, bc: t.bc, diff: t.diff }));
+
+          if (champStandingsAll.length > 0) {
+            if (!data.entities.seasons) data.entities.seasons = {};
+            if (!data.entities.seasons[champKey]) {
+              data.entities.seasons[champKey] = { season: seasonNum };
+            }
+            data.entities.seasons[champKey].standings = champStandingsAll;
+            data.entities.seasons[champKey].playedMatchdays = playedMatchdays;
+          }
+        });
       });
     }
 
