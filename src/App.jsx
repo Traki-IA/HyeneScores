@@ -748,6 +748,32 @@ export default function HyeneScores() {
       });
     }
 
+    // === Synchroniser playedMatchdays pour TOUS les championnats individuels ===
+    // Le pré-calcul ci-dessus ne couvre que la Ligue des Hyènes.
+    // Les championnats individuels n'ont playedMatchdays que pour la saison sélectionnée.
+    // Le Panthéon itère TOUTES les entrées → il faut playedMatchdays partout.
+    if (data.entities.matches && data.entities.seasons) {
+      Object.keys(data.entities.seasons).forEach(sk => {
+        // Ne pas recalculer si déjà présent (Hyènes ou saison sélectionnée)
+        if (data.entities.seasons[sk].playedMatchdays !== undefined) return;
+
+        const parts = sk.split('_');
+        const sNum = parts[parts.length - 1].replace('s', '');
+        const cName = parts.slice(0, -1).join('_');
+
+        // Les entrées ligue_hyenes sont déjà traitées par le pré-calcul Hyènes
+        if (cName === 'ligue_hyenes') return;
+
+        const champMatches = data.entities.matches.filter(
+          block => block.championship?.toLowerCase() === cName.toLowerCase() &&
+                   block.season === parseInt(sNum)
+        );
+        if (champMatches.length > 0) {
+          data.entities.seasons[sk].playedMatchdays = Math.max(...champMatches.map(b => b.matchday));
+        }
+      });
+    }
+
     // Extraire champions[] pour le championnat sélectionné
     if (data.entities.seasons) {
       const championsList = [];
