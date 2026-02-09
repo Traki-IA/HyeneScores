@@ -116,6 +116,8 @@ export async function fetchAppData() {
           .from('matches')
           .select('*')
           .order('matchday', { ascending: true })
+          .order('game_order', { ascending: true, nullsFirst: false })
+          .order('id', { ascending: true })
           .range(offset, offset + pageSize - 1);
 
         if (error) {
@@ -198,10 +200,20 @@ export async function fetchAppData() {
         homeTeam: m.home_team,
         awayTeam: m.away_team,
         homeScore: m.home_score,
-        awayScore: m.away_score
+        awayScore: m.away_score,
+        gameOrder: m.game_order
       });
     });
-    Object.values(matchGroups).forEach(group => matchesArray.push(group));
+    // Trier les games par game_order (puis par id en fallback) pour préserver l'ordre de saisie
+    Object.values(matchGroups).forEach(group => {
+      group.games.sort((a, b) => {
+        const orderA = a.gameOrder ?? Infinity;
+        const orderB = b.gameOrder ?? Infinity;
+        if (orderA !== orderB) return orderA - orderB;
+        return (a.id || 0) - (b.id || 0);
+      });
+      matchesArray.push(group);
+    });
 
     // Format palmares
     const palmaresMap = {};
@@ -368,14 +380,15 @@ export async function saveMatches(championship, season, matchday, games) {
   }
 
   // Inserer les nouveaux matchs
-  const matchesToInsert = validGames.map(game => ({
+  const matchesToInsert = validGames.map((game, index) => ({
     championship,
     season,
     matchday,
     home_team: game.homeTeam,
     away_team: game.awayTeam,
     home_score: game.homeScore,
-    away_score: game.awayScore
+    away_score: game.awayScore,
+    game_order: index
   }));
 
   const { data, error } = await supabase
