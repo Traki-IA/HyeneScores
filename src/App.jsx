@@ -203,6 +203,8 @@ export default function HyeneScores() {
   const [isTeamDropdownOpen, setIsTeamDropdownOpen] = useState(false);
   const skipNextMatchesLoadRef = useRef(false);
   const skipNextExemptLoadRef = useRef(false);
+  const matchesDirtyRef = useRef(false);
+  const exemptDirtyRef = useRef(false);
   const saveMatchesTimeoutRef = useRef(null);
 
   const [seasons, setSeasons] = useState([]);
@@ -1466,6 +1468,10 @@ export default function HyeneScores() {
     }
 
     async function loadFromSupabase(isInitial) {
+      // Ne pas écraser les données locales si l'utilisateur est en train de saisir
+      if (!isInitial && (matchesDirtyRef.current || exemptDirtyRef.current)) {
+        return;
+      }
       try {
         if (isInitial) {
           setIsLoadingFromSupabase(true);
@@ -1538,13 +1544,26 @@ export default function HyeneScores() {
 
       // Empêcher loadDataFromAppData d'écraser l'exempt qu'on vient de définir
       skipNextExemptLoadRef.current = true;
+      exemptDirtyRef.current = true;
+      window.__hyeneFormDirty = true;
       setAppData(updatedAppData);
     }
 
     // Sync vers Supabase
     if (isAdmin) {
       updateSeasonExempt(parseInt(selectedSeason), team || null)
-        .catch(err => console.error('Erreur sync exempt Supabase:', err));
+        .then(() => {
+          exemptDirtyRef.current = false;
+          window.__hyeneFormDirty = matchesDirtyRef.current || exemptDirtyRef.current;
+        })
+        .catch(err => {
+          console.error('Erreur sync exempt Supabase:', err);
+          exemptDirtyRef.current = false;
+          window.__hyeneFormDirty = matchesDirtyRef.current || exemptDirtyRef.current;
+        });
+    } else {
+      exemptDirtyRef.current = false;
+      window.__hyeneFormDirty = matchesDirtyRef.current || exemptDirtyRef.current;
     }
   };
 
@@ -2400,6 +2419,8 @@ export default function HyeneScores() {
 
     // Empêcher loadDataFromAppData d'écraser les matchs en cours de saisie
     skipNextMatchesLoadRef.current = true;
+    matchesDirtyRef.current = true;
+    window.__hyeneFormDirty = true;
     setAppData(updatedAppData);
 
     // Auto-save vers Supabase si admin connecté (avec debounce pour éviter les doublons)
@@ -2417,8 +2438,19 @@ export default function HyeneScores() {
           parseInt(selectedSeason),
           parseInt(selectedJournee),
           newMatchBlock.games
-        ).catch(err => console.error('Erreur auto-save Supabase:', err));
+        ).then(() => {
+          matchesDirtyRef.current = false;
+          window.__hyeneFormDirty = matchesDirtyRef.current || exemptDirtyRef.current;
+        }).catch(err => {
+          console.error('Erreur auto-save Supabase:', err);
+          matchesDirtyRef.current = false;
+          window.__hyeneFormDirty = matchesDirtyRef.current || exemptDirtyRef.current;
+        });
       }, AUTOSAVE_DEBOUNCE_MS);
+    } else {
+      // Pas d'admin = pas de save Supabase, libérer le verrou dirty immédiatement
+      matchesDirtyRef.current = false;
+      window.__hyeneFormDirty = matchesDirtyRef.current || exemptDirtyRef.current;
     }
   }, [appData, allTeams, selectedChampionship, selectedSeason, selectedJournee, penalties, isAdmin]);
 
