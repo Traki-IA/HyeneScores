@@ -153,11 +153,13 @@ function sortTeamsToStandings(teamStats, getPenalty = () => 0) {
 
 export default function HyeneScores() {
   const [selectedTab, setSelectedTab] = useState('classement');
+  const selectedTabRef = useRef('classement');
   const fileInputRef = useRef(null);
 
   // États Authentification
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const isAdminRef = useRef(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
@@ -203,8 +205,6 @@ export default function HyeneScores() {
   const [isTeamDropdownOpen, setIsTeamDropdownOpen] = useState(false);
   const skipNextMatchesLoadRef = useRef(false);
   const skipNextExemptLoadRef = useRef(false);
-  const matchesDirtyRef = useRef(false);
-  const exemptDirtyRef = useRef(false);
   const saveMatchesTimeoutRef = useRef(null);
 
   const [seasons, setSeasons] = useState([]);
@@ -1468,8 +1468,9 @@ export default function HyeneScores() {
     }
 
     async function loadFromSupabase(isInitial) {
-      // Ne pas écraser les données locales si l'utilisateur est en train de saisir
-      if (!isInitial && (matchesDirtyRef.current || exemptDirtyRef.current)) {
+      // Désactiver l'auto-refresh quand l'admin est sur l'onglet Matchs
+      // Seules les sauvegardes explicites (debounce) écrivent vers Supabase
+      if (!isInitial && selectedTabRef.current === 'match' && isAdminRef.current) {
         return;
       }
       try {
@@ -1503,22 +1504,24 @@ export default function HyeneScores() {
     }
   }, [selectedChampionship, selectedSeason, selectedJournee, appData, penalties, loadDataFromAppData, isAdmin]);
 
+  // Synchroniser les refs avec le state pour que le setInterval y accède
+  useEffect(() => {
+    selectedTabRef.current = selectedTab;
+    // Libérer le verrou Service Worker quand on quitte l'onglet Matchs
+    if (selectedTab !== 'match') {
+      window.__hyeneFormDirty = false;
+    }
+  }, [selectedTab]);
+  useEffect(() => {
+    isAdminRef.current = isAdmin;
+  }, [isAdmin]);
+
   // useEffect pour forcer un championnat valide sur l'onglet Match (exclure Ligue des Hyènes)
   useEffect(() => {
     if (selectedTab === 'match' && selectedChampionship === 'hyenes') {
       setSelectedChampionship('france');
     }
   }, [selectedTab, selectedChampionship]);
-
-  // Libérer les verrous dirty quand l'utilisateur quitte l'onglet Matchs
-  // L'auto-refresh peut alors reprendre normalement avec les données Supabase à jour
-  useEffect(() => {
-    if (selectedTab !== 'match') {
-      matchesDirtyRef.current = false;
-      exemptDirtyRef.current = false;
-      window.__hyeneFormDirty = false;
-    }
-  }, [selectedTab]);
 
   // Fonctions Match
   const getAvailableTeams = (currentMatchId, currentType) => {
@@ -1554,7 +1557,6 @@ export default function HyeneScores() {
 
       // Empêcher loadDataFromAppData d'écraser l'exempt qu'on vient de définir
       skipNextExemptLoadRef.current = true;
-      exemptDirtyRef.current = true;
       window.__hyeneFormDirty = true;
       setAppData(updatedAppData);
     }
@@ -1564,7 +1566,6 @@ export default function HyeneScores() {
       updateSeasonExempt(parseInt(selectedSeason), team || null)
         .catch(err => console.error('Erreur sync exempt Supabase:', err));
     }
-    // Note: exemptDirtyRef reste true jusqu'à ce que l'utilisateur quitte l'onglet Matchs
   };
 
   const handleTeamSelect = (matchId, type, team) => {
@@ -2419,7 +2420,6 @@ export default function HyeneScores() {
 
     // Empêcher loadDataFromAppData d'écraser les matchs en cours de saisie
     skipNextMatchesLoadRef.current = true;
-    matchesDirtyRef.current = true;
     window.__hyeneFormDirty = true;
     setAppData(updatedAppData);
 
@@ -2441,8 +2441,6 @@ export default function HyeneScores() {
         ).catch(err => console.error('Erreur auto-save Supabase:', err));
       }, AUTOSAVE_DEBOUNCE_MS);
     }
-    // Note: matchesDirtyRef reste true jusqu'à ce que l'utilisateur quitte l'onglet Matchs
-    // pour éviter que l'auto-refresh n'écrase les saisies entre deux interactions
   }, [appData, allTeams, selectedChampionship, selectedSeason, selectedJournee, penalties, isAdmin]);
 
   return (
