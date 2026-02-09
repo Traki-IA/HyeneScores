@@ -3,8 +3,19 @@ if ('serviceWorker' in navigator) {
   let refreshing = false;
 
   // Détecte quand le nouveau service worker prend le contrôle
+  // Différer le rechargement si l'utilisateur a des données non sauvegardées
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (refreshing) return;
+    if (window.__hyeneFormDirty) {
+      var checkInterval = setInterval(function() {
+        if (!window.__hyeneFormDirty) {
+          clearInterval(checkInterval);
+          refreshing = true;
+          window.location.reload();
+        }
+      }, 1000);
+      return;
+    }
     refreshing = true;
     window.location.reload();
   });
