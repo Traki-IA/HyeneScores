@@ -1510,6 +1510,16 @@ export default function HyeneScores() {
     }
   }, [selectedTab, selectedChampionship]);
 
+  // Libérer les verrous dirty quand l'utilisateur quitte l'onglet Matchs
+  // L'auto-refresh peut alors reprendre normalement avec les données Supabase à jour
+  useEffect(() => {
+    if (selectedTab !== 'match') {
+      matchesDirtyRef.current = false;
+      exemptDirtyRef.current = false;
+      window.__hyeneFormDirty = false;
+    }
+  }, [selectedTab]);
+
   // Fonctions Match
   const getAvailableTeams = (currentMatchId, currentType) => {
     const selectedTeams = [];
@@ -1552,19 +1562,9 @@ export default function HyeneScores() {
     // Sync vers Supabase
     if (isAdmin) {
       updateSeasonExempt(parseInt(selectedSeason), team || null)
-        .then(() => {
-          exemptDirtyRef.current = false;
-          window.__hyeneFormDirty = matchesDirtyRef.current || exemptDirtyRef.current;
-        })
-        .catch(err => {
-          console.error('Erreur sync exempt Supabase:', err);
-          exemptDirtyRef.current = false;
-          window.__hyeneFormDirty = matchesDirtyRef.current || exemptDirtyRef.current;
-        });
-    } else {
-      exemptDirtyRef.current = false;
-      window.__hyeneFormDirty = matchesDirtyRef.current || exemptDirtyRef.current;
+        .catch(err => console.error('Erreur sync exempt Supabase:', err));
     }
+    // Note: exemptDirtyRef reste true jusqu'à ce que l'utilisateur quitte l'onglet Matchs
   };
 
   const handleTeamSelect = (matchId, type, team) => {
@@ -2438,20 +2438,11 @@ export default function HyeneScores() {
           parseInt(selectedSeason),
           parseInt(selectedJournee),
           newMatchBlock.games
-        ).then(() => {
-          matchesDirtyRef.current = false;
-          window.__hyeneFormDirty = matchesDirtyRef.current || exemptDirtyRef.current;
-        }).catch(err => {
-          console.error('Erreur auto-save Supabase:', err);
-          matchesDirtyRef.current = false;
-          window.__hyeneFormDirty = matchesDirtyRef.current || exemptDirtyRef.current;
-        });
+        ).catch(err => console.error('Erreur auto-save Supabase:', err));
       }, AUTOSAVE_DEBOUNCE_MS);
-    } else {
-      // Pas d'admin = pas de save Supabase, libérer le verrou dirty immédiatement
-      matchesDirtyRef.current = false;
-      window.__hyeneFormDirty = matchesDirtyRef.current || exemptDirtyRef.current;
     }
+    // Note: matchesDirtyRef reste true jusqu'à ce que l'utilisateur quitte l'onglet Matchs
+    // pour éviter que l'auto-refresh n'écrase les saisies entre deux interactions
   }, [appData, allTeams, selectedChampionship, selectedSeason, selectedJournee, penalties, isAdmin]);
 
   return (
