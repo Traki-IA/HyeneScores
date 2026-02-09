@@ -116,7 +116,6 @@ export async function fetchAppData() {
           .from('matches')
           .select('*')
           .order('matchday', { ascending: true })
-          .order('game_order', { ascending: true, nullsFirst: false })
           .order('id', { ascending: true })
           .range(offset, offset + pageSize - 1);
 
@@ -379,8 +378,8 @@ export async function saveMatches(championship, season, matchday, games) {
     return [];
   }
 
-  // Inserer les nouveaux matchs
-  const matchesToInsert = validGames.map((game, index) => ({
+  // Inserer les nouveaux matchs (avec game_order si la colonne existe)
+  const baseFields = validGames.map((game, index) => ({
     championship,
     season,
     matchday,
@@ -391,10 +390,27 @@ export async function saveMatches(championship, season, matchday, games) {
     game_order: index
   }));
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('matches')
-    .insert(matchesToInsert)
+    .insert(baseFields)
     .select();
+
+  // Si la colonne game_order n'existe pas encore, réessayer sans
+  if (error && error.message && error.message.includes('game_order')) {
+    const fallbackFields = validGames.map(game => ({
+      championship,
+      season,
+      matchday,
+      home_team: game.homeTeam,
+      away_team: game.awayTeam,
+      home_score: game.homeScore,
+      away_score: game.awayScore
+    }));
+    ({ data, error } = await supabase
+      .from('matches')
+      .insert(fallbackFields)
+      .select());
+  }
 
   if (error) throw error;
   return data;
