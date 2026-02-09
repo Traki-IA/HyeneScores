@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS matches (
   away_team TEXT NOT NULL,
   home_score INTEGER,
   away_score INTEGER,
+  game_order INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -305,6 +306,12 @@ ON CONFLICT (email) DO NOTHING;
 -- Si vous mettez à jour une base existante, exécutez :
 --   ALTER TABLE seasons ADD COLUMN IF NOT EXISTS exempt_team TEXT;
 --   ALTER TABLE matches DROP COLUMN IF EXISTS exempt_team;
+
+-- ============================================
+-- MIGRATION: game_order pour préserver l'ordre de saisie
+-- ============================================
+-- Si vous mettez à jour une base existante, exécutez :
+--   ALTER TABLE matches ADD COLUMN IF NOT EXISTS game_order INTEGER DEFAULT 0;
 
 -- ============================================
 -- FIN DU SCRIPT
