@@ -1044,7 +1044,7 @@ export default function HyeneScores() {
           ...allChampionsForDb.map(c =>
             saveChampion(c.championship, c.season, c.champion, c.runnerUp).catch(err => console.error('Erreur saveChampion:', err))
           ),
-          ...pantheon.filter(p => p.total > 0).map(p =>
+          ...pantheon.map(p =>
             updatePantheon(p.name, 0, p.total, 0).catch(err => console.error('Erreur updatePantheon:', err))
           )
         ]).catch(err => console.error('Erreur persistence Panthéon:', err));
