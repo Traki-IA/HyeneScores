@@ -13,8 +13,8 @@ const SUPABASE_PAGE_SIZE = 1000;
 const MAX_IMPORT_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 const HYENES_MATCHDAYS = 72;
 const STANDARD_MATCHDAYS = 18;
-const HYENES_S6_MATCHDAYS = 62;
-const FRANCE_S6_MATCHDAYS = 8;
+const HYENES_S6_MATCHDAYS = 64;
+const FRANCE_S6_MATCHDAYS = 10;
 const MATCHES_PER_MATCHDAY = 5;
 
 // Constantes extraites au niveau module (évite les recréations à chaque render)
@@ -209,13 +209,21 @@ export default function HyeneScores() {
 
   const [seasons, setSeasons] = useState([]);
 
-  // Nombre de journées dynamique selon le championnat
-  const getJourneesForChampionship = (championship) => {
-    const count = championship === 'hyenes' ? HYENES_MATCHDAYS : STANDARD_MATCHDAYS;
+  // Nombre de journées dynamique selon le championnat et la saison
+  const getJourneesForChampionship = (championship, season) => {
+    const isS6 = season === '6';
+    let count;
+    if (championship === 'hyenes') {
+      count = isS6 ? HYENES_S6_MATCHDAYS : HYENES_MATCHDAYS;
+    } else if (championship === 'france' && isS6) {
+      count = FRANCE_S6_MATCHDAYS;
+    } else {
+      count = STANDARD_MATCHDAYS;
+    }
     return Array.from({ length: count }, (_, i) => (i + 1).toString());
   };
 
-  const journees = getJourneesForChampionship(selectedChampionship);
+  const journees = getJourneesForChampionship(selectedChampionship, selectedSeason);
 
   // États Réglages
   const [showResetModal, setShowResetModal] = useState(false);
@@ -588,13 +596,13 @@ export default function HyeneScores() {
 
       // Calculer la progression de la saison
       // Ligue des Hyènes : 72 journées, Autres championnats : 18 journées
-      // Cas spécial S6 : France a 8 journées, donc Ligue des Hyènes S6 = 62 (8+18+18+18)
+      // Cas spécial S6 : France a 10 journées, donc Ligue des Hyènes S6 = 64 (10+18+18+18)
       const isS6 = season === '6';
       const isFranceS6 = championship === 'france' && isS6;
       const isHyenesS6 = championship === 'hyenes' && isS6;
       const totalMatchdays = championship === 'hyenes'
-        ? (isHyenesS6 ? 62 : 72)
-        : (isFranceS6 ? 8 : 18);
+        ? (isHyenesS6 ? HYENES_S6_MATCHDAYS : HYENES_MATCHDAYS)
+        : (isFranceS6 ? FRANCE_S6_MATCHDAYS : STANDARD_MATCHDAYS);
       // Utiliser le max des journées enregistrées plutôt que le nb de matchs de la 1ère équipe
       const currentMatchday = allSeasonMatches.length > 0
         ? Math.max(...allSeasonMatches.map(b => b.matchday))
@@ -855,7 +863,7 @@ export default function HyeneScores() {
           if (standings.length > 0) {
             // Vérifier si la saison est terminée
             // Ligue des Hyènes : 72 journées, Autres : 18 journées
-            // Cas spécial S6 : France a 8 journées, Ligue des Hyènes S6 = 62
+            // Cas spécial S6 : France a 10 journées, Ligue des Hyènes S6 = 64
             const isS6 = seasonNum === '6';
             const isFranceS6 = championshipName === 'france' && isS6;
             const isHyenesS6 = championshipName === 'ligue_hyenes' && isS6;
@@ -872,6 +880,7 @@ export default function HyeneScores() {
             if (isSeasonComplete) {
               // Cas spécial : France S6 - deux champions ex-aequo
               if (isFranceS6) {
+                const firstTeam = standings[0];
                 championsList.push({
                   season: seasonNum,
                   team: 'BimBam / Warnaque',
@@ -936,8 +945,8 @@ export default function HyeneScores() {
 
       // Mapping des championnats
       const championshipConfigPantheon = {
-        'ligue_hyenes': { field: 'trophies', totalMatchdays: 72, s6Matchdays: 62 },
-        'france': { field: 'france', totalMatchdays: 18, s6Matchdays: 8 },
+        'ligue_hyenes': { field: 'trophies', totalMatchdays: HYENES_MATCHDAYS, s6Matchdays: HYENES_S6_MATCHDAYS },
+        'france': { field: 'france', totalMatchdays: STANDARD_MATCHDAYS, s6Matchdays: FRANCE_S6_MATCHDAYS },
         'espagne': { field: 'spain', totalMatchdays: 18, s6Matchdays: 18 },
         'italie': { field: 'italy', totalMatchdays: 18, s6Matchdays: 18 },
         'angleterre': { field: 'england', totalMatchdays: 18, s6Matchdays: 18 }
@@ -2077,8 +2086,8 @@ export default function HyeneScores() {
 
             // Mapping des championnats
             const championshipConfig = {
-              'ligue_hyenes': { field: 'trophies', totalMatchdays: 72, s6Matchdays: 62 },
-              'france': { field: 'france', totalMatchdays: 18, s6Matchdays: 8 },
+              'ligue_hyenes': { field: 'trophies', totalMatchdays: HYENES_MATCHDAYS, s6Matchdays: HYENES_S6_MATCHDAYS },
+              'france': { field: 'france', totalMatchdays: STANDARD_MATCHDAYS, s6Matchdays: FRANCE_S6_MATCHDAYS },
               'espagne': { field: 'spain', totalMatchdays: 18, s6Matchdays: 18 },
               'italie': { field: 'italy', totalMatchdays: 18, s6Matchdays: 18 },
               'angleterre': { field: 'england', totalMatchdays: 18, s6Matchdays: 18 }
