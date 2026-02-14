@@ -554,18 +554,32 @@ export default function HyeneScores() {
             return b.bp - a.bp;
           });
 
-        standings = sortedTeams.map((team, index) => ({
-          pos: index + 1,
-          mgr: team.name,
-          pts: team.pts,
-          j: team.j,
-          g: team.g,
-          n: team.n,
-          p: team.p,
-          bp: team.bp,
-          bc: team.bc,
-          diff: team.diff
-        }));
+        // France S6 : système de binômes - les équipes avec stats identiques partagent le même rang
+        const isFranceS6Standings = championship === 'france' && season === '6';
+        let currentPos = 1;
+
+        standings = sortedTeams.map((team, index) => {
+          if (isFranceS6Standings && index > 0) {
+            const prev = sortedTeams[index - 1];
+            if (prev.effectivePts !== team.effectivePts || prev.diff !== team.diff) {
+              currentPos++;
+            }
+          } else if (!isFranceS6Standings) {
+            currentPos = index + 1;
+          }
+          return {
+            pos: currentPos,
+            mgr: team.name,
+            pts: team.pts,
+            j: team.j,
+            g: team.g,
+            n: team.n,
+            p: team.p,
+            bp: team.bp,
+            bc: team.bc,
+            diff: team.diff
+          };
+        });
       } else {
         // Pas de données de matchs - utiliser les standings sauvegardés
         standings = savedStandings;
@@ -1753,7 +1767,7 @@ export default function HyeneScores() {
 
   // Calculer le classement trié avec les pénalités appliquées
   const getSortedTeams = () => {
-    return [...teams]
+    const sorted = [...teams]
       .map(team => ({
         ...team,
         effectivePts: team.pts - getTeamPenalty(team.name)
@@ -1767,11 +1781,30 @@ export default function HyeneScores() {
         const diffA = parseInt(String(a.diff).replace('+', '')) || 0;
         const diffB = parseInt(String(b.diff).replace('+', '')) || 0;
         return diffB - diffA;
-      })
-      .map((team, index) => ({
-        ...team,
-        displayRank: index + 1
-      }));
+      });
+
+    // France S6 : système de binômes - les équipes avec stats identiques partagent le même rang
+    const isFranceS6 = selectedChampionship === 'france' && selectedSeason === '6';
+
+    if (isFranceS6) {
+      let currentRank = 1;
+      return sorted.map((team, index) => {
+        if (index > 0) {
+          const prev = sorted[index - 1];
+          const prevDiff = parseInt(String(prev.diff).replace('+', '')) || 0;
+          const currDiff = parseInt(String(team.diff).replace('+', '')) || 0;
+          if (prev.effectivePts !== team.effectivePts || prevDiff !== currDiff) {
+            currentRank++;
+          }
+        }
+        return { ...team, displayRank: currentRank };
+      });
+    }
+
+    return sorted.map((team, index) => ({
+      ...team,
+      displayRank: index + 1
+    }));
   };
 
   const handleJourneeSelect = (journee) => {
