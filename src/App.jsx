@@ -1076,9 +1076,14 @@ export default function HyeneScores() {
         }
       });
 
-      // Convertir en tableau et trier par nombre total de trophées
+      // Convertir en tableau et trier : priorité Ligue des Hyènes, puis total de trophées
       const pantheon = Object.values(trophyCount)
-        .sort((a, b) => b.total - a.total)
+        .sort((a, b) => {
+          // 1. Priorité aux trophées Ligue des Hyènes (championnat le plus prestigieux)
+          if (b.trophies !== a.trophies) return b.trophies - a.trophies;
+          // 2. Départage par nombre total de trophées
+          return b.total - a.total;
+        })
         .map((team, index) => ({
           ...team,
           rank: index + 1
@@ -3242,8 +3247,8 @@ export default function HyeneScores() {
                 <div className="grid grid-cols-12 gap-0.5 items-center">
                   <div className="col-span-1 flex justify-center text-gray-400 text-sm font-bold tracking-widest">#</div>
                   <div className="col-span-4 flex items-center text-left pl-1 text-gray-400 text-sm font-bold tracking-widest">ÉQUIPE</div>
-                  <div className="col-span-1 flex justify-center text-gray-400 text-sm font-bold tracking-widest">
-                    <div className="text-lg">🏆</div>
+                  <div className="col-span-1 flex justify-center text-yellow-500 text-sm font-bold tracking-widest">
+                    <div className="text-lg glow-gold">🏆</div>
                   </div>
                   <div className="col-span-1 flex justify-center text-gray-400 text-sm font-bold tracking-widest">
                     <div className="text-lg">🇫🇷</div>
@@ -3277,7 +3282,7 @@ export default function HyeneScores() {
                         <span className="text-white text-base font-bold tracking-tight">{team.name}</span>
                       </div>
                       <div className="col-span-1 flex items-center justify-center">
-                        <span className="text-gray-300 text-base font-medium">{team.trophies}</span>
+                        <span className={`text-base font-bold ${team.trophies > 0 ? 'text-yellow-500 glow-gold' : 'text-gray-500'}`}>{team.trophies}</span>
                       </div>
                       <div className="col-span-1 flex items-center justify-center">
                         <span className="text-gray-300 text-base font-medium">{team.france}</span>
