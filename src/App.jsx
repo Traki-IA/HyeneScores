@@ -459,7 +459,7 @@ export default function HyeneScores() {
                    block.season === parseInt(season)
         );
         if (champMatches.length > 0) {
-          currentMatchday += Math.max(...champMatches.map(b => b.matchday));
+          currentMatchday += new Set(champMatches.map(b => b.matchday)).size;
         }
       });
       const totalMatchdays = isS6 ? HYENES_S6_MATCHDAYS : HYENES_MATCHDAYS;
@@ -588,9 +588,9 @@ export default function HyeneScores() {
       // Mettre à jour les standings dans data pour que Palmarès/Panthéon voient les données recalculées
       if (data.entities.seasons[seasonKey]) {
         data.entities.seasons[seasonKey].standings = standings;
-        // Stocker le nombre de journées jouées (basé sur les matchdays, pas sur j)
+        // Stocker le nombre de journées distinctes jouées (pas le max, pour détecter les trous)
         if (allSeasonMatches.length > 0) {
-          data.entities.seasons[seasonKey].playedMatchdays = Math.max(...allSeasonMatches.map(b => b.matchday));
+          data.entities.seasons[seasonKey].playedMatchdays = new Set(allSeasonMatches.map(b => b.matchday)).size;
         }
       }
 
@@ -617,9 +617,9 @@ export default function HyeneScores() {
       const totalMatchdays = championship === 'hyenes'
         ? (isHyenesS6 ? HYENES_S6_MATCHDAYS : HYENES_MATCHDAYS)
         : (isFranceS6 ? FRANCE_S6_MATCHDAYS : STANDARD_MATCHDAYS);
-      // Utiliser le max des journées enregistrées plutôt que le nb de matchs de la 1ère équipe
+      // Compter les journées distinctes réellement saisies (pas le max, pour détecter les trous)
       const currentMatchday = allSeasonMatches.length > 0
-        ? Math.max(...allSeasonMatches.map(b => b.matchday))
+        ? new Set(allSeasonMatches.map(b => b.matchday)).size
         : (standings[0]?.j || 0);
       const percentage = totalMatchdays > 0 ? ((currentMatchday / totalMatchdays) * 100).toFixed(1) : 0;
 
@@ -726,7 +726,7 @@ export default function HyeneScores() {
             block => block.championship?.toLowerCase() === champ && block.season === seasonNum
           );
           if (champMatches.length > 0) {
-            playedMatchdays += Math.max(...champMatches.map(b => b.matchday));
+            playedMatchdays += new Set(champMatches.map(b => b.matchday)).size;
           }
           champMatches.forEach(matchBlock => {
             if (!matchBlock.games || !Array.isArray(matchBlock.games)) return;
@@ -811,7 +811,7 @@ export default function HyeneScores() {
 
           let playedMatchdays = 0;
           if (champMatches.length > 0) {
-            playedMatchdays = Math.max(...champMatches.map(b => b.matchday));
+            playedMatchdays = new Set(champMatches.map(b => b.matchday)).size;
           }
 
           champMatches.forEach(matchBlock => {
@@ -2409,12 +2409,13 @@ export default function HyeneScores() {
       setTeams(normalizedTeams);
 
       // Mettre à jour la progression (allSeasonMatches déjà défini plus haut)
-      const maxMatchday = Math.max(...allSeasonMatches.map(b => b.matchday), parseInt(selectedJournee));
+      const distinctMatchdays = new Set([...allSeasonMatches.map(b => b.matchday), parseInt(selectedJournee)]);
+      const currentMatchday = distinctMatchdays.size;
       const totalMatchdays = 18;
       setSeasonProgress({
-        currentMatchday: maxMatchday,
+        currentMatchday,
         totalMatchdays,
-        percentage: parseFloat(((maxMatchday / totalMatchdays) * 100).toFixed(1))
+        percentage: parseFloat(((currentMatchday / totalMatchdays) * 100).toFixed(1))
       });
 
       alert('✅ Classement mis à jour avec les nouvelles données !');
