@@ -562,7 +562,7 @@ export default function HyeneScores() {
           if (isFranceS6Standings && index > 0) {
             const prev = sortedTeams[index - 1];
             if (prev.effectivePts !== team.effectivePts || prev.diff !== team.diff) {
-              currentPos = index + 1;
+              currentPos++;
             }
           } else if (!isFranceS6Standings) {
             currentPos = index + 1;
@@ -1794,7 +1794,7 @@ export default function HyeneScores() {
           const prevDiff = parseInt(String(prev.diff).replace('+', '')) || 0;
           const currDiff = parseInt(String(team.diff).replace('+', '')) || 0;
           if (prev.effectivePts !== team.effectivePts || prevDiff !== currDiff) {
-            currentRank = index + 1;
+            currentRank++;
           }
         }
         return { ...team, displayRank: currentRank };
