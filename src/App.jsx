@@ -1003,7 +1003,21 @@ export default function HyeneScores() {
             trophyCount['Warnaque'].france += 1;
             trophyCount['Warnaque'].total += 1;
           }
-          allChampionsForDb.push({ championship: championshipName, season: parseInt(seasonNum), champion: 'BimBam / Warnaque' });
+          // Déterminer le runner-up (3e au classement, après les deux co-champions)
+          const franceS6Teams = standings.map(team => {
+            const teamName = team.mgr || team.name || '?';
+            const penalty = getTeamPenaltyLocal(teamName, championshipName, seasonNum);
+            const pts = team.pts || team.points || 0;
+            return { name: teamName, effectivePts: pts - penalty, diff: team.diff };
+          });
+          franceS6Teams.sort((a, b) => {
+            if (b.effectivePts !== a.effectivePts) return b.effectivePts - a.effectivePts;
+            const diffA = parseInt(String(a.diff).replace('+', '')) || 0;
+            const diffB = parseInt(String(b.diff).replace('+', '')) || 0;
+            return diffB - diffA;
+          });
+          const franceS6RunnerUp = franceS6Teams.find(t => t.name !== 'BimBam' && t.name !== 'Warnaque');
+          allChampionsForDb.push({ championship: championshipName, season: parseInt(seasonNum), champion: 'BimBam / Warnaque', runnerUp: franceS6RunnerUp?.name || null });
           return;
         }
 
