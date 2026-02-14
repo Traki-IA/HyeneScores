@@ -1003,7 +1003,32 @@ export default function HyeneScores() {
             trophyCount['Warnaque'].france += 1;
             trophyCount['Warnaque'].total += 1;
           }
-          allChampionsForDb.push({ championship: championshipName, season: parseInt(seasonNum), champion: 'BimBam / Warnaque' });
+          // Déterminer le runner-up (3e au classement, après les deux co-champions)
+          const franceS6Teams = standings.map(team => {
+            const teamName = team.mgr || team.name || '?';
+            const penalty = getTeamPenaltyLocal(teamName, championshipName, seasonNum);
+            const pts = team.pts || team.points || 0;
+            return { name: teamName, effectivePts: pts - penalty, diff: team.diff };
+          });
+          franceS6Teams.sort((a, b) => {
+            if (b.effectivePts !== a.effectivePts) return b.effectivePts - a.effectivePts;
+            const diffA = parseInt(String(a.diff).replace('+', '')) || 0;
+            const diffB = parseInt(String(b.diff).replace('+', '')) || 0;
+            return diffB - diffA;
+          });
+          // Trouver tous les runner-ups ex-aequo (même pts et diff après les co-champions)
+          const remainingTeams = franceS6Teams.filter(t => t.name !== 'BimBam' && t.name !== 'Warnaque');
+          const firstRunnerUp = remainingTeams[0];
+          let runnerUpName = null;
+          if (firstRunnerUp) {
+            const firstDiff = parseInt(String(firstRunnerUp.diff).replace('+', '')) || 0;
+            const coRunnerUps = remainingTeams.filter(t => {
+              const tDiff = parseInt(String(t.diff).replace('+', '')) || 0;
+              return t.effectivePts === firstRunnerUp.effectivePts && tDiff === firstDiff;
+            });
+            runnerUpName = coRunnerUps.map(t => t.name).join(' / ');
+          }
+          allChampionsForDb.push({ championship: championshipName, season: parseInt(seasonNum), champion: 'BimBam / Warnaque', runnerUp: runnerUpName });
           return;
         }
 
