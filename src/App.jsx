@@ -1016,8 +1016,19 @@ export default function HyeneScores() {
             const diffB = parseInt(String(b.diff).replace('+', '')) || 0;
             return diffB - diffA;
           });
-          const franceS6RunnerUp = franceS6Teams.find(t => t.name !== 'BimBam' && t.name !== 'Warnaque');
-          allChampionsForDb.push({ championship: championshipName, season: parseInt(seasonNum), champion: 'BimBam / Warnaque', runnerUp: franceS6RunnerUp?.name || null });
+          // Trouver tous les runner-ups ex-aequo (même pts et diff après les co-champions)
+          const remainingTeams = franceS6Teams.filter(t => t.name !== 'BimBam' && t.name !== 'Warnaque');
+          const firstRunnerUp = remainingTeams[0];
+          let runnerUpName = null;
+          if (firstRunnerUp) {
+            const firstDiff = parseInt(String(firstRunnerUp.diff).replace('+', '')) || 0;
+            const coRunnerUps = remainingTeams.filter(t => {
+              const tDiff = parseInt(String(t.diff).replace('+', '')) || 0;
+              return t.effectivePts === firstRunnerUp.effectivePts && tDiff === firstDiff;
+            });
+            runnerUpName = coRunnerUps.map(t => t.name).join(' / ');
+          }
+          allChampionsForDb.push({ championship: championshipName, season: parseInt(seasonNum), champion: 'BimBam / Warnaque', runnerUp: runnerUpName });
           return;
         }
 
