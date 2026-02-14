@@ -2590,8 +2590,8 @@ export default function HyeneScores() {
                     {isSeasonOpen && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setIsSeasonOpen(false)}></div>
-                        <div className="absolute right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 w-36 max-h-48 overflow-y-auto">
-                          {seasons.map(season => (
+                        <div className="absolute right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 w-36 max-h-72 overflow-y-auto">
+                          {[...seasons].reverse().map(season => (
                             <button
                               key={season}
                               onClick={() => handleSeasonSelect(season)}
@@ -2875,8 +2875,8 @@ export default function HyeneScores() {
                     {isSeasonOpen && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setIsSeasonOpen(false)}></div>
-                        <div className="absolute right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 w-36 max-h-48 overflow-y-auto">
-                          {seasons.map(season => (
+                        <div className="absolute right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 w-36 max-h-72 overflow-y-auto">
+                          {[...seasons].reverse().map(season => (
                             <button
                               key={season}
                               onClick={() => {
