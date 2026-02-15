@@ -641,6 +641,8 @@ export default function HyeneScores() {
   const [visibleManagers, setVisibleManagers] = useState(new Set());
   const [timelineMode, setTimelineMode] = useState('points');
   const [h2hSelectedManager, setH2hSelectedManager] = useState(null);
+  const [isStatsChampOpen, setIsStatsChampOpen] = useState(false);
+  const [isStatsSeasonOpen, setIsStatsSeasonOpen] = useState(false);
 
   // Compute stats only when on the stats tab
   const statsResult = useMemo(() => {
@@ -4182,33 +4184,99 @@ export default function HyeneScores() {
 
       {/* STATS */}
       {selectedTab === 'stats' && (
-        <div className="h-full flex flex-col ios26-vibrancy pb-16">
+        <div className="h-full flex flex-col ios26-vibrancy pb-14">
           {/* Header */}
           <div className="px-2 pt-2 flex-shrink-0">
             <div className="ios26-header rounded-xl py-2 text-center">
-              <h1 className="text-cyan-400 text-xl font-extrabold tracking-widest glow-cyan">STATISTIQUES</h1>
+              <h1 className="text-cyan-400 text-2xl font-extrabold tracking-widest glow-cyan">STATISTIQUES</h1>
             </div>
           </div>
 
           <div className="flex-1 px-2 overflow-y-auto">
-            {/* Filter Bar */}
-            <div className="flex items-center gap-2 mt-2 mb-1">
-              {/* Championship filter */}
-              <div className="flex gap-1 flex-1 overflow-x-auto scrollbar-hide">
-                <button onClick={() => setStatsChampionship('all')} className={`px-2 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${statsChampionship === 'all' ? 'ios26-tab-active text-cyan-400' : 'ios26-btn text-gray-400'}`}>Tous</button>
-                {CHAMPIONSHIPS.map(c => (
-                  <button key={c.id} onClick={() => setStatsChampionship(c.id)} className={`px-2 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${statsChampionship === c.id ? 'ios26-tab-active text-cyan-400' : 'ios26-btn text-gray-400'}`}>{c.icon}</button>
-                ))}
+            {/* Selectors — même style que Classement */}
+            <div className="py-2 relative">
+              <div className="flex items-stretch gap-3">
+                {/* Championship dropdown */}
+                <div className="flex-1 relative">
+                  <button
+                    onClick={() => { setIsStatsChampOpen(!isStatsChampOpen); setIsStatsSeasonOpen(false); }}
+                    className={`w-full h-12 ios26-btn rounded-xl px-4 text-white text-base font-semibold cursor-pointer flex items-center justify-between ${isStatsChampOpen ? 'border-cyan-500/50' : ''}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{statsChampionship === 'all' ? '📊' : championships.find(c => c.id === statsChampionship)?.icon}</span>
+                      <span className="truncate">{statsChampionship === 'all' ? 'Tous les championnats' : championships.find(c => c.id === statsChampionship)?.name}</span>
+                    </div>
+                    <svg className={`w-5 h-5 text-cyan-400 flex-shrink-0 transition-transform ${isStatsChampOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {isStatsChampOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setIsStatsChampOpen(false)}></div>
+                      <div className="absolute left-0 right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 overflow-hidden">
+                        <button
+                          onClick={() => { setStatsChampionship('all'); setIsStatsChampOpen(false); }}
+                          className={`w-full px-4 py-3 text-base font-semibold text-left flex items-center gap-3 ${statsChampionship === 'all' ? 'bg-cyan-500/20 text-cyan-400' : 'text-white hover:bg-white/10'}`}
+                        >
+                          <span className="text-2xl">📊</span>
+                          <span>Tous les championnats</span>
+                        </button>
+                        {championships.map(champ => (
+                          <button
+                            key={champ.id}
+                            onClick={() => { setStatsChampionship(champ.id); setIsStatsChampOpen(false); }}
+                            className={`w-full px-4 py-3 text-base font-semibold text-left flex items-center gap-3 ${statsChampionship === champ.id ? 'bg-cyan-500/20 text-cyan-400' : 'text-white hover:bg-white/10'}`}
+                          >
+                            <span className="text-2xl">{champ.icon}</span>
+                            <span>{champ.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Season dropdown */}
+                <div className="w-32 relative">
+                  <button
+                    onClick={() => { setIsStatsSeasonOpen(!isStatsSeasonOpen); setIsStatsChampOpen(false); }}
+                    className={`w-full h-12 ios26-btn rounded-xl px-4 text-white text-base font-semibold cursor-pointer flex items-center justify-between ${isStatsSeasonOpen ? 'border-cyan-500/50' : ''}`}
+                  >
+                    <span>{statsSeason === 'all' ? 'Toutes' : `Saison ${statsSeason}`}</span>
+                    <svg className={`w-5 h-5 text-cyan-400 flex-shrink-0 transition-transform ${isStatsSeasonOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {isStatsSeasonOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setIsStatsSeasonOpen(false)}></div>
+                      <div className="absolute right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 w-36 max-h-72 overflow-y-auto">
+                        <button
+                          onClick={() => { setStatsSeason('all'); setIsStatsSeasonOpen(false); }}
+                          className={`w-full px-4 py-3 text-base font-semibold text-left ${statsSeason === 'all' ? 'bg-cyan-500/20 text-cyan-400' : 'text-white hover:bg-white/10'}`}
+                        >
+                          Toutes
+                        </button>
+                        {[...availableSeasons].reverse().map(s => (
+                          <button
+                            key={s}
+                            onClick={() => { setStatsSeason(String(s)); setIsStatsSeasonOpen(false); }}
+                            className={`w-full px-4 py-3 text-base font-semibold text-left ${statsSeason === String(s) ? 'bg-cyan-500/20 text-cyan-400' : 'text-white hover:bg-white/10'}`}
+                          >
+                            Saison {s}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
-              {/* Season filter */}
-              <select value={statsSeason} onChange={e => setStatsSeason(e.target.value)} className="ios26-input rounded-lg px-2 py-1 text-xs text-gray-300 bg-black/40 min-w-[70px]">
-                <option value="all">Toutes</option>
-                {availableSeasons.map(s => (<option key={s} value={s}>S{s}</option>))}
-              </select>
             </div>
 
             {/* Category Selector */}
-            <div className="flex gap-1.5 overflow-x-auto py-2 scrollbar-hide">
+            <div className="flex gap-1.5 overflow-x-auto py-1 scrollbar-hide">
               {STATS_CATEGORIES.map(cat => (
                 <button key={cat.id} onClick={() => setStatsCategory(cat.id)} className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${statsCategory === cat.id ? 'ios26-tab-active text-cyan-400' : 'ios26-btn text-gray-500'}`}>
                   {cat.icon} {cat.label}
