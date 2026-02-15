@@ -237,7 +237,47 @@ function computeRecords(flatMatches, matchBlocks, appData, champFilter, seasonFi
   // Trophy wins record
   const trophyWins = {};
   if (appData?.entities?.seasons) {
-    Object.entries(appData.entities.seasons).forEach(([key, season]) => {
+    // Build effective seasons map: compute Hyènes standings dynamically if missing
+    // (Hyènes standings are aggregated from 4 European championships and only exist
+    // in-memory after loadDataFromAppData runs; fresh Supabase data won't have them)
+    const seasons = appData.entities.seasons;
+    const effectiveSeasons = {};
+    const seasonNums = new Set();
+
+    Object.entries(seasons).forEach(([key, s]) => {
+      effectiveSeasons[key] = s;
+      const num = s.season || parseInt(key.match(/_s(\d+)$/)?.[1] || '0');
+      if (num > 0) seasonNums.add(num);
+    });
+
+    const euroKeys = ['france', 'espagne', 'italie', 'angleterre'];
+    seasonNums.forEach(sNum => {
+      const hyenesKey = `ligue_hyenes_s${sNum}`;
+      if (effectiveSeasons[hyenesKey]?.standings?.length > 0) return;
+      // Aggregate standings from the 4 European championships
+      const managerStats = {};
+      euroKeys.forEach(champ => {
+        const champSeason = effectiveSeasons[`${champ}_s${sNum}`];
+        if (!champSeason?.standings?.length) return;
+        champSeason.standings.forEach(t => {
+          const name = t.mgr || t.name || '?';
+          if (name === '?') return;
+          if (!managerStats[name]) managerStats[name] = { mgr: name, pts: 0, j: 0, diff: 0, bp: 0 };
+          managerStats[name].pts += (t.pts || 0);
+          managerStats[name].j += (t.j || 0);
+          managerStats[name].bp += (t.bp || 0);
+          const d = typeof t.diff === 'string' ? parseInt(t.diff.replace('+', '')) : (t.diff || 0);
+          managerStats[name].diff += d;
+        });
+      });
+      if (Object.keys(managerStats).length > 0) {
+        const sorted = Object.values(managerStats)
+          .sort((a, b) => b.pts - a.pts || b.diff - a.diff || b.bp - a.bp);
+        effectiveSeasons[hyenesKey] = { season: sNum, standings: sorted };
+      }
+    });
+
+    Object.entries(effectiveSeasons).forEach(([key, season]) => {
       if (!season.standings || !Array.isArray(season.standings) || season.standings.length === 0) return;
       const champ = key.replace(/_s\d+$/, '');
       const sNum = season.season || parseInt(key.match(/_s(\d+)$/)?.[1] || '0');
@@ -4157,7 +4197,7 @@ export default function HyeneScores() {
 
       {/* STATS */}
       {selectedTab === 'stats' && (
-        <div className="h-full flex flex-col ios26-vibrancy pb-14">
+        <div className="h-full flex flex-col ios26-vibrancy pb-20">
           {/* Header */}
           <div className="px-2 pt-2 flex-shrink-0">
             <div className="ios26-header rounded-xl py-2 text-center">
@@ -4254,7 +4294,7 @@ export default function HyeneScores() {
             {!statsResult ? (
               <div className="text-center py-12 text-gray-500 text-sm">Aucune donnée disponible</div>
             ) : (
-              <div className="space-y-2 pt-2 pb-4">
+              <div className="space-y-2 pt-2 pb-20">
 
                 {/* === RECORDS === */}
                 {statsCategory === 'records' && statsResult.records && (
@@ -4283,9 +4323,9 @@ export default function HyeneScores() {
                         <div key={i} className={`py-2 ${i > 0 ? 'border-t border-white/5' : ''}`}>
                           <div className="flex items-center">
                             <span className={`font-extrabold text-sm w-6 flex-shrink-0 ${i === 0 ? 'text-yellow-400' : 'text-gray-500'}`}>{i + 1}.</span>
-                            <span className={`flex-1 text-right font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>{m.winner}</span>
-                            <span className="flex-shrink-0 mx-2 font-extrabold text-base text-center w-16"><span className="text-green-400">{m.winScore}</span> - <span className="text-red-400">{m.loseScore}</span></span>
-                            <span className={`flex-1 text-left font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>{m.loser}</span>
+                            <span className={`flex-1 text-right font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>{m.homeTeam}</span>
+                            <span className="flex-shrink-0 mx-2 font-extrabold text-base text-center w-16"><span className={m.homeScore > m.awayScore ? 'text-green-400' : 'text-red-400'}>{m.homeScore}</span> - <span className={m.awayScore > m.homeScore ? 'text-green-400' : 'text-red-400'}>{m.awayScore}</span></span>
+                            <span className={`flex-1 text-left font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>{m.awayTeam}</span>
                           </div>
                           <div className="text-gray-500 text-xs text-center mt-0.5">{CHAMP_ICON[m.championship] || ''} Saison {m.season} — Journée {m.matchday}</div>
                         </div>
