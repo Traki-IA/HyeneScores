@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { fetchAppData, importFromJSON, signIn, signOut, getSession, onAuthStateChange, checkIsAdmin, saveManager, saveMatches, deleteManager, updateManagerName, saveSeason, savePenalty, deletePenalty, updateSeasonExempt, saveChampion, updatePantheon } from './lib/supabase';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, Legend } from 'recharts';
 
 // === CONSTANTES DE CONFIGURATION ===
 const MAX_SCORE = 99;
@@ -37,6 +38,27 @@ const CHAMPIONSHIP_MAPPING = {
 const REVERSE_CHAMPIONSHIP_MAPPING = Object.fromEntries(
   Object.entries(CHAMPIONSHIP_MAPPING).map(([k, v]) => [v, k])
 );
+
+// === CONSTANTES STATS ===
+const STATS_CATEGORIES = [
+  { id: 'records', icon: '🏅', label: 'Records' },
+  { id: 'performance', icon: '📈', label: 'Perf.' },
+  { id: 'h2h', icon: '⚔️', label: 'H2H' },
+  { id: 'trends', icon: '📉', label: 'Évolution' },
+  { id: 'homeaway', icon: '🏟️', label: 'Dom/Ext' },
+  { id: 'scoring', icon: '⚽', label: 'Buts' },
+  { id: 'streaks', icon: '🔥', label: 'Forme' }
+];
+
+const MANAGER_COLORS = [
+  '#22d3ee', '#22c55e', '#eab308', '#f87171', '#a78bfa',
+  '#fb923c', '#ec4899', '#14b8a6', '#6366f1', '#84cc16'
+];
+
+const EURO_CHAMPIONSHIPS = ['france', 'espagne', 'italie', 'angleterre'];
+
+// Icône de championnat pour les stats
+const CHAMP_ICON = { hyenes: '🏆', france: '🇫🇷', spain: '🇪🇸', italy: '🇮🇹', england: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', espagne: '🇪🇸', italie: '🇮🇹', angleterre: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', ligue_hyenes: '🏆' };
 
 const DEFAULT_MATCHES = [
   { id: 1, homeTeam: '', awayTeam: '', homeScore: null, awayScore: null },
@@ -151,6 +173,363 @@ function sortTeamsToStandings(teamStats, getPenalty = () => 0) {
     }));
 }
 
+// === MOTEUR DE CALCUL STATS ===
+
+function getFilteredMatches(appData, champFilter, seasonFilter) {
+  if (!appData?.entities?.matches) return [];
+  return appData.entities.matches.filter(block => {
+    if (!block.games || !Array.isArray(block.games)) return false;
+    const champMatch = champFilter === 'all'
+      ? !['ligue_hyenes'].includes(block.championship?.toLowerCase())
+      : champFilter === 'hyenes'
+        ? EURO_CHAMPIONSHIPS.includes(block.championship?.toLowerCase())
+        : (block.championship?.toLowerCase() === (CHAMPIONSHIP_MAPPING[champFilter] || champFilter)?.toLowerCase());
+    const seasonMatch = seasonFilter === 'all' || block.season === parseInt(seasonFilter);
+    return champMatch && seasonMatch;
+  });
+}
+
+function flattenMatches(matchBlocks) {
+  const flat = [];
+  matchBlocks.forEach(block => {
+    if (!block.games) return;
+    block.games.forEach(match => {
+      const { homeTeam, awayTeam, homeScore, awayScore } = normalizeMatch(match);
+      if (homeScore === null || homeScore === undefined || awayScore === null || awayScore === undefined) return;
+      const hs = parseInt(homeScore), as2 = parseInt(awayScore);
+      if (isNaN(hs) || isNaN(as2)) return;
+      flat.push({ homeTeam, awayTeam, homeScore: hs, awayScore: as2, championship: block.championship, season: block.season, matchday: block.matchday });
+    });
+  });
+  return flat;
+}
+
+function computeRecords(flatMatches, matchBlocks, appData, champFilter, seasonFilter) {
+  // Biggest victories
+  const biggestWins = [...flatMatches]
+    .map(m => ({ ...m, diff: Math.abs(m.homeScore - m.awayScore), total: m.homeScore + m.awayScore, winner: m.homeScore > m.awayScore ? m.homeTeam : m.awayTeam, loser: m.homeScore > m.awayScore ? m.awayTeam : m.homeTeam, winScore: Math.max(m.homeScore, m.awayScore), loseScore: Math.min(m.homeScore, m.awayScore) }))
+    .filter(m => m.diff > 0)
+    .sort((a, b) => b.diff - a.diff || b.total - a.total)
+    .slice(0, 5);
+
+  // Highest scoring matches
+  const highestScoring = [...flatMatches]
+    .map(m => ({ ...m, total: m.homeScore + m.awayScore }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 5);
+
+  // Streaks (wins, unbeaten, losses)
+  const streaks = computeStreakRecords(matchBlocks);
+
+  // Best/worst season points
+  const seasonPoints = [];
+  if (appData?.entities?.seasons) {
+    Object.entries(appData.entities.seasons).forEach(([key, season]) => {
+      if (!season.standings || !Array.isArray(season.standings)) return;
+      const champ = key.replace(/_s\d+$/, '');
+      const sNum = season.season || parseInt(key.match(/_s(\d+)$/)?.[1] || '0');
+      if (champFilter !== 'all') {
+        const mappedChamp = CHAMPIONSHIP_MAPPING[champFilter] || champFilter;
+        if (champFilter === 'hyenes') {
+          if (champ !== 'ligue_hyenes') return;
+        } else if (champ.toLowerCase() !== mappedChamp.toLowerCase()) return;
+      }
+      if (seasonFilter !== 'all' && sNum !== parseInt(seasonFilter)) return;
+      season.standings.forEach(team => {
+        if (team.j >= 3 || team.pts > 0) {
+          seasonPoints.push({ name: team.mgr || team.name, pts: team.pts, championship: champ, season: sNum, j: team.j });
+        }
+      });
+    });
+  }
+  const bestSeasons = [...seasonPoints].sort((a, b) => b.pts - a.pts).slice(0, 5);
+  const worstSeasons = [...seasonPoints].filter(s => s.j >= 3).sort((a, b) => a.pts - b.pts).slice(0, 5);
+
+  return { biggestWins, highestScoring, streaks, bestSeasons, worstSeasons };
+}
+
+function computeStreakRecords(matchBlocks) {
+  const managerMatches = {};
+  matchBlocks.forEach(block => {
+    if (!block.games) return;
+    block.games.forEach(match => {
+      const { homeTeam, awayTeam, homeScore, awayScore } = normalizeMatch(match);
+      if (homeScore === null || awayScore === null) return;
+      const hs = parseInt(homeScore), as2 = parseInt(awayScore);
+      if (isNaN(hs) || isNaN(as2)) return;
+      const key1 = `${homeTeam}_${block.championship}_${block.season}`;
+      const key2 = `${awayTeam}_${block.championship}_${block.season}`;
+      if (!managerMatches[key1]) managerMatches[key1] = [];
+      if (!managerMatches[key2]) managerMatches[key2] = [];
+      managerMatches[key1].push({ matchday: block.matchday, result: hs > as2 ? 'W' : hs < as2 ? 'L' : 'D', manager: homeTeam, championship: block.championship, season: block.season });
+      managerMatches[key2].push({ matchday: block.matchday, result: as2 > hs ? 'W' : as2 < hs ? 'L' : 'D', manager: awayTeam, championship: block.championship, season: block.season });
+    });
+  });
+
+  let longestWin = { length: 0 }, longestUnbeaten = { length: 0 }, longestLosing = { length: 0 };
+
+  Object.values(managerMatches).forEach(matches => {
+    matches.sort((a, b) => a.matchday - b.matchday);
+    let winStreak = 0, unbeatStreak = 0, loseStreak = 0;
+    matches.forEach(m => {
+      if (m.result === 'W') { winStreak++; unbeatStreak++; loseStreak = 0; }
+      else if (m.result === 'D') { winStreak = 0; unbeatStreak++; loseStreak = 0; }
+      else { winStreak = 0; unbeatStreak = 0; loseStreak++; }
+      if (winStreak > longestWin.length) longestWin = { length: winStreak, manager: m.manager, championship: m.championship, season: m.season };
+      if (unbeatStreak > longestUnbeaten.length) longestUnbeaten = { length: unbeatStreak, manager: m.manager, championship: m.championship, season: m.season };
+      if (loseStreak > longestLosing.length) longestLosing = { length: loseStreak, manager: m.manager, championship: m.championship, season: m.season };
+    });
+  });
+
+  return { longestWin, longestUnbeaten, longestLosing };
+}
+
+function computePerformance(flatMatches, managers) {
+  const stats = {};
+  managers.forEach(m => { stats[m] = { name: m, pts: 0, j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0 }; });
+  flatMatches.forEach(m => {
+    if (!stats[m.homeTeam]) stats[m.homeTeam] = { name: m.homeTeam, pts: 0, j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0 };
+    if (!stats[m.awayTeam]) stats[m.awayTeam] = { name: m.awayTeam, pts: 0, j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0 };
+    stats[m.homeTeam].j++; stats[m.awayTeam].j++;
+    stats[m.homeTeam].bp += m.homeScore; stats[m.homeTeam].bc += m.awayScore;
+    stats[m.awayTeam].bp += m.awayScore; stats[m.awayTeam].bc += m.homeScore;
+    if (m.homeScore > m.awayScore) { stats[m.homeTeam].pts += 3; stats[m.homeTeam].g++; stats[m.awayTeam].p++; }
+    else if (m.homeScore < m.awayScore) { stats[m.awayTeam].pts += 3; stats[m.awayTeam].g++; stats[m.homeTeam].p++; }
+    else { stats[m.homeTeam].pts++; stats[m.awayTeam].pts++; stats[m.homeTeam].n++; stats[m.awayTeam].n++; }
+  });
+  const arr = Object.values(stats).filter(s => s.j >= 3);
+  const ppg = [...arr].map(s => ({ ...s, value: (s.pts / s.j).toFixed(2) })).sort((a, b) => b.value - a.value);
+  const winRate = [...arr].map(s => ({ ...s, value: ((s.g / s.j) * 100).toFixed(1) })).sort((a, b) => b.value - a.value);
+  const attack = [...arr].map(s => ({ ...s, value: (s.bp / s.j).toFixed(2) })).sort((a, b) => b.value - a.value);
+  const defense = [...arr].map(s => ({ ...s, value: (s.bc / s.j).toFixed(2) })).sort((a, b) => a.value - b.value);
+  return { ppg, winRate, attack, defense };
+}
+
+function computeHeadToHead(flatMatches, managers) {
+  const h2h = {};
+  managers.forEach(a => { h2h[a] = {}; managers.forEach(b => { if (a !== b) h2h[a][b] = { w: 0, d: 0, l: 0, gf: 0, ga: 0, played: 0 }; }); });
+  flatMatches.forEach(m => {
+    const h = m.homeTeam, a = m.awayTeam;
+    if (!h2h[h]) h2h[h] = {};
+    if (!h2h[a]) h2h[a] = {};
+    if (!h2h[h][a]) h2h[h][a] = { w: 0, d: 0, l: 0, gf: 0, ga: 0, played: 0 };
+    if (!h2h[a][h]) h2h[a][h] = { w: 0, d: 0, l: 0, gf: 0, ga: 0, played: 0 };
+    h2h[h][a].played++; h2h[a][h].played++;
+    h2h[h][a].gf += m.homeScore; h2h[h][a].ga += m.awayScore;
+    h2h[a][h].gf += m.awayScore; h2h[a][h].ga += m.homeScore;
+    if (m.homeScore > m.awayScore) { h2h[h][a].w++; h2h[a][h].l++; }
+    else if (m.homeScore < m.awayScore) { h2h[a][h].w++; h2h[h][a].l++; }
+    else { h2h[h][a].d++; h2h[a][h].d++; }
+  });
+  const activeManagers = managers.filter(m => Object.values(h2h[m] || {}).some(v => v.played > 0));
+  return { matrix: h2h, managers: activeManagers };
+}
+
+function computeTrends(appData, managers, champFilter, seasonFilter) {
+  // Timeline: for each matchday, cumulative standings
+  const timeline = [];
+  if (seasonFilter !== 'all' && appData?.entities?.matches) {
+    const filtered = appData.entities.matches.filter(block => {
+      if (!block.games || !Array.isArray(block.games)) return false;
+      const champMatch = champFilter === 'all'
+        ? !['ligue_hyenes'].includes(block.championship?.toLowerCase())
+        : champFilter === 'hyenes'
+          ? EURO_CHAMPIONSHIPS.includes(block.championship?.toLowerCase())
+          : (block.championship?.toLowerCase() === (CHAMPIONSHIP_MAPPING[champFilter] || champFilter)?.toLowerCase());
+      return champMatch && block.season === parseInt(seasonFilter);
+    });
+
+    const maxMatchday = Math.max(0, ...filtered.map(b => b.matchday || 0));
+    for (let md = 1; md <= maxMatchday; md++) {
+      const blocksUpToMd = filtered.filter(b => b.matchday <= md);
+      const teamStats = {};
+      managers.forEach(m => { teamStats[m] = { pts: 0, j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0, diff: 0 }; });
+      blocksUpToMd.forEach(block => {
+        block.games.forEach(match => {
+          const { homeTeam, awayTeam, homeScore, awayScore } = normalizeMatch(match);
+          if (homeScore === null || awayScore === null) return;
+          const hs = parseInt(homeScore), as2 = parseInt(awayScore);
+          if (isNaN(hs) || isNaN(as2)) return;
+          if (!teamStats[homeTeam]) teamStats[homeTeam] = { pts: 0, j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0, diff: 0 };
+          if (!teamStats[awayTeam]) teamStats[awayTeam] = { pts: 0, j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0, diff: 0 };
+          teamStats[homeTeam].j++; teamStats[awayTeam].j++;
+          teamStats[homeTeam].bp += hs; teamStats[homeTeam].bc += as2;
+          teamStats[awayTeam].bp += as2; teamStats[awayTeam].bc += hs;
+          if (hs > as2) { teamStats[homeTeam].pts += 3; teamStats[homeTeam].g++; teamStats[awayTeam].p++; }
+          else if (hs < as2) { teamStats[awayTeam].pts += 3; teamStats[awayTeam].g++; teamStats[homeTeam].p++; }
+          else { teamStats[homeTeam].pts++; teamStats[awayTeam].pts++; teamStats[homeTeam].n++; teamStats[awayTeam].n++; }
+          teamStats[homeTeam].diff = teamStats[homeTeam].bp - teamStats[homeTeam].bc;
+          teamStats[awayTeam].diff = teamStats[awayTeam].bp - teamStats[awayTeam].bc;
+        });
+      });
+      // Calculate positions
+      const sorted = Object.entries(teamStats)
+        .filter(([, s]) => s.j > 0)
+        .sort(([, a], [, b]) => b.pts !== a.pts ? b.pts - a.pts : b.diff !== a.diff ? b.diff - a.diff : b.bp - a.bp);
+      const point = { matchday: md };
+      sorted.forEach(([name, s], idx) => {
+        point[`pts_${name}`] = s.pts;
+        point[`pos_${name}`] = idx + 1;
+      });
+      timeline.push(point);
+    }
+  }
+
+  // Inter-season evolution
+  const interSeason = [];
+  if (appData?.entities?.seasons) {
+    const seasonNumbers = [...new Set(Object.values(appData.entities.seasons).map(s => s.season))].filter(Boolean).sort((a, b) => a - b);
+    seasonNumbers.forEach(sNum => {
+      const point = { season: `S${sNum}` };
+      managers.forEach(mgr => {
+        let totalPts = 0, found = false;
+        Object.entries(appData.entities.seasons).forEach(([key, season]) => {
+          if (season.season !== sNum || !season.standings) return;
+          const champ = key.replace(/_s\d+$/, '');
+          if (champFilter !== 'all') {
+            const mappedChamp = CHAMPIONSHIP_MAPPING[champFilter] || champFilter;
+            if (champFilter === 'hyenes') {
+              if (champ !== 'ligue_hyenes') return;
+            } else if (champ.toLowerCase() !== mappedChamp.toLowerCase()) return;
+          }
+          const team = season.standings.find(t => (t.mgr || t.name) === mgr);
+          if (team) { totalPts += team.pts || 0; found = true; }
+        });
+        if (found) point[`pts_${mgr}`] = totalPts;
+      });
+      if (Object.keys(point).length > 1) interSeason.push(point);
+    });
+  }
+
+  return { timeline, interSeason };
+}
+
+function computeHomeAway(flatMatches, managers) {
+  const stats = {};
+  managers.forEach(m => { stats[m] = { name: m, home: { j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0 }, away: { j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0 } }; });
+  flatMatches.forEach(m => {
+    if (!stats[m.homeTeam]) stats[m.homeTeam] = { name: m.homeTeam, home: { j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0 }, away: { j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0 } };
+    if (!stats[m.awayTeam]) stats[m.awayTeam] = { name: m.awayTeam, home: { j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0 }, away: { j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0 } };
+    const h = stats[m.homeTeam].home, a = stats[m.awayTeam].away;
+    h.j++; a.j++;
+    h.bp += m.homeScore; h.bc += m.awayScore;
+    a.bp += m.awayScore; a.bc += m.homeScore;
+    if (m.homeScore > m.awayScore) { h.g++; a.p++; }
+    else if (m.homeScore < m.awayScore) { a.g++; h.p++; }
+    else { h.n++; a.n++; }
+  });
+  const arr = Object.values(stats).filter(s => s.home.j + s.away.j >= 3);
+  const homeWinRate = [...arr].filter(s => s.home.j >= 2).map(s => ({ name: s.name, value: ((s.home.g / s.home.j) * 100).toFixed(1), j: s.home.j })).sort((a, b) => b.value - a.value);
+  const awayWinRate = [...arr].filter(s => s.away.j >= 2).map(s => ({ name: s.name, value: ((s.away.g / s.away.j) * 100).toFixed(1), j: s.away.j })).sort((a, b) => b.value - a.value);
+  const comparison = [...arr].map(s => ({
+    name: s.name,
+    homeRate: s.home.j > 0 ? ((s.home.g / s.home.j) * 100).toFixed(1) : '0.0',
+    awayRate: s.away.j > 0 ? ((s.away.g / s.away.j) * 100).toFixed(1) : '0.0',
+    homeJ: s.home.j, awayJ: s.away.j
+  })).sort((a, b) => parseFloat(b.homeRate) - parseFloat(a.homeRate));
+  return { homeWinRate, awayWinRate, comparison };
+}
+
+function computeScoring(flatMatches, managers) {
+  const totalGoals = flatMatches.reduce((s, m) => s + m.homeScore + m.awayScore, 0);
+  const avgGoals = flatMatches.length > 0 ? (totalGoals / flatMatches.length).toFixed(2) : '0.00';
+  const highScoringRate = flatMatches.length > 0 ? ((flatMatches.filter(m => m.homeScore + m.awayScore >= 4).length / flatMatches.length) * 100).toFixed(1) : '0.0';
+
+  // Clean sheets & failed to score
+  const mgrStats = {};
+  managers.forEach(m => { mgrStats[m] = { name: m, cleanSheets: 0, failedToScore: 0, j: 0 }; });
+  flatMatches.forEach(m => {
+    if (!mgrStats[m.homeTeam]) mgrStats[m.homeTeam] = { name: m.homeTeam, cleanSheets: 0, failedToScore: 0, j: 0 };
+    if (!mgrStats[m.awayTeam]) mgrStats[m.awayTeam] = { name: m.awayTeam, cleanSheets: 0, failedToScore: 0, j: 0 };
+    mgrStats[m.homeTeam].j++; mgrStats[m.awayTeam].j++;
+    if (m.awayScore === 0) mgrStats[m.homeTeam].cleanSheets++;
+    if (m.homeScore === 0) mgrStats[m.awayTeam].cleanSheets++;
+    if (m.homeScore === 0) mgrStats[m.homeTeam].failedToScore++;
+    if (m.awayScore === 0) mgrStats[m.awayTeam].failedToScore++;
+  });
+  const cleanSheets = Object.values(mgrStats).filter(s => s.j >= 3).sort((a, b) => b.cleanSheets - a.cleanSheets);
+  const failedToScore = Object.values(mgrStats).filter(s => s.j >= 3).sort((a, b) => b.failedToScore - a.failedToScore);
+
+  // Score distribution
+  const scoreDist = {};
+  flatMatches.forEach(m => {
+    const score = m.homeScore >= m.awayScore ? `${m.homeScore}-${m.awayScore}` : `${m.awayScore}-${m.homeScore}`;
+    scoreDist[score] = (scoreDist[score] || 0) + 1;
+  });
+  const scoreDistArr = Object.entries(scoreDist).map(([score, count]) => ({ score, count })).sort((a, b) => b.count - a.count).slice(0, 10);
+
+  return { totalGoals, totalMatches: flatMatches.length, avgGoals, highScoringRate, cleanSheets, failedToScore, scoreDistArr };
+}
+
+function computeFormData(matchBlocks, managers) {
+  // Get last 5 results per manager in most recent season context
+  const managerResults = {};
+  managers.forEach(m => { managerResults[m] = []; });
+
+  // Sort blocks by season desc then matchday desc
+  const sorted = [...matchBlocks].sort((a, b) => b.season !== a.season ? b.season - a.season : b.matchday - a.matchday);
+
+  sorted.forEach(block => {
+    if (!block.games) return;
+    block.games.forEach(match => {
+      const { homeTeam, awayTeam, homeScore, awayScore } = normalizeMatch(match);
+      if (homeScore === null || awayScore === null) return;
+      const hs = parseInt(homeScore), as2 = parseInt(awayScore);
+      if (isNaN(hs) || isNaN(as2)) return;
+
+      if (managerResults[homeTeam] && managerResults[homeTeam].length < 5) {
+        managerResults[homeTeam].push({ result: hs > as2 ? 'W' : hs < as2 ? 'L' : 'D', vs: awayTeam, score: `${hs}-${as2}`, matchday: block.matchday, season: block.season });
+      }
+      if (managerResults[awayTeam] && managerResults[awayTeam].length < 5) {
+        managerResults[awayTeam].push({ result: as2 > hs ? 'W' : as2 < hs ? 'L' : 'D', vs: homeTeam, score: `${as2}-${hs}`, matchday: block.matchday, season: block.season });
+      }
+    });
+  });
+
+  // Current streak
+  const currentStreaks = {};
+  managers.forEach(m => {
+    const results = managerResults[m];
+    if (!results || results.length === 0) { currentStreaks[m] = { type: '-', length: 0 }; return; }
+    const firstResult = results[0].result;
+    let count = 0;
+    for (const r of results) {
+      if (r.result === firstResult) count++;
+      else break;
+    }
+    currentStreaks[m] = { type: firstResult, length: count };
+  });
+
+  // Points from last 5
+  const formPoints = {};
+  managers.forEach(m => {
+    const results = managerResults[m];
+    formPoints[m] = results.reduce((s, r) => s + (r.result === 'W' ? 3 : r.result === 'D' ? 1 : 0), 0);
+  });
+
+  return { form: managerResults, streaks: currentStreaks, formPoints };
+}
+
+function computeAllStats(appData, champFilter, seasonFilter) {
+  if (!appData?.entities?.matches) return null;
+  const matchBlocks = getFilteredMatches(appData, champFilter, seasonFilter);
+  const flat = flattenMatches(matchBlocks);
+  const managers = appData.entities.managers
+    ? Object.values(appData.entities.managers).map(m => m.name).filter(Boolean)
+    : [];
+  if (flat.length === 0 && managers.length === 0) return null;
+
+  return {
+    records: computeRecords(flat, matchBlocks, appData, champFilter, seasonFilter),
+    performance: computePerformance(flat, managers),
+    h2h: computeHeadToHead(flat, managers),
+    trends: computeTrends(appData, managers, champFilter, seasonFilter),
+    homeAway: computeHomeAway(flat, managers),
+    scoring: computeScoring(flat, managers),
+    form: computeFormData(matchBlocks, managers)
+  };
+}
+
 export default function HyeneScores() {
   const [selectedTab, setSelectedTab] = useState('classement');
   const selectedTabRef = useRef('classement');
@@ -254,6 +633,36 @@ export default function HyeneScores() {
   const [editingManagerId, setEditingManagerId] = useState(null);
   const [editingManagerName, setEditingManagerName] = useState('');
   const [isEditingManager, setIsEditingManager] = useState(false);
+
+  // États Stats
+  const [statsChampionship, setStatsChampionship] = useState('all');
+  const [statsSeason, setStatsSeason] = useState('all');
+  const [statsCategory, setStatsCategory] = useState('records');
+  const [visibleManagers, setVisibleManagers] = useState(new Set());
+  const [timelineMode, setTimelineMode] = useState('points');
+  const [h2hSelectedManager, setH2hSelectedManager] = useState(null);
+
+  // Compute stats only when on the stats tab
+  const statsResult = useMemo(() => {
+    if (selectedTab !== 'stats' || !appData) return null;
+    return computeAllStats(appData, statsChampionship, statsSeason);
+  }, [selectedTab, appData, statsChampionship, statsSeason]);
+
+  // Initialize visible managers when stats data changes
+  useEffect(() => {
+    if (statsResult?.trends?.timeline?.length > 0 && appData?.entities?.managers) {
+      const mgrs = Object.values(appData.entities.managers).map(m => m.name).filter(Boolean);
+      setVisibleManagers(prev => prev.size === 0 ? new Set(mgrs) : prev);
+    }
+  }, [statsResult, appData]);
+
+  // Get available seasons list for stats filter
+  const availableSeasons = useMemo(() => {
+    if (!appData?.entities?.seasons) return [];
+    const nums = new Set();
+    Object.values(appData.entities.seasons).forEach(s => { if (s.season) nums.add(s.season); });
+    return [...nums].sort((a, b) => a - b);
+  }, [appData]);
 
   // Fonction pour charger les données depuis appData v2.0
   const loadDataFromAppData = useCallback((data, championship, season, journee, currentPenalties = {}, isAdminUser = false) => {
@@ -3771,15 +4180,519 @@ export default function HyeneScores() {
         </div>
       )}
 
-      {/* STATS (Placeholder) */}
+      {/* STATS */}
       {selectedTab === 'stats' && (
-        <div className="h-full flex flex-col items-center justify-center ios26-vibrancy">
-          <div className=" text-center">
-            <div className="w-24 h-24 mx-auto mb-6 rounded-3xl liquid-glass-intense flex items-center justify-center">
-              <span className="text-5xl">📊</span>
+        <div className="h-full flex flex-col ios26-vibrancy pb-16">
+          {/* Header */}
+          <div className="px-2 pt-2 flex-shrink-0">
+            <div className="ios26-header rounded-xl py-2 text-center">
+              <h1 className="text-cyan-400 text-xl font-extrabold tracking-widest glow-cyan">STATISTIQUES</h1>
             </div>
-            <h2 className="text-cyan-400 text-2xl font-extrabold glow-cyan">STATISTIQUES</h2>
-            <p className="text-gray-400 text-sm mt-3 font-medium">Bientôt disponible</p>
+          </div>
+
+          <div className="flex-1 px-2 overflow-y-auto">
+            {/* Filter Bar */}
+            <div className="flex items-center gap-2 mt-2 mb-1">
+              {/* Championship filter */}
+              <div className="flex gap-1 flex-1 overflow-x-auto scrollbar-hide">
+                <button onClick={() => setStatsChampionship('all')} className={`px-2 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${statsChampionship === 'all' ? 'ios26-tab-active text-cyan-400' : 'ios26-btn text-gray-400'}`}>Tous</button>
+                {CHAMPIONSHIPS.map(c => (
+                  <button key={c.id} onClick={() => setStatsChampionship(c.id)} className={`px-2 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${statsChampionship === c.id ? 'ios26-tab-active text-cyan-400' : 'ios26-btn text-gray-400'}`}>{c.icon}</button>
+                ))}
+              </div>
+              {/* Season filter */}
+              <select value={statsSeason} onChange={e => setStatsSeason(e.target.value)} className="ios26-input rounded-lg px-2 py-1 text-xs text-gray-300 bg-black/40 min-w-[70px]">
+                <option value="all">Toutes</option>
+                {availableSeasons.map(s => (<option key={s} value={s}>S{s}</option>))}
+              </select>
+            </div>
+
+            {/* Category Selector */}
+            <div className="flex gap-1.5 overflow-x-auto py-2 scrollbar-hide">
+              {STATS_CATEGORIES.map(cat => (
+                <button key={cat.id} onClick={() => setStatsCategory(cat.id)} className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${statsCategory === cat.id ? 'ios26-tab-active text-cyan-400' : 'ios26-btn text-gray-500'}`}>
+                  {cat.icon} {cat.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Category Content */}
+            {!statsResult ? (
+              <div className="text-center py-12 text-gray-500 text-sm">Aucune donnée disponible</div>
+            ) : (
+              <div className="space-y-3 pb-4">
+
+                {/* === RECORDS === */}
+                {statsCategory === 'records' && statsResult.records && (
+                  <>
+                    {/* Biggest Wins */}
+                    <div className="ios26-card rounded-xl p-3">
+                      <h3 className="text-cyan-400 text-sm font-bold mb-2">🏆 Plus Larges Victoires</h3>
+                      {statsResult.records.biggestWins.length === 0 ? (
+                        <p className="text-gray-500 text-xs">Aucun résultat</p>
+                      ) : statsResult.records.biggestWins.map((m, i) => (
+                        <div key={i} className={`flex items-center justify-between py-1.5 ${i === 0 ? 'text-yellow-400' : 'text-gray-300'} text-xs`}>
+                          <span className="font-bold w-5">{i + 1}.</span>
+                          <span className="flex-1 text-center font-semibold">{m.winner} <span className="text-green-400">{m.winScore}</span> - <span className="text-red-400">{m.loseScore}</span> {m.loser}</span>
+                          <span className="text-gray-500 text-[10px] ml-2">{CHAMP_ICON[m.championship] || ''} S{m.season} J{m.matchday}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Highest Scoring */}
+                    <div className="ios26-card rounded-xl p-3">
+                      <h3 className="text-cyan-400 text-sm font-bold mb-2">⚡ Matchs les Plus Prolifiques</h3>
+                      {statsResult.records.highestScoring.map((m, i) => (
+                        <div key={i} className={`flex items-center justify-between py-1.5 ${i === 0 ? 'text-yellow-400' : 'text-gray-300'} text-xs`}>
+                          <span className="font-bold w-5">{i + 1}.</span>
+                          <span className="flex-1 text-center font-semibold">{m.homeTeam} <span className="text-cyan-400">{m.homeScore}</span> - <span className="text-cyan-400">{m.awayScore}</span> {m.awayTeam}</span>
+                          <span className="text-gray-500 text-[10px] ml-2">{CHAMP_ICON[m.championship] || ''} S{m.season}</span>
+                          <span className="text-cyan-400 font-bold ml-1 text-[10px]">{m.total}b</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Streaks */}
+                    <div className="ios26-card rounded-xl p-3">
+                      <h3 className="text-cyan-400 text-sm font-bold mb-2">🔥 Records de Séries</h3>
+                      <div className="space-y-2">
+                        {statsResult.records.streaks.longestWin.length > 0 && (
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-green-400 font-semibold">Victoires consécutives</span>
+                            <span className="text-gray-300"><span className="text-green-400 font-bold">{statsResult.records.streaks.longestWin.length}</span> — {statsResult.records.streaks.longestWin.manager} ({CHAMP_ICON[statsResult.records.streaks.longestWin.championship] || ''} S{statsResult.records.streaks.longestWin.season})</span>
+                          </div>
+                        )}
+                        {statsResult.records.streaks.longestUnbeaten.length > 0 && (
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-cyan-400 font-semibold">Invincibilité</span>
+                            <span className="text-gray-300"><span className="text-cyan-400 font-bold">{statsResult.records.streaks.longestUnbeaten.length}</span> — {statsResult.records.streaks.longestUnbeaten.manager} ({CHAMP_ICON[statsResult.records.streaks.longestUnbeaten.championship] || ''} S{statsResult.records.streaks.longestUnbeaten.season})</span>
+                          </div>
+                        )}
+                        {statsResult.records.streaks.longestLosing.length > 0 && (
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-red-400 font-semibold">Défaites consécutives</span>
+                            <span className="text-gray-300"><span className="text-red-400 font-bold">{statsResult.records.streaks.longestLosing.length}</span> — {statsResult.records.streaks.longestLosing.manager} ({CHAMP_ICON[statsResult.records.streaks.longestLosing.championship] || ''} S{statsResult.records.streaks.longestLosing.season})</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Best Season Points */}
+                    <div className="ios26-card rounded-xl p-3">
+                      <h3 className="text-cyan-400 text-sm font-bold mb-2">⭐ Meilleurs Totaux de Points</h3>
+                      {statsResult.records.bestSeasons.map((s, i) => (
+                        <div key={i} className={`flex items-center justify-between py-1 ${i === 0 ? 'text-yellow-400' : 'text-gray-300'} text-xs`}>
+                          <span className="font-bold w-5">{i + 1}.</span>
+                          <span className="flex-1 font-semibold">{s.name}</span>
+                          <span className="text-cyan-400 font-bold">{s.pts} pts</span>
+                          <span className="text-gray-500 text-[10px] ml-2">{CHAMP_ICON[s.championship] || ''} S{s.season}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Worst Season Points */}
+                    {statsResult.records.worstSeasons.length > 0 && (
+                      <div className="ios26-card rounded-xl p-3">
+                        <h3 className="text-red-400 text-sm font-bold mb-2">📉 Pires Totaux de Points</h3>
+                        {statsResult.records.worstSeasons.map((s, i) => (
+                          <div key={i} className="flex items-center justify-between py-1 text-gray-400 text-xs">
+                            <span className="font-bold w-5">{i + 1}.</span>
+                            <span className="flex-1 font-semibold">{s.name}</span>
+                            <span className="text-red-400 font-bold">{s.pts} pts</span>
+                            <span className="text-gray-500 text-[10px] ml-2">{CHAMP_ICON[s.championship] || ''} S{s.season}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* === PERFORMANCES === */}
+                {statsCategory === 'performance' && statsResult.performance && (
+                  <>
+                    {/* Points per game */}
+                    <div className="ios26-card rounded-xl p-3">
+                      <h3 className="text-cyan-400 text-sm font-bold mb-2">📊 Points Par Match</h3>
+                      {statsResult.performance.ppg.map((s, i) => (
+                        <div key={i} className="flex items-center gap-2 py-1 text-xs">
+                          <span className="text-gray-500 w-5 font-bold">{i + 1}.</span>
+                          <span className="text-gray-300 w-24 truncate font-semibold">{s.name}</span>
+                          <div className="flex-1 h-5 rounded-full overflow-hidden bg-white/5">
+                            <div className="stats-bar h-full rounded-full" style={{ width: `${(s.value / 3) * 100}%`, background: 'linear-gradient(90deg, rgba(34,211,238,0.4), rgba(34,211,238,0.7))' }} />
+                          </div>
+                          <span className="text-cyan-400 font-bold w-10 text-right">{s.value}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Win Rate */}
+                    <div className="ios26-card rounded-xl p-3">
+                      <h3 className="text-green-400 text-sm font-bold mb-2">🏆 Taux de Victoire</h3>
+                      {statsResult.performance.winRate.map((s, i) => (
+                        <div key={i} className="flex items-center gap-2 py-1 text-xs">
+                          <span className="text-gray-500 w-5 font-bold">{i + 1}.</span>
+                          <span className="text-gray-300 w-24 truncate font-semibold">{s.name}</span>
+                          <div className="flex-1 h-5 rounded-full overflow-hidden bg-white/5">
+                            <div className="stats-bar h-full rounded-full" style={{ width: `${s.value}%`, background: `linear-gradient(90deg, rgba(34,197,94,0.4), rgba(34,197,94,0.7))` }} />
+                          </div>
+                          <span className="text-green-400 font-bold w-12 text-right">{s.value}%</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Attack Rating */}
+                    <div className="ios26-card rounded-xl p-3">
+                      <h3 className="text-cyan-400 text-sm font-bold mb-2">⚔️ Classement Offensif <span className="text-gray-500 font-normal">(buts/match)</span></h3>
+                      {statsResult.performance.attack.map((s, i) => (
+                        <div key={i} className="flex items-center gap-2 py-1 text-xs">
+                          <span className="text-gray-500 w-5 font-bold">{i + 1}.</span>
+                          <span className="text-gray-300 w-24 truncate font-semibold">{s.name}</span>
+                          <div className="flex-1 h-5 rounded-full overflow-hidden bg-white/5">
+                            <div className="stats-bar h-full rounded-full" style={{ width: `${(s.value / 4) * 100}%`, background: 'linear-gradient(90deg, rgba(34,211,238,0.4), rgba(34,211,238,0.7))' }} />
+                          </div>
+                          <span className="text-cyan-400 font-bold w-10 text-right">{s.value}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Defense Rating */}
+                    <div className="ios26-card rounded-xl p-3">
+                      <h3 className="text-green-400 text-sm font-bold mb-2">🛡️ Classement Défensif <span className="text-gray-500 font-normal">(buts encaissés/match)</span></h3>
+                      {statsResult.performance.defense.map((s, i) => (
+                        <div key={i} className="flex items-center gap-2 py-1 text-xs">
+                          <span className="text-gray-500 w-5 font-bold">{i + 1}.</span>
+                          <span className="text-gray-300 w-24 truncate font-semibold">{s.name}</span>
+                          <div className="flex-1 h-5 rounded-full overflow-hidden bg-white/5">
+                            <div className="stats-bar h-full rounded-full" style={{ width: `${(s.value / 4) * 100}%`, background: `linear-gradient(90deg, rgba(${parseFloat(s.value) < 1.5 ? '34,197,94' : parseFloat(s.value) < 2.5 ? '234,179,8' : '248,113,113'},0.4), rgba(${parseFloat(s.value) < 1.5 ? '34,197,94' : parseFloat(s.value) < 2.5 ? '234,179,8' : '248,113,113'},0.7))` }} />
+                          </div>
+                          <span className={`font-bold w-10 text-right ${parseFloat(s.value) < 1.5 ? 'text-green-400' : parseFloat(s.value) < 2.5 ? 'text-yellow-400' : 'text-red-400'}`}>{s.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* === HEAD TO HEAD === */}
+                {statsCategory === 'h2h' && statsResult.h2h && (
+                  <div className="ios26-card rounded-xl p-3">
+                    <h3 className="text-cyan-400 text-sm font-bold mb-3">⚔️ Confrontations Directes</h3>
+                    {statsResult.h2h.managers.length === 0 ? (
+                      <p className="text-gray-500 text-xs">Aucune confrontation</p>
+                    ) : (
+                      <>
+                        {/* Manager selector for mobile */}
+                        <div className="flex flex-wrap gap-1 mb-3">
+                          <button onClick={() => setH2hSelectedManager(null)} className={`px-2 py-1 rounded-lg text-[10px] font-bold ${!h2hSelectedManager ? 'ios26-tab-active text-cyan-400' : 'ios26-btn text-gray-400'}`}>Matrice</button>
+                          {statsResult.h2h.managers.map(m => (
+                            <button key={m} onClick={() => setH2hSelectedManager(m)} className={`px-2 py-1 rounded-lg text-[10px] font-bold truncate max-w-[80px] ${h2hSelectedManager === m ? 'ios26-tab-active text-cyan-400' : 'ios26-btn text-gray-400'}`}>{m}</button>
+                          ))}
+                        </div>
+
+                        {!h2hSelectedManager ? (
+                          /* Matrix view */
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-[10px]">
+                              <thead>
+                                <tr>
+                                  <th className="text-left text-gray-500 p-1">vs</th>
+                                  {statsResult.h2h.managers.map(m => (
+                                    <th key={m} className="text-center text-gray-400 p-1 font-bold" style={{ writingMode: 'vertical-rl', maxHeight: '60px' }}>{m.slice(0, 6)}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {statsResult.h2h.managers.map(a => (
+                                  <tr key={a}>
+                                    <td className="text-gray-300 font-bold p-1 whitespace-nowrap">{a.slice(0, 8)}</td>
+                                    {statsResult.h2h.managers.map(b => {
+                                      if (a === b) return <td key={b} className="bg-white/5 p-1 text-center">-</td>;
+                                      const rec = statsResult.h2h.matrix[a]?.[b];
+                                      if (!rec || rec.played === 0) return <td key={b} className="p-1 text-center text-gray-600">-</td>;
+                                      const color = rec.w > rec.l ? 'text-green-400' : rec.w < rec.l ? 'text-red-400' : 'text-gray-400';
+                                      return <td key={b} className={`p-1 text-center font-bold ${color}`}>{rec.w}-{rec.d}-{rec.l}</td>;
+                                    })}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          /* Detail view for selected manager */
+                          <div className="space-y-2">
+                            {statsResult.h2h.managers.filter(m => m !== h2hSelectedManager).map(opp => {
+                              const rec = statsResult.h2h.matrix[h2hSelectedManager]?.[opp];
+                              if (!rec || rec.played === 0) return null;
+                              const color = rec.w > rec.l ? 'border-green-500/30' : rec.w < rec.l ? 'border-red-500/30' : 'border-gray-500/30';
+                              return (
+                                <div key={opp} className={`border ${color} rounded-lg p-2 bg-white/[0.02]`}>
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-gray-300 font-bold text-xs">vs {opp}</span>
+                                    <span className="text-gray-500 text-[10px]">{rec.played} matchs</span>
+                                  </div>
+                                  <div className="flex items-center gap-3 mt-1">
+                                    <span className="text-green-400 text-xs font-bold">{rec.w}V</span>
+                                    <span className="text-gray-400 text-xs font-bold">{rec.d}N</span>
+                                    <span className="text-red-400 text-xs font-bold">{rec.l}D</span>
+                                    <span className="text-gray-500 text-[10px] ml-auto">{rec.gf}-{rec.ga} buts</span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* === ÉVOLUTION / TRENDS === */}
+                {statsCategory === 'trends' && statsResult.trends && (
+                  <>
+                    {/* Timeline - matchday by matchday */}
+                    {statsSeason !== 'all' && statsResult.trends.timeline.length > 0 ? (
+                      <div className="ios26-card rounded-xl p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-cyan-400 text-sm font-bold">📈 Évolution {timelineMode === 'points' ? 'des Points' : 'du Classement'}</h3>
+                          <button onClick={() => setTimelineMode(m => m === 'points' ? 'position' : 'points')} className="ios26-btn px-2 py-0.5 rounded-lg text-[10px] text-gray-400 font-bold">
+                            {timelineMode === 'points' ? 'Position' : 'Points'}
+                          </button>
+                        </div>
+
+                        {/* Team toggle filters */}
+                        <div className="flex flex-wrap gap-1 mb-3">
+                          {appData?.entities?.managers && Object.values(appData.entities.managers).map((m, idx) => {
+                            if (!m.name) return null;
+                            const isVisible = visibleManagers.has(m.name);
+                            const color = MANAGER_COLORS[idx % MANAGER_COLORS.length];
+                            return (
+                              <button key={m.name} onClick={() => setVisibleManagers(prev => {
+                                const next = new Set(prev);
+                                if (next.has(m.name)) next.delete(m.name); else next.add(m.name);
+                                return next;
+                              })} className={`px-2 py-0.5 rounded-full text-[10px] font-bold border transition-all ${isVisible ? 'opacity-100' : 'opacity-30'}`} style={{ borderColor: color, color: isVisible ? color : '#666', background: isVisible ? `${color}15` : 'transparent' }}>
+                                {m.name}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        <div className="h-64">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={statsResult.trends.timeline} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                              <XAxis dataKey="matchday" tick={{ fill: '#9ca3af', fontSize: 10 }} tickFormatter={v => `J${v}`} />
+                              <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} reversed={timelineMode === 'position'} domain={timelineMode === 'position' ? [1, 'auto'] : ['auto', 'auto']} />
+                              <Tooltip contentStyle={{ background: 'rgba(20,20,30,0.95)', border: '1px solid rgba(34,211,238,0.3)', borderRadius: '8px', fontSize: '11px', color: '#e5e7eb' }} />
+                              {appData?.entities?.managers && Object.values(appData.entities.managers).map((m, idx) => {
+                                if (!m.name || !visibleManagers.has(m.name)) return null;
+                                const dataKey = timelineMode === 'points' ? `pts_${m.name}` : `pos_${m.name}`;
+                                return (
+                                  <Line key={m.name} type="monotone" dataKey={dataKey} name={m.name} stroke={MANAGER_COLORS[idx % MANAGER_COLORS.length]} strokeWidth={2} dot={false} connectNulls />
+                                );
+                              })}
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    ) : statsSeason === 'all' ? (
+                      <div className="text-center py-6">
+                        <p className="text-gray-500 text-xs mb-2">Sélectionnez une saison pour voir la timeline journée par journée</p>
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 text-gray-500 text-xs">Aucune donnée pour cette saison</div>
+                    )}
+
+                    {/* Inter-season evolution */}
+                    {statsResult.trends.interSeason.length > 1 && (
+                      <div className="ios26-card rounded-xl p-3">
+                        <h3 className="text-cyan-400 text-sm font-bold mb-2">📉 Évolution Inter-Saisons</h3>
+                        <div className="h-56">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={statsResult.trends.interSeason} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                              <XAxis dataKey="season" tick={{ fill: '#9ca3af', fontSize: 10 }} />
+                              <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} />
+                              <Tooltip contentStyle={{ background: 'rgba(20,20,30,0.95)', border: '1px solid rgba(34,211,238,0.3)', borderRadius: '8px', fontSize: '11px', color: '#e5e7eb' }} />
+                              {appData?.entities?.managers && Object.values(appData.entities.managers).map((m, idx) => {
+                                if (!m.name) return null;
+                                return (
+                                  <Line key={m.name} type="monotone" dataKey={`pts_${m.name}`} name={m.name} stroke={MANAGER_COLORS[idx % MANAGER_COLORS.length]} strokeWidth={2} dot={{ r: 3, fill: MANAGER_COLORS[idx % MANAGER_COLORS.length] }} connectNulls />
+                                );
+                              })}
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* === HOME / AWAY === */}
+                {statsCategory === 'homeaway' && statsResult.homeAway && (
+                  <>
+                    {/* Comparison */}
+                    <div className="ios26-card rounded-xl p-3">
+                      <h3 className="text-cyan-400 text-sm font-bold mb-2">🏟️ Taux de Victoire Dom/Ext</h3>
+                      {statsResult.homeAway.comparison.map((s, i) => (
+                        <div key={i} className="py-1.5 text-xs">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-gray-300 font-bold truncate w-24">{s.name}</span>
+                            <div className="flex gap-3 text-[10px]">
+                              <span className="text-cyan-400">🏠 {s.homeRate}%</span>
+                              <span className="text-orange-400">✈️ {s.awayRate}%</span>
+                            </div>
+                          </div>
+                          <div className="flex gap-1 h-3">
+                            <div className="flex-1 rounded-full overflow-hidden bg-white/5">
+                              <div className="h-full rounded-full" style={{ width: `${s.homeRate}%`, background: 'linear-gradient(90deg, rgba(34,211,238,0.4), rgba(34,211,238,0.7))' }} />
+                            </div>
+                            <div className="flex-1 rounded-full overflow-hidden bg-white/5">
+                              <div className="h-full rounded-full" style={{ width: `${s.awayRate}%`, background: 'linear-gradient(90deg, rgba(251,146,60,0.4), rgba(251,146,60,0.7))' }} />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Fortress */}
+                    <div className="ios26-card rounded-xl p-3">
+                      <h3 className="text-cyan-400 text-sm font-bold mb-2">🏰 Forteresses <span className="text-gray-500 font-normal">(meilleur taux domicile)</span></h3>
+                      {statsResult.homeAway.homeWinRate.map((s, i) => (
+                        <div key={i} className="flex items-center gap-2 py-1 text-xs">
+                          <span className="text-gray-500 w-5 font-bold">{i + 1}.</span>
+                          <span className="text-gray-300 w-24 truncate font-semibold">{s.name}</span>
+                          <div className="flex-1 h-4 rounded-full overflow-hidden bg-white/5">
+                            <div className="h-full rounded-full" style={{ width: `${s.value}%`, background: 'linear-gradient(90deg, rgba(34,211,238,0.4), rgba(34,211,238,0.7))' }} />
+                          </div>
+                          <span className="text-cyan-400 font-bold w-12 text-right">{s.value}%</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Road Warriors */}
+                    <div className="ios26-card rounded-xl p-3">
+                      <h3 className="text-orange-400 text-sm font-bold mb-2">✈️ Guerriers d'Extérieur <span className="text-gray-500 font-normal">(meilleur taux extérieur)</span></h3>
+                      {statsResult.homeAway.awayWinRate.map((s, i) => (
+                        <div key={i} className="flex items-center gap-2 py-1 text-xs">
+                          <span className="text-gray-500 w-5 font-bold">{i + 1}.</span>
+                          <span className="text-gray-300 w-24 truncate font-semibold">{s.name}</span>
+                          <div className="flex-1 h-4 rounded-full overflow-hidden bg-white/5">
+                            <div className="h-full rounded-full" style={{ width: `${s.value}%`, background: 'linear-gradient(90deg, rgba(251,146,60,0.4), rgba(251,146,60,0.7))' }} />
+                          </div>
+                          <span className="text-orange-400 font-bold w-12 text-right">{s.value}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* === SCORING === */}
+                {statsCategory === 'scoring' && statsResult.scoring && (
+                  <>
+                    {/* Overview cards */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="ios26-card rounded-xl p-3 text-center">
+                        <div className="text-2xl font-extrabold text-cyan-400 glow-cyan">{statsResult.scoring.avgGoals}</div>
+                        <div className="text-gray-400 text-[10px] font-medium mt-1">Buts / Match</div>
+                      </div>
+                      <div className="ios26-card rounded-xl p-3 text-center">
+                        <div className="text-2xl font-extrabold text-green-400 glow-green">{statsResult.scoring.highScoringRate}%</div>
+                        <div className="text-gray-400 text-[10px] font-medium mt-1">Matchs 4+ buts</div>
+                      </div>
+                      <div className="ios26-card rounded-xl p-3 text-center">
+                        <div className="text-2xl font-extrabold text-yellow-400 glow-gold">{statsResult.scoring.totalGoals}</div>
+                        <div className="text-gray-400 text-[10px] font-medium mt-1">Total buts</div>
+                      </div>
+                      <div className="ios26-card rounded-xl p-3 text-center">
+                        <div className="text-2xl font-extrabold text-gray-300">{statsResult.scoring.totalMatches}</div>
+                        <div className="text-gray-400 text-[10px] font-medium mt-1">Total matchs</div>
+                      </div>
+                    </div>
+
+                    {/* Clean sheets */}
+                    <div className="ios26-card rounded-xl p-3">
+                      <h3 className="text-green-400 text-sm font-bold mb-2">🧤 Clean Sheets</h3>
+                      {statsResult.scoring.cleanSheets.map((s, i) => (
+                        <div key={i} className="flex items-center gap-2 py-1 text-xs">
+                          <span className="text-gray-500 w-5 font-bold">{i + 1}.</span>
+                          <span className="text-gray-300 w-24 truncate font-semibold">{s.name}</span>
+                          <div className="flex-1 h-4 rounded-full overflow-hidden bg-white/5">
+                            <div className="h-full rounded-full" style={{ width: `${s.j > 0 ? (s.cleanSheets / s.j) * 100 : 0}%`, background: 'linear-gradient(90deg, rgba(34,197,94,0.4), rgba(34,197,94,0.7))' }} />
+                          </div>
+                          <span className="text-green-400 font-bold w-6 text-right">{s.cleanSheets}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Failed to score */}
+                    <div className="ios26-card rounded-xl p-3">
+                      <h3 className="text-red-400 text-sm font-bold mb-2">❌ Matchs Sans Marquer</h3>
+                      {statsResult.scoring.failedToScore.map((s, i) => (
+                        <div key={i} className="flex items-center gap-2 py-1 text-xs">
+                          <span className="text-gray-500 w-5 font-bold">{i + 1}.</span>
+                          <span className="text-gray-300 w-24 truncate font-semibold">{s.name}</span>
+                          <div className="flex-1 h-4 rounded-full overflow-hidden bg-white/5">
+                            <div className="h-full rounded-full" style={{ width: `${s.j > 0 ? (s.failedToScore / s.j) * 100 : 0}%`, background: 'linear-gradient(90deg, rgba(248,113,113,0.4), rgba(248,113,113,0.7))' }} />
+                          </div>
+                          <span className="text-red-400 font-bold w-6 text-right">{s.failedToScore}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Score Distribution */}
+                    <div className="ios26-card rounded-xl p-3">
+                      <h3 className="text-cyan-400 text-sm font-bold mb-2">📊 Scores les Plus Fréquents</h3>
+                      {statsResult.scoring.scoreDistArr.map((s, i) => (
+                        <div key={i} className="flex items-center gap-2 py-1 text-xs">
+                          <span className="text-gray-300 font-bold w-10 text-center">{s.score}</span>
+                          <div className="flex-1 h-4 rounded-full overflow-hidden bg-white/5">
+                            <div className="h-full rounded-full" style={{ width: `${(s.count / (statsResult.scoring.scoreDistArr[0]?.count || 1)) * 100}%`, background: 'linear-gradient(90deg, rgba(34,211,238,0.4), rgba(34,211,238,0.7))' }} />
+                          </div>
+                          <span className="text-cyan-400 font-bold w-8 text-right">{s.count}×</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* === FORME / STREAKS === */}
+                {statsCategory === 'streaks' && statsResult.form && (
+                  <div className="ios26-card rounded-xl p-3">
+                    <h3 className="text-cyan-400 text-sm font-bold mb-3">🔥 Forme Actuelle</h3>
+                    {appData?.entities?.managers && Object.values(appData.entities.managers).map(m => {
+                      if (!m.name) return null;
+                      const results = statsResult.form.form[m.name];
+                      const streak = statsResult.form.streaks[m.name];
+                      const pts = statsResult.form.formPoints[m.name];
+                      if (!results || results.length === 0) return null;
+                      return (
+                        <div key={m.name} className="py-2 border-b border-white/5 last:border-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-gray-300 font-bold text-xs">{m.name}</span>
+                            <div className="flex items-center gap-2">
+                              {streak && streak.length > 0 && (
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${streak.type === 'W' ? 'bg-green-500/20 text-green-400' : streak.type === 'D' ? 'bg-gray-500/20 text-gray-400' : 'bg-red-500/20 text-red-400'}`}>
+                                  {streak.length}{streak.type}
+                                </span>
+                              )}
+                              <span className="text-cyan-400 text-[10px] font-bold">{pts} pts</span>
+                            </div>
+                          </div>
+                          <div className="flex gap-1.5">
+                            {results.map((r, i) => (
+                              <div key={i} className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${r.result === 'W' ? 'bg-green-500/30 text-green-400' : r.result === 'D' ? 'bg-gray-500/30 text-gray-400' : 'bg-red-500/30 text-red-400'}`} title={`${r.score} vs ${r.vs}`}>
+                                {r.result}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+              </div>
+            )}
           </div>
         </div>
       )}
