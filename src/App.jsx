@@ -635,7 +635,7 @@ export default function HyeneScores() {
   const [isEditingManager, setIsEditingManager] = useState(false);
 
   // États Stats
-  const [statsChampionship, setStatsChampionship] = useState('all');
+  const [statsChampionship, setStatsChampionship] = useState('hyenes');
   const [statsSeason, setStatsSeason] = useState('all');
   const [statsCategory, setStatsCategory] = useState('records');
   const [visibleManagers, setVisibleManagers] = useState(new Set());
@@ -4203,8 +4203,8 @@ export default function HyeneScores() {
                     className={`w-full h-12 ios26-btn rounded-xl px-4 text-white text-base font-semibold cursor-pointer flex items-center justify-between ${isStatsChampOpen ? 'border-cyan-500/50' : ''}`}
                   >
                     <div className="flex items-center gap-3">
-                      <span className="text-2xl">{statsChampionship === 'all' ? '📊' : championships.find(c => c.id === statsChampionship)?.icon}</span>
-                      <span className="truncate">{statsChampionship === 'all' ? 'Tous les championnats' : championships.find(c => c.id === statsChampionship)?.name}</span>
+                      <span className="text-2xl">{championships.find(c => c.id === statsChampionship)?.icon}</span>
+                      <span className="truncate">{championships.find(c => c.id === statsChampionship)?.name}</span>
                     </div>
                     <svg className={`w-5 h-5 text-cyan-400 flex-shrink-0 transition-transform ${isStatsChampOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -4215,13 +4215,6 @@ export default function HyeneScores() {
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setIsStatsChampOpen(false)}></div>
                       <div className="absolute left-0 right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 overflow-hidden">
-                        <button
-                          onClick={() => { setStatsChampionship('all'); setIsStatsChampOpen(false); }}
-                          className={`w-full px-4 py-3 text-base font-semibold text-left flex items-center gap-3 ${statsChampionship === 'all' ? 'bg-cyan-500/20 text-cyan-400' : 'text-white hover:bg-white/10'}`}
-                        >
-                          <span className="text-2xl">📊</span>
-                          <span>Tous les championnats</span>
-                        </button>
                         {championships.map(champ => (
                           <button
                             key={champ.id}
@@ -4243,7 +4236,7 @@ export default function HyeneScores() {
                     onClick={() => { setIsStatsSeasonOpen(!isStatsSeasonOpen); setIsStatsChampOpen(false); }}
                     className={`w-full h-12 ios26-btn rounded-xl px-4 text-white text-base font-semibold cursor-pointer flex items-center justify-between ${isStatsSeasonOpen ? 'border-cyan-500/50' : ''}`}
                   >
-                    <span>{statsSeason === 'all' ? 'Toutes' : `Saison ${statsSeason}`}</span>
+                    <span>{statsSeason === 'all' ? 'All time' : `Saison ${statsSeason}`}</span>
                     <svg className={`w-5 h-5 text-cyan-400 flex-shrink-0 transition-transform ${isStatsSeasonOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
@@ -4257,7 +4250,7 @@ export default function HyeneScores() {
                           onClick={() => { setStatsSeason('all'); setIsStatsSeasonOpen(false); }}
                           className={`w-full px-4 py-3 text-base font-semibold text-left ${statsSeason === 'all' ? 'bg-cyan-500/20 text-cyan-400' : 'text-white hover:bg-white/10'}`}
                         >
-                          Toutes
+                          All time
                         </button>
                         {[...availableSeasons].reverse().map(s => (
                           <button
