@@ -256,7 +256,9 @@ function computeRecords(flatMatches, matchBlocks, appData, champFilter, seasonFi
       const totalMatchdays = championshipId === 'hyenes'
         ? (isHyenesS6 ? HYENES_S6_MATCHDAYS : HYENES_MATCHDAYS)
         : (isFranceS6 ? FRANCE_S6_MATCHDAYS : STANDARD_MATCHDAYS);
-      const currentMatchday = season.playedMatchdays || season.standings[0]?.j || 0;
+      // Use max j across all teams to avoid exempt team having lower j
+      const maxJ = Math.max(0, ...season.standings.map(t => t.j || 0));
+      const currentMatchday = season.playedMatchdays || maxJ;
       if (!isFranceS6 && currentMatchday < totalMatchdays) return;
 
       // Find the champion
@@ -274,7 +276,7 @@ function computeRecords(flatMatches, matchBlocks, appData, champFilter, seasonFi
       trophyWins[championName].seasons.push({ championship: champ, season: sNum });
     });
   }
-  const trophyRanking = Object.values(trophyWins).sort((a, b) => b.titles - a.titles);
+  const trophyRanking = Object.values(trophyWins).sort((a, b) => b.titles - a.titles).slice(0, 3);
 
   return { biggestWins, highestScoring, streaks, trophyRanking };
 }
@@ -4262,11 +4264,11 @@ export default function HyeneScores() {
                       <div className="ios26-card rounded-xl px-4 py-3">
                         <h3 className="text-yellow-400 text-sm font-extrabold mb-2">🏆 Palmarès des Trophées</h3>
                         {statsResult.records.trophyRanking.map((t, i) => (
-                          <div key={i} className="flex items-center gap-2 py-1.5">
-                            <span className={`text-base font-extrabold w-7 flex-shrink-0 ${i === 0 ? 'text-yellow-400' : i === 1 ? 'text-gray-300' : i === 2 ? 'text-orange-700' : 'text-gray-500'}`}>{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`}</span>
-                            <span className={`flex-1 font-bold text-sm ${i === 0 ? 'text-yellow-400' : 'text-gray-300'}`}>{t.name}</span>
-                            <span className={`font-extrabold text-base flex-shrink-0 ${i === 0 ? 'text-yellow-400' : 'text-cyan-400'}`}>{t.titles}</span>
-                            <span className="text-gray-500 text-xs flex-shrink-0">titre{t.titles > 1 ? 's' : ''}</span>
+                          <div key={i} className={`flex items-center py-2 ${i > 0 ? 'border-t border-white/5' : ''}`}>
+                            <span className="text-lg w-8 flex-shrink-0 text-center">{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
+                            <span className={`flex-1 font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-300'}`}>{t.name}</span>
+                            <span className={`font-extrabold text-lg w-8 text-right flex-shrink-0 ${i === 0 ? 'text-yellow-400' : 'text-cyan-400'}`}>{t.titles}</span>
+                            <span className="text-gray-500 text-xs w-12 text-left pl-1.5 flex-shrink-0">titre{t.titles > 1 ? 's' : ''}</span>
                           </div>
                         ))}
                       </div>
