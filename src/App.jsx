@@ -218,27 +218,27 @@ function flattenMatches(matchBlocks) {
 }
 
 function computeRecords(flatMatches, matchBlocks, appData, champFilter, seasonFilter) {
-  // Biggest victories
+  // Biggest victories (top 3)
   const biggestWins = [...flatMatches]
     .map(m => ({ ...m, diff: Math.abs(m.homeScore - m.awayScore), total: m.homeScore + m.awayScore, winner: m.homeScore > m.awayScore ? m.homeTeam : m.awayTeam, loser: m.homeScore > m.awayScore ? m.awayTeam : m.homeTeam, winScore: Math.max(m.homeScore, m.awayScore), loseScore: Math.min(m.homeScore, m.awayScore) }))
     .filter(m => m.diff > 0)
     .sort((a, b) => b.diff - a.diff || b.total - a.total)
-    .slice(0, 5);
+    .slice(0, 3);
 
-  // Highest scoring matches
+  // Highest scoring matches (top 3)
   const highestScoring = [...flatMatches]
     .map(m => ({ ...m, total: m.homeScore + m.awayScore }))
     .sort((a, b) => b.total - a.total)
-    .slice(0, 5);
+    .slice(0, 3);
 
   // Streaks (wins, unbeaten, losses)
   const streaks = computeStreakRecords(matchBlocks);
 
-  // Best/worst season points
-  const seasonPoints = [];
+  // Trophy wins record
+  const trophyWins = {};
   if (appData?.entities?.seasons) {
     Object.entries(appData.entities.seasons).forEach(([key, season]) => {
-      if (!season.standings || !Array.isArray(season.standings)) return;
+      if (!season.standings || !Array.isArray(season.standings) || season.standings.length === 0) return;
       const champ = key.replace(/_s\d+$/, '');
       const sNum = season.season || parseInt(key.match(/_s(\d+)$/)?.[1] || '0');
       if (champFilter !== 'all') {
@@ -248,17 +248,35 @@ function computeRecords(flatMatches, matchBlocks, appData, champFilter, seasonFi
         } else if (champ.toLowerCase() !== mappedChamp.toLowerCase()) return;
       }
       if (seasonFilter !== 'all' && sNum !== parseInt(seasonFilter)) return;
-      season.standings.forEach(team => {
-        if (team.j >= 3 || team.pts > 0) {
-          seasonPoints.push({ name: team.mgr || team.name, pts: team.pts, championship: champ, season: sNum, j: team.j });
-        }
+
+      // Check if season is complete
+      const championshipId = Object.entries(CHAMPIONSHIP_MAPPING).find(([, v]) => v === champ)?.[0] || champ;
+      const isHyenesS6 = championshipId === 'hyenes' && sNum === 6;
+      const isFranceS6 = championshipId === 'france' && sNum === 6;
+      const totalMatchdays = championshipId === 'hyenes'
+        ? (isHyenesS6 ? HYENES_S6_MATCHDAYS : HYENES_MATCHDAYS)
+        : (isFranceS6 ? FRANCE_S6_MATCHDAYS : STANDARD_MATCHDAYS);
+      const currentMatchday = season.playedMatchdays || season.standings[0]?.j || 0;
+      if (!isFranceS6 && currentMatchday < totalMatchdays) return;
+
+      // Find the champion
+      const sorted = [...season.standings].sort((a, b) => {
+        const ptsA = a.pts || a.points || 0;
+        const ptsB = b.pts || b.points || 0;
+        if (ptsB !== ptsA) return ptsB - ptsA;
+        const diffA = parseInt(String(a.diff || 0).replace('+', '')) || 0;
+        const diffB = parseInt(String(b.diff || 0).replace('+', '')) || 0;
+        return diffB - diffA;
       });
+      const championName = sorted[0]?.mgr || sorted[0]?.name || '?';
+      if (!trophyWins[championName]) trophyWins[championName] = { name: championName, titles: 0, seasons: [] };
+      trophyWins[championName].titles++;
+      trophyWins[championName].seasons.push({ championship: champ, season: sNum });
     });
   }
-  const bestSeasons = [...seasonPoints].sort((a, b) => b.pts - a.pts).slice(0, 5);
-  const worstSeasons = [...seasonPoints].filter(s => s.j >= 3).sort((a, b) => a.pts - b.pts).slice(0, 5);
+  const trophyRanking = Object.values(trophyWins).sort((a, b) => b.titles - a.titles);
 
-  return { biggestWins, highestScoring, streaks, bestSeasons, worstSeasons };
+  return { biggestWins, highestScoring, streaks, trophyRanking };
 }
 
 function computeStreakRecords(matchBlocks) {
@@ -4230,77 +4248,96 @@ export default function HyeneScores() {
             {!statsResult ? (
               <div className="text-center py-12 text-gray-500 text-sm">Aucune donnée disponible</div>
             ) : (
-              <div className="space-y-3 pb-4">
+              <div className="space-y-2 pt-2 pb-4">
 
                 {/* === RECORDS === */}
                 {statsCategory === 'records' && statsResult.records && (
                   <>
+                    {/* Trophy Wins */}
+                    {statsResult.records.trophyRanking.length > 0 && (
+                      <div className="ios26-card rounded-xl px-4 py-3">
+                        <h3 className="text-yellow-400 text-sm font-extrabold mb-2">🏆 Palmarès des Trophées</h3>
+                        {statsResult.records.trophyRanking.map((t, i) => (
+                          <div key={i} className="flex items-center gap-2 py-1.5">
+                            <span className={`text-base font-extrabold w-7 flex-shrink-0 ${i === 0 ? 'text-yellow-400' : i === 1 ? 'text-gray-300' : i === 2 ? 'text-orange-700' : 'text-gray-500'}`}>{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`}</span>
+                            <span className={`flex-1 font-bold text-sm ${i === 0 ? 'text-yellow-400' : 'text-gray-300'}`}>{t.name}</span>
+                            <span className={`font-extrabold text-base flex-shrink-0 ${i === 0 ? 'text-yellow-400' : 'text-cyan-400'}`}>{t.titles}</span>
+                            <span className="text-gray-500 text-xs flex-shrink-0">titre{t.titles > 1 ? 's' : ''}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     {/* Biggest Wins */}
-                    <div className="ios26-card rounded-xl p-3">
-                      <h3 className="text-cyan-400 text-sm font-bold mb-2">🏆 Plus Larges Victoires</h3>
+                    <div className="ios26-card rounded-xl px-4 py-3">
+                      <h3 className="text-cyan-400 text-sm font-extrabold mb-1">🥊 Plus Larges Victoires</h3>
                       {statsResult.records.biggestWins.length === 0 ? (
-                        <p className="text-gray-500 text-xs">Aucun résultat</p>
+                        <p className="text-gray-500 text-sm">Aucun résultat</p>
                       ) : statsResult.records.biggestWins.map((m, i) => (
-                        <div key={i} className={`flex items-center gap-2 py-1.5 ${i === 0 ? 'text-yellow-400' : 'text-gray-300'} text-xs`}>
-                          <span className="font-bold w-5 flex-shrink-0">{i + 1}.</span>
-                          <span className="flex-1 text-center font-semibold truncate">{m.winner} <span className="text-green-400">{m.winScore}</span> - <span className="text-red-400">{m.loseScore}</span> {m.loser}</span>
-                          <span className="text-gray-500 text-[10px] flex-shrink-0">{CHAMP_ICON[m.championship] || ''} S{m.season} J{m.matchday}</span>
+                        <div key={i} className={`flex items-center gap-2 py-2 ${i > 0 ? 'border-t border-white/5' : ''}`}>
+                          <span className={`font-extrabold text-base w-6 flex-shrink-0 ${i === 0 ? 'text-yellow-400' : 'text-gray-500'}`}>{i + 1}.</span>
+                          <div className="flex-1 min-w-0">
+                            <div className={`font-bold text-sm ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>
+                              {m.winner} <span className="text-green-400">{m.winScore}</span> - <span className="text-red-400">{m.loseScore}</span> {m.loser}
+                            </div>
+                            <div className="text-gray-500 text-xs mt-0.5">{CHAMP_ICON[m.championship] || ''} Saison {m.season} — Journée {m.matchday}</div>
+                          </div>
                         </div>
                       ))}
                     </div>
 
                     {/* Highest Scoring */}
-                    <div className="ios26-card rounded-xl p-3">
-                      <h3 className="text-cyan-400 text-sm font-bold mb-2">⚡ Matchs les Plus Prolifiques</h3>
+                    <div className="ios26-card rounded-xl px-4 py-3">
+                      <h3 className="text-cyan-400 text-sm font-extrabold mb-1">⚡ Matchs les Plus Prolifiques</h3>
                       {statsResult.records.highestScoring.map((m, i) => (
-                        <div key={i} className={`flex items-center gap-2 py-1.5 ${i === 0 ? 'text-yellow-400' : 'text-gray-300'} text-xs`}>
-                          <span className="font-bold w-5 flex-shrink-0">{i + 1}.</span>
-                          <span className="flex-1 text-center font-semibold truncate">{m.homeTeam} <span className="text-cyan-400">{m.homeScore}</span> - <span className="text-cyan-400">{m.awayScore}</span> {m.awayTeam}</span>
-                          <span className="text-gray-500 text-[10px] flex-shrink-0">{CHAMP_ICON[m.championship] || ''} S{m.season}</span>
-                          <span className="text-cyan-400 font-bold text-[10px] flex-shrink-0">{m.total}b</span>
+                        <div key={i} className={`flex items-center gap-2 py-2 ${i > 0 ? 'border-t border-white/5' : ''}`}>
+                          <span className={`font-extrabold text-base w-6 flex-shrink-0 ${i === 0 ? 'text-yellow-400' : 'text-gray-500'}`}>{i + 1}.</span>
+                          <div className="flex-1 min-w-0">
+                            <div className={`font-bold text-sm ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>
+                              {m.homeTeam} <span className="text-cyan-400">{m.homeScore}</span> - <span className="text-cyan-400">{m.awayScore}</span> {m.awayTeam}
+                            </div>
+                            <div className="text-gray-500 text-xs mt-0.5">{CHAMP_ICON[m.championship] || ''} Saison {m.season} — <span className="text-cyan-400 font-bold">{m.total} buts</span></div>
+                          </div>
                         </div>
                       ))}
                     </div>
 
                     {/* Streaks */}
-                    <div className="ios26-card rounded-xl p-3">
-                      <h3 className="text-cyan-400 text-sm font-bold mb-2">🔥 Records de Séries</h3>
-                      <div className="space-y-2">
+                    <div className="ios26-card rounded-xl px-4 py-3">
+                      <h3 className="text-cyan-400 text-sm font-extrabold mb-2">🔥 Records de Séries</h3>
+                      <div className="space-y-3">
                         {statsResult.records.streaks.longestWin.length > 0 && (
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-green-400 font-semibold">Victoires consécutives</span>
-                            <span className="text-gray-300"><span className="text-green-400 font-bold">{statsResult.records.streaks.longestWin.length}</span> — {statsResult.records.streaks.longestWin.manager} ({CHAMP_ICON[statsResult.records.streaks.longestWin.championship] || ''} S{statsResult.records.streaks.longestWin.season})</span>
+                          <div>
+                            <div className="text-green-400 font-bold text-xs mb-0.5">Victoires consécutives</div>
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-green-400 font-extrabold text-xl">{statsResult.records.streaks.longestWin.length}</span>
+                              <span className="text-gray-300 text-sm font-semibold">{statsResult.records.streaks.longestWin.manager}</span>
+                              <span className="text-gray-500 text-xs ml-auto">{CHAMP_ICON[statsResult.records.streaks.longestWin.championship] || ''} S{statsResult.records.streaks.longestWin.season}</span>
+                            </div>
                           </div>
                         )}
                         {statsResult.records.streaks.longestUnbeaten.length > 0 && (
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-cyan-400 font-semibold">Invincibilité</span>
-                            <span className="text-gray-300"><span className="text-cyan-400 font-bold">{statsResult.records.streaks.longestUnbeaten.length}</span> — {statsResult.records.streaks.longestUnbeaten.manager} ({CHAMP_ICON[statsResult.records.streaks.longestUnbeaten.championship] || ''} S{statsResult.records.streaks.longestUnbeaten.season})</span>
+                          <div>
+                            <div className="text-cyan-400 font-bold text-xs mb-0.5">Invincibilité</div>
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-cyan-400 font-extrabold text-xl">{statsResult.records.streaks.longestUnbeaten.length}</span>
+                              <span className="text-gray-300 text-sm font-semibold">{statsResult.records.streaks.longestUnbeaten.manager}</span>
+                              <span className="text-gray-500 text-xs ml-auto">{CHAMP_ICON[statsResult.records.streaks.longestUnbeaten.championship] || ''} S{statsResult.records.streaks.longestUnbeaten.season}</span>
+                            </div>
                           </div>
                         )}
                         {statsResult.records.streaks.longestLosing.length > 0 && (
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-red-400 font-semibold">Défaites consécutives</span>
-                            <span className="text-gray-300"><span className="text-red-400 font-bold">{statsResult.records.streaks.longestLosing.length}</span> — {statsResult.records.streaks.longestLosing.manager} ({CHAMP_ICON[statsResult.records.streaks.longestLosing.championship] || ''} S{statsResult.records.streaks.longestLosing.season})</span>
+                          <div>
+                            <div className="text-red-400 font-bold text-xs mb-0.5">Défaites consécutives</div>
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-red-400 font-extrabold text-xl">{statsResult.records.streaks.longestLosing.length}</span>
+                              <span className="text-gray-300 text-sm font-semibold">{statsResult.records.streaks.longestLosing.manager}</span>
+                              <span className="text-gray-500 text-xs ml-auto">{CHAMP_ICON[statsResult.records.streaks.longestLosing.championship] || ''} S{statsResult.records.streaks.longestLosing.season}</span>
+                            </div>
                           </div>
                         )}
                       </div>
                     </div>
-
-                    {/* Worst Season Points */}
-                    {statsResult.records.worstSeasons.length > 0 && (
-                      <div className="ios26-card rounded-xl p-3">
-                        <h3 className="text-red-400 text-sm font-bold mb-2">📉 Pires Totaux de Points</h3>
-                        {statsResult.records.worstSeasons.map((s, i) => (
-                          <div key={i} className="flex items-center gap-2 py-1.5 text-gray-400 text-xs">
-                            <span className="font-bold w-5 text-gray-500 flex-shrink-0">{i + 1}.</span>
-                            <span className="flex-1 font-semibold truncate">{s.name}</span>
-                            <span className="text-red-400 font-bold flex-shrink-0">{s.pts} pts</span>
-                            <span className="text-gray-500 text-[10px] flex-shrink-0">{CHAMP_ICON[s.championship] || ''} S{s.season} ({s.j}j)</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </>
                 )}
 
