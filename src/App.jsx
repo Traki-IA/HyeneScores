@@ -197,7 +197,7 @@ function getFilteredMatches(appData, champFilter, seasonFilter) {
       : champFilter === 'hyenes'
         ? EURO_CHAMPIONSHIPS.includes(block.championship?.toLowerCase())
         : (block.championship?.toLowerCase() === (CHAMPIONSHIP_MAPPING[champFilter] || champFilter)?.toLowerCase());
-    const seasonMatch = seasonFilter === 'all' || block.season === parseInt(seasonFilter);
+    const seasonMatch = seasonFilter === 'all' || Number(block.season) === Number(seasonFilter);
     return champMatch && seasonMatch;
   });
 }
@@ -288,12 +288,15 @@ function computeStreakRecords(matchBlocks) {
       if (homeScore === null || awayScore === null) return;
       const hs = parseInt(homeScore), as2 = parseInt(awayScore);
       if (isNaN(hs) || isNaN(as2)) return;
-      const key1 = `${homeTeam}_${block.championship}_${block.season}`;
-      const key2 = `${awayTeam}_${block.championship}_${block.season}`;
+      // Group by manager + season only (not championship) so streaks span across
+      // all championships within the Ligue des Hyènes for the same season
+      const sn = Number(block.season);
+      const key1 = `${homeTeam}_${sn}`;
+      const key2 = `${awayTeam}_${sn}`;
       if (!managerMatches[key1]) managerMatches[key1] = [];
       if (!managerMatches[key2]) managerMatches[key2] = [];
-      managerMatches[key1].push({ matchday: block.matchday, result: hs > as2 ? 'W' : hs < as2 ? 'L' : 'D', manager: homeTeam, championship: block.championship, season: block.season });
-      managerMatches[key2].push({ matchday: block.matchday, result: as2 > hs ? 'W' : as2 < hs ? 'L' : 'D', manager: awayTeam, championship: block.championship, season: block.season });
+      managerMatches[key1].push({ matchday: block.matchday, result: hs > as2 ? 'W' : hs < as2 ? 'L' : 'D', manager: homeTeam, championship: block.championship, season: sn });
+      managerMatches[key2].push({ matchday: block.matchday, result: as2 > hs ? 'W' : as2 < hs ? 'L' : 'D', manager: awayTeam, championship: block.championship, season: sn });
     });
   });
 
@@ -4274,14 +4277,14 @@ export default function HyeneScores() {
                       {statsResult.records.biggestWins.length === 0 ? (
                         <p className="text-gray-500 text-sm">Aucun résultat</p>
                       ) : statsResult.records.biggestWins.map((m, i) => (
-                        <div key={i} className={`flex items-center gap-2 py-2 ${i > 0 ? 'border-t border-white/5' : ''}`}>
-                          <span className={`font-extrabold text-base w-6 flex-shrink-0 ${i === 0 ? 'text-yellow-400' : 'text-gray-500'}`}>{i + 1}.</span>
-                          <div className="flex-1 min-w-0">
-                            <div className={`font-bold text-sm ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>
-                              {m.winner} <span className="text-green-400">{m.winScore}</span> - <span className="text-red-400">{m.loseScore}</span> {m.loser}
-                            </div>
-                            <div className="text-gray-500 text-xs mt-0.5">{CHAMP_ICON[m.championship] || ''} Saison {m.season} — Journée {m.matchday}</div>
+                        <div key={i} className={`py-2 ${i > 0 ? 'border-t border-white/5' : ''}`}>
+                          <div className="flex items-center">
+                            <span className={`font-extrabold text-sm w-6 flex-shrink-0 ${i === 0 ? 'text-yellow-400' : 'text-gray-500'}`}>{i + 1}.</span>
+                            <span className={`flex-1 text-right font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>{m.winner}</span>
+                            <span className="flex-shrink-0 mx-2 font-extrabold text-base text-center w-16"><span className="text-green-400">{m.winScore}</span> - <span className="text-red-400">{m.loseScore}</span></span>
+                            <span className={`flex-1 text-left font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>{m.loser}</span>
                           </div>
+                          <div className="text-gray-500 text-xs text-center mt-0.5">{CHAMP_ICON[m.championship] || ''} Saison {m.season} — Journée {m.matchday}</div>
                         </div>
                       ))}
                     </div>
@@ -4290,14 +4293,14 @@ export default function HyeneScores() {
                     <div className="ios26-card rounded-xl px-4 py-3">
                       <h3 className="text-cyan-400 text-sm font-extrabold mb-1">⚡ Matchs les Plus Prolifiques</h3>
                       {statsResult.records.highestScoring.map((m, i) => (
-                        <div key={i} className={`flex items-center gap-2 py-2 ${i > 0 ? 'border-t border-white/5' : ''}`}>
-                          <span className={`font-extrabold text-base w-6 flex-shrink-0 ${i === 0 ? 'text-yellow-400' : 'text-gray-500'}`}>{i + 1}.</span>
-                          <div className="flex-1 min-w-0">
-                            <div className={`font-bold text-sm ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>
-                              {m.homeTeam} <span className="text-cyan-400">{m.homeScore}</span> - <span className="text-cyan-400">{m.awayScore}</span> {m.awayTeam}
-                            </div>
-                            <div className="text-gray-500 text-xs mt-0.5">{CHAMP_ICON[m.championship] || ''} Saison {m.season} — <span className="text-cyan-400 font-bold">{m.total} buts</span></div>
+                        <div key={i} className={`py-2 ${i > 0 ? 'border-t border-white/5' : ''}`}>
+                          <div className="flex items-center">
+                            <span className={`font-extrabold text-sm w-6 flex-shrink-0 ${i === 0 ? 'text-yellow-400' : 'text-gray-500'}`}>{i + 1}.</span>
+                            <span className={`flex-1 text-right font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>{m.homeTeam}</span>
+                            <span className="flex-shrink-0 mx-2 font-extrabold text-base text-center w-16"><span className="text-cyan-400">{m.homeScore}</span> - <span className="text-cyan-400">{m.awayScore}</span></span>
+                            <span className={`flex-1 text-left font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>{m.awayTeam}</span>
                           </div>
+                          <div className="text-gray-500 text-xs text-center mt-0.5">{CHAMP_ICON[m.championship] || ''} Saison {m.season} — <span className="text-cyan-400 font-bold">{m.total} buts</span></div>
                         </div>
                       ))}
                     </div>
