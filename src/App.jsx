@@ -247,7 +247,7 @@ function computeRecords(flatMatches, matchBlocks, appData, champFilter, seasonFi
           if (champ !== 'ligue_hyenes') return;
         } else if (champ.toLowerCase() !== mappedChamp.toLowerCase()) return;
       }
-      if (seasonFilter !== 'all' && sNum !== parseInt(seasonFilter)) return;
+      if (seasonFilter !== 'all' && sNum !== Number(seasonFilter)) return;
 
       // Check if season is complete
       const championshipId = Object.entries(CHAMPIONSHIP_MAPPING).find(([, v]) => v === champ)?.[0] || champ;
@@ -288,15 +288,16 @@ function computeStreakRecords(matchBlocks) {
       if (homeScore === null || awayScore === null) return;
       const hs = parseInt(homeScore), as2 = parseInt(awayScore);
       if (isNaN(hs) || isNaN(as2)) return;
-      // Group by manager + season only (not championship) so streaks span across
-      // all championships within the Ligue des Hyènes for the same season
+      // Group by manager + championship + season: streaks are per-championship
+      // because matchday numbering is independent per championship (1-18 each)
       const sn = Number(block.season);
-      const key1 = `${homeTeam}_${sn}`;
-      const key2 = `${awayTeam}_${sn}`;
+      const champ = block.championship || '';
+      const key1 = `${homeTeam}_${champ}_${sn}`;
+      const key2 = `${awayTeam}_${champ}_${sn}`;
       if (!managerMatches[key1]) managerMatches[key1] = [];
       if (!managerMatches[key2]) managerMatches[key2] = [];
-      managerMatches[key1].push({ matchday: block.matchday, result: hs > as2 ? 'W' : hs < as2 ? 'L' : 'D', manager: homeTeam, championship: block.championship, season: sn });
-      managerMatches[key2].push({ matchday: block.matchday, result: as2 > hs ? 'W' : as2 < hs ? 'L' : 'D', manager: awayTeam, championship: block.championship, season: sn });
+      managerMatches[key1].push({ matchday: block.matchday, result: hs > as2 ? 'W' : hs < as2 ? 'L' : 'D', manager: homeTeam, championship: champ, season: sn });
+      managerMatches[key2].push({ matchday: block.matchday, result: as2 > hs ? 'W' : as2 < hs ? 'L' : 'D', manager: awayTeam, championship: champ, season: sn });
     });
   });
 
@@ -379,7 +380,7 @@ function computeTrends(appData, managers, champFilter, seasonFilter) {
         : champFilter === 'hyenes'
           ? EURO_CHAMPIONSHIPS.includes(block.championship?.toLowerCase())
           : (block.championship?.toLowerCase() === (CHAMPIONSHIP_MAPPING[champFilter] || champFilter)?.toLowerCase());
-      return champMatch && block.season === parseInt(seasonFilter);
+      return champMatch && Number(block.season) === Number(seasonFilter);
     });
 
     const maxMatchday = Math.max(0, ...filtered.map(b => b.matchday || 0));
