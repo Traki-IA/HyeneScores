@@ -676,6 +676,9 @@ export default function HyeneScores() {
   const [h2hTeamB, setH2hTeamB] = useState(null);
   const [isStatsChampOpen, setIsStatsChampOpen] = useState(false);
   const [isStatsSeasonOpen, setIsStatsSeasonOpen] = useState(false);
+  const [isH2hDropdownAOpen, setIsH2hDropdownAOpen] = useState(false);
+  const [isH2hDropdownBOpen, setIsH2hDropdownBOpen] = useState(false);
+  const [isEvoTeamDropdownOpen, setIsEvoTeamDropdownOpen] = useState(false);
 
   // Compute stats only when on the stats tab
   const statsResult = useMemo(() => {
@@ -698,6 +701,13 @@ export default function HyeneScores() {
     Object.values(appData.entities.seasons).forEach(s => { if (s.season) nums.add(s.season); });
     return [...nums].sort((a, b) => a - b);
   }, [appData]);
+
+  // Auto-select latest season when switching to Evolution tab with "All time"
+  useEffect(() => {
+    if (statsCategory === 'trends' && statsSeason === 'all' && availableSeasons.length > 0) {
+      setStatsSeason(String(availableSeasons[availableSeasons.length - 1]));
+    }
+  }, [statsCategory, availableSeasons]);
 
   // Fonction pour charger les données depuis appData v2.0
   const loadDataFromAppData = useCallback((data, championship, season, journee, currentPenalties = {}, isAdminUser = false) => {
@@ -4279,12 +4289,14 @@ export default function HyeneScores() {
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setIsStatsSeasonOpen(false)}></div>
                       <div className="absolute right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 w-36 max-h-72 overflow-y-auto">
-                        <button
-                          onClick={() => { setStatsSeason('all'); setIsStatsSeasonOpen(false); }}
-                          className={`w-full px-4 py-3 text-base font-semibold text-left ${statsSeason === 'all' ? 'bg-cyan-500/20 text-cyan-400' : 'text-white hover:bg-white/10'}`}
-                        >
-                          All time
-                        </button>
+                        {statsCategory !== 'trends' && (
+                          <button
+                            onClick={() => { setStatsSeason('all'); setIsStatsSeasonOpen(false); }}
+                            className={`w-full px-4 py-3 text-base font-semibold text-left ${statsSeason === 'all' ? 'bg-cyan-500/20 text-cyan-400' : 'text-white hover:bg-white/10'}`}
+                          >
+                            All time
+                          </button>
+                        )}
                         {[...availableSeasons].reverse().map(s => (
                           <button
                             key={s}
@@ -4328,7 +4340,6 @@ export default function HyeneScores() {
                             <span className="text-lg w-8 flex-shrink-0 text-center">{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
                             <span className={`flex-1 font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-300'}`}>{t.name}</span>
                             <span className={`font-extrabold text-lg w-8 text-right flex-shrink-0 ${i === 0 ? 'text-yellow-400' : 'text-cyan-400'}`}>{t.titles}</span>
-                            <span className="text-gray-500 text-xs w-12 text-left pl-1.5 flex-shrink-0">titre{t.titles > 1 ? 's' : ''}</span>
                           </div>
                         ))}
                       </div>
@@ -4485,37 +4496,68 @@ export default function HyeneScores() {
                       </div>
                     ) : (
                       <>
-                        {/* Team A selector */}
+                        {/* Team selectors - two side-by-side dropdowns */}
                         <div className="ios26-card rounded-xl p-3">
-                          <h3 className="text-cyan-400 text-xs font-bold mb-2">Équipe 1</h3>
-                          <div className="grid grid-cols-2 gap-1.5">
-                            {statsResult.h2h.managers.map(m => (
-                              <button key={m} onClick={() => { setH2hTeamA(h2hTeamA === m ? null : m); if (h2hTeamB === m) setH2hTeamB(null); }}
-                                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${h2hTeamA === m ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40' : 'ios26-btn text-gray-400 hover:text-gray-300'}`}>
-                                {m}
+                          <div className="flex gap-2">
+                            {/* Team A dropdown */}
+                            <div className="flex-1 relative">
+                              <button
+                                onClick={() => { setIsH2hDropdownAOpen(!isH2hDropdownAOpen); setIsH2hDropdownBOpen(false); }}
+                                className={`w-full h-10 ios26-btn rounded-xl px-3 text-sm font-bold cursor-pointer flex items-center justify-between ${isH2hDropdownAOpen ? 'border-cyan-500/50' : ''}`}
+                              >
+                                <span className={h2hTeamA ? 'text-cyan-400' : 'text-gray-500'}>{h2hTeamA || 'Équipe 1'}</span>
+                                <svg className={`w-4 h-4 text-cyan-400 flex-shrink-0 transition-transform ${isH2hDropdownAOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
                               </button>
-                            ))}
-                          </div>
-                        </div>
+                              {isH2hDropdownAOpen && (
+                                <>
+                                  <div className="fixed inset-0 z-40" onClick={() => setIsH2hDropdownAOpen(false)}></div>
+                                  <div className="absolute left-0 right-0 top-full mt-1 ios26-dropdown rounded-xl z-50 max-h-60 overflow-y-auto">
+                                    {statsResult.h2h.managers.map(m => (
+                                      <button key={m} onClick={() => { setH2hTeamA(m); setIsH2hDropdownAOpen(false); if (h2hTeamB === m) setH2hTeamB(null); }}
+                                        className={`w-full px-3 py-2.5 text-sm font-semibold text-left ${h2hTeamA === m ? 'bg-cyan-500/20 text-cyan-400' : 'text-white hover:bg-white/10'}`}>
+                                        {m}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </>
+                              )}
+                            </div>
 
-                        {/* Team B selector (only show if Team A is selected) */}
-                        {h2hTeamA && (
-                          <div className="ios26-card rounded-xl p-3">
-                            <h3 className="text-orange-400 text-xs font-bold mb-2">Équipe 2</h3>
-                            <div className="grid grid-cols-2 gap-1.5">
-                              {statsResult.h2h.managers.filter(m => m !== h2hTeamA).map(m => {
-                                const rec = statsResult.h2h.matrix[h2hTeamA]?.[m];
-                                const hasMatches = rec && rec.played > 0;
-                                return (
-                                  <button key={m} onClick={() => hasMatches && setH2hTeamB(h2hTeamB === m ? null : m)}
-                                    className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${h2hTeamB === m ? 'bg-orange-500/20 text-orange-400 border border-orange-500/40' : hasMatches ? 'ios26-btn text-gray-400 hover:text-gray-300' : 'ios26-btn text-gray-600 opacity-50 cursor-not-allowed'}`}>
-                                    {m} {hasMatches ? <span className="text-gray-600 text-[10px]">({rec.played})</span> : ''}
-                                  </button>
-                                );
-                              })}
+                            <span className="text-gray-500 text-xs font-bold self-center">vs</span>
+
+                            {/* Team B dropdown */}
+                            <div className="flex-1 relative">
+                              <button
+                                onClick={() => { if (h2hTeamA) { setIsH2hDropdownBOpen(!isH2hDropdownBOpen); setIsH2hDropdownAOpen(false); } }}
+                                className={`w-full h-10 ios26-btn rounded-xl px-3 text-sm font-bold cursor-pointer flex items-center justify-between ${!h2hTeamA ? 'opacity-50 cursor-not-allowed' : ''} ${isH2hDropdownBOpen ? 'border-orange-500/50' : ''}`}
+                              >
+                                <span className={h2hTeamB ? 'text-orange-400' : 'text-gray-500'}>{h2hTeamB || 'Équipe 2'}</span>
+                                <svg className={`w-4 h-4 text-orange-400 flex-shrink-0 transition-transform ${isH2hDropdownBOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </button>
+                              {isH2hDropdownBOpen && h2hTeamA && (
+                                <>
+                                  <div className="fixed inset-0 z-40" onClick={() => setIsH2hDropdownBOpen(false)}></div>
+                                  <div className="absolute left-0 right-0 top-full mt-1 ios26-dropdown rounded-xl z-50 max-h-60 overflow-y-auto">
+                                    {statsResult.h2h.managers.filter(m => m !== h2hTeamA).map(m => {
+                                      const rec = statsResult.h2h.matrix[h2hTeamA]?.[m];
+                                      const hasMatches = rec && rec.played > 0;
+                                      return (
+                                        <button key={m} onClick={() => { if (hasMatches) { setH2hTeamB(m); setIsH2hDropdownBOpen(false); } }}
+                                          className={`w-full px-3 py-2.5 text-sm font-semibold text-left ${h2hTeamB === m ? 'bg-orange-500/20 text-orange-400' : hasMatches ? 'text-white hover:bg-white/10' : 'text-gray-600 opacity-50 cursor-not-allowed'}`}>
+                                          {m} {hasMatches ? <span className="text-gray-600 text-[10px]">({rec.played})</span> : ''}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </>
+                              )}
                             </div>
                           </div>
-                        )}
+                        </div>
 
                         {/* Detailed H2H view when both teams selected */}
                         {h2hTeamA && h2hTeamB && (() => {
@@ -4621,47 +4663,78 @@ export default function HyeneScores() {
                   <>
                     {/* Timeline - matchday by matchday */}
                     {statsSeason !== 'all' && statsResult.trends.timeline.length > 0 ? (
-                      <div className="ios26-card rounded-xl p-3">
+                      <div className="ios26-card rounded-xl px-1.5 py-3">
                         <div className="flex items-center justify-between mb-3">
                           <h3 className="text-cyan-400 text-sm font-bold">📈 Évolution {timelineMode === 'points' ? 'des Points' : 'du Classement'}</h3>
-                          <button onClick={() => setTimelineMode(m => m === 'points' ? 'position' : 'points')} className={`px-3 py-1 rounded-xl text-[10px] font-bold transition-all ${timelineMode === 'position' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40' : 'ios26-btn text-gray-400'}`}>
-                            {timelineMode === 'points' ? '📊 Points' : '🏆 Position'}
-                          </button>
                         </div>
 
-                        {/* Team toggle filters - harmonized design */}
-                        <div className="flex items-center gap-1.5 mb-2">
-                          <button onClick={() => {
-                            const allMgrs = appData?.entities?.managers ? Object.values(appData.entities.managers).map(m => m.name).filter(Boolean) : [];
-                            setVisibleManagers(prev => prev.size === allMgrs.length ? new Set() : new Set(allMgrs));
-                          }} className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all flex-shrink-0 ${
-                            (() => { const allMgrs = appData?.entities?.managers ? Object.values(appData.entities.managers).map(m => m.name).filter(Boolean) : []; return visibleManagers.size === allMgrs.length; })()
-                              ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40'
-                              : 'ios26-btn text-gray-400'
-                          }`}>
-                            {(() => { const allMgrs = appData?.entities?.managers ? Object.values(appData.entities.managers).map(m => m.name).filter(Boolean) : []; return visibleManagers.size === allMgrs.length; })() ? 'Tout désélectionner' : 'Tout sélectionner'}
-                          </button>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5 mb-3">
-                          {appData?.entities?.managers && Object.values(appData.entities.managers).map((m, idx) => {
-                            if (!m.name) return null;
-                            const isVisible = visibleManagers.has(m.name);
-                            const color = MANAGER_COLORS[idx % MANAGER_COLORS.length];
-                            return (
-                              <button key={m.name} onClick={() => setVisibleManagers(prev => {
-                                const next = new Set(prev);
-                                if (next.has(m.name)) next.delete(m.name); else next.add(m.name);
-                                return next;
-                              })} className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${isVisible ? '' : 'opacity-30'}`} style={{ borderWidth: '1px', borderStyle: 'solid', borderColor: isVisible ? color : '#444', color: isVisible ? color : '#666', background: isVisible ? `${color}15` : 'transparent' }}>
-                                {m.name}
-                              </button>
-                            );
-                          })}
+                        {/* Controls: team dropdown + point/position toggle */}
+                        <div className="flex gap-2 mb-3">
+                          {/* Team multi-select dropdown */}
+                          <div className="flex-1 relative">
+                            <button
+                              onClick={() => setIsEvoTeamDropdownOpen(!isEvoTeamDropdownOpen)}
+                              className={`w-full h-9 ios26-btn rounded-xl px-3 text-xs font-bold cursor-pointer flex items-center justify-between ${isEvoTeamDropdownOpen ? 'border-cyan-500/50' : ''}`}
+                            >
+                              <span className="text-gray-300 truncate">
+                                {(() => {
+                                  const allMgrs = appData?.entities?.managers ? Object.values(appData.entities.managers).map(m => m.name).filter(Boolean) : [];
+                                  if (visibleManagers.size === 0) return 'Aucune équipe';
+                                  if (visibleManagers.size === allMgrs.length) return 'Toutes les équipes';
+                                  return `${visibleManagers.size} équipe${visibleManagers.size > 1 ? 's' : ''}`;
+                                })()}
+                              </span>
+                              <svg className={`w-4 h-4 text-cyan-400 flex-shrink-0 transition-transform ${isEvoTeamDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+                            {isEvoTeamDropdownOpen && (
+                              <>
+                                <div className="fixed inset-0 z-40" onClick={() => setIsEvoTeamDropdownOpen(false)}></div>
+                                <div className="absolute left-0 right-0 top-full mt-1 ios26-dropdown rounded-xl z-50 max-h-60 overflow-y-auto">
+                                  <button
+                                    onClick={() => {
+                                      const allMgrs = appData?.entities?.managers ? Object.values(appData.entities.managers).map(m => m.name).filter(Boolean) : [];
+                                      setVisibleManagers(prev => prev.size === allMgrs.length ? new Set() : new Set(allMgrs));
+                                    }}
+                                    className="w-full px-3 py-2 text-xs font-bold text-left text-cyan-400 border-b border-white/10 hover:bg-white/10"
+                                  >
+                                    {(() => { const allMgrs = appData?.entities?.managers ? Object.values(appData.entities.managers).map(m => m.name).filter(Boolean) : []; return visibleManagers.size === allMgrs.length; })() ? 'Tout désélectionner' : 'Tout sélectionner'}
+                                  </button>
+                                  {appData?.entities?.managers && Object.values(appData.entities.managers).map((m, idx) => {
+                                    if (!m.name) return null;
+                                    const isVisible = visibleManagers.has(m.name);
+                                    const color = MANAGER_COLORS[idx % MANAGER_COLORS.length];
+                                    return (
+                                      <button key={m.name} onClick={() => setVisibleManagers(prev => {
+                                        const next = new Set(prev);
+                                        if (next.has(m.name)) next.delete(m.name); else next.add(m.name);
+                                        return next;
+                                      })} className="w-full px-3 py-2 text-xs font-semibold text-left flex items-center gap-2 hover:bg-white/10">
+                                        <span className="w-3 h-3 rounded-sm flex-shrink-0" style={{ background: isVisible ? color : 'transparent', border: `2px solid ${isVisible ? color : '#555'}` }}></span>
+                                        <span style={{ color: isVisible ? color : '#666' }}>{m.name}</span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </>
+                            )}
+                          </div>
+
+                          {/* Points / Position toggle buttons */}
+                          <div className="flex rounded-xl overflow-hidden flex-shrink-0">
+                            <button onClick={() => setTimelineMode('points')} className={`px-3 py-1.5 text-[10px] font-bold transition-all ${timelineMode === 'points' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40' : 'ios26-btn text-gray-400'}`} style={{ borderRadius: '12px 0 0 12px' }}>
+                              📊 Points
+                            </button>
+                            <button onClick={() => setTimelineMode('position')} className={`px-3 py-1.5 text-[10px] font-bold transition-all ${timelineMode === 'position' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40' : 'ios26-btn text-gray-400'}`} style={{ borderRadius: '0 12px 12px 0' }}>
+                              🏆 Position
+                            </button>
+                          </div>
                         </div>
 
                         <div className="h-64">
                           <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={statsResult.trends.timeline} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                            <LineChart data={statsResult.trends.timeline} margin={{ top: 5, right: 0, left: -30, bottom: 5 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
                               <XAxis dataKey="matchday" tick={{ fill: '#9ca3af', fontSize: 10 }} tickFormatter={v => `J${v}`} />
                               <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} reversed={timelineMode === 'position'} domain={timelineMode === 'position' ? [1, 'auto'] : ['auto', 'auto']} />
@@ -4677,10 +4750,6 @@ export default function HyeneScores() {
                           </ResponsiveContainer>
                         </div>
                       </div>
-                    ) : statsSeason === 'all' ? (
-                      <div className="text-center py-6">
-                        <p className="text-gray-500 text-xs mb-2">Sélectionnez une saison pour voir la timeline journée par journée</p>
-                      </div>
                     ) : (
                       <div className="text-center py-6 text-gray-500 text-xs">Aucune donnée pour cette saison</div>
                     )}
@@ -4692,22 +4761,28 @@ export default function HyeneScores() {
                   <>
                     {/* Comparison */}
                     <div className="ios26-card rounded-xl p-3">
-                      <h3 className="text-cyan-400 text-sm font-bold mb-2">🏟️ Taux de Victoire Dom/Ext</h3>
+                      <h3 className="text-cyan-400 text-sm font-bold mb-3">🏟️ Taux de Victoire Dom/Ext</h3>
+                      <div className="flex items-center justify-end gap-6 mb-2 text-[10px] font-bold">
+                        <span className="text-cyan-400">🏠 Domicile</span>
+                        <span className="text-orange-400">✈️ Extérieur</span>
+                      </div>
                       {statsResult.homeAway.comparison.map((s, i) => (
-                        <div key={i} className="py-1.5 text-xs">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-gray-300 font-bold truncate w-24">{s.name}</span>
-                            <div className="flex gap-3 text-[10px]">
-                              <span className="text-cyan-400">🏠 {s.homeRate}% <span className="text-gray-600">({s.homeJ}m)</span></span>
-                              <span className="text-orange-400">✈️ {s.awayRate}% <span className="text-gray-600">({s.awayJ}m)</span></span>
+                        <div key={i} className={`py-2.5 ${i > 0 ? 'border-t border-white/5' : ''}`}>
+                          <div className="text-gray-200 font-bold text-xs mb-2">{s.name}</div>
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-cyan-400 font-extrabold text-sm w-12 text-right">{s.homeRate}%</span>
+                              <div className="flex-1 h-4 rounded-full overflow-hidden bg-white/5">
+                                <div className="h-full rounded-full" style={{ width: `${Math.min(100, parseFloat(s.homeRate))}%`, background: 'linear-gradient(90deg, rgba(34,211,238,0.4), rgba(34,211,238,0.7))' }} />
+                              </div>
+                              <span className="text-gray-500 text-[10px] w-8 text-right">{s.homeJ}m</span>
                             </div>
-                          </div>
-                          <div className="flex gap-1 h-3">
-                            <div className="flex-1 rounded-full overflow-hidden bg-white/5">
-                              <div className="h-full rounded-full" style={{ width: `${Math.min(100, parseFloat(s.homeRate))}%`, background: 'linear-gradient(90deg, rgba(34,211,238,0.4), rgba(34,211,238,0.7))' }} />
-                            </div>
-                            <div className="flex-1 rounded-full overflow-hidden bg-white/5">
-                              <div className="h-full rounded-full" style={{ width: `${Math.min(100, parseFloat(s.awayRate))}%`, background: 'linear-gradient(90deg, rgba(251,146,60,0.4), rgba(251,146,60,0.7))' }} />
+                            <div className="flex items-center gap-2">
+                              <span className="text-orange-400 font-extrabold text-sm w-12 text-right">{s.awayRate}%</span>
+                              <div className="flex-1 h-4 rounded-full overflow-hidden bg-white/5">
+                                <div className="h-full rounded-full" style={{ width: `${Math.min(100, parseFloat(s.awayRate))}%`, background: 'linear-gradient(90deg, rgba(251,146,60,0.4), rgba(251,146,60,0.7))' }} />
+                              </div>
+                              <span className="text-gray-500 text-[10px] w-8 text-right">{s.awayJ}m</span>
                             </div>
                           </div>
                         </div>
@@ -4751,27 +4826,6 @@ export default function HyeneScores() {
                 {/* === SCORING === */}
                 {statsCategory === 'scoring' && statsResult.scoring && (
                   <>
-                    {/* Overview cards */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="ios26-card rounded-xl p-3 text-center">
-                        <div className="text-2xl font-extrabold text-cyan-400 glow-cyan">{statsResult.scoring.avgGoals}</div>
-                        <div className="text-gray-400 text-[10px] font-medium mt-1">Buts / Match</div>
-                      </div>
-                      <div className="ios26-card rounded-xl p-3 text-center">
-                        <div className="text-2xl font-extrabold text-green-400 glow-green">{statsResult.scoring.highScoringRate}%</div>
-                        <div className="text-gray-400 text-[10px] font-medium mt-1">Matchs 4+ buts</div>
-                      </div>
-                      <div className="ios26-card rounded-xl p-3 text-center">
-                        <div className="text-2xl font-extrabold text-yellow-400 glow-gold">{statsResult.scoring.totalGoals}</div>
-                        <div className="text-gray-400 text-[10px] font-medium mt-1">Total buts</div>
-                      </div>
-                      <div className="ios26-card rounded-xl p-3 text-center">
-                        <div className="text-2xl font-extrabold text-gray-300">{statsResult.scoring.totalGames}</div>
-                        <div className="text-gray-400 text-[10px] font-medium mt-1">Matchs joués</div>
-                        <div className="text-gray-600 text-[9px] mt-0.5">{statsResult.scoring.totalMatchdays} journée{statsResult.scoring.totalMatchdays > 1 ? 's' : ''}</div>
-                      </div>
-                    </div>
-
                     {/* Clean sheets */}
                     <div className="ios26-card rounded-xl p-3">
                       <h3 className="text-green-400 text-sm font-bold mb-2">🧤 Clean Sheets</h3>
