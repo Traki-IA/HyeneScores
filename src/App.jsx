@@ -674,6 +674,7 @@ export default function HyeneScores() {
   const [timelineMode, setTimelineMode] = useState('points');
   const [h2hTeamA, setH2hTeamA] = useState(null);
   const [h2hTeamB, setH2hTeamB] = useState(null);
+  const [h2hShowAllHistory, setH2hShowAllHistory] = useState(false);
   const [isStatsChampOpen, setIsStatsChampOpen] = useState(false);
   const [isStatsSeasonOpen, setIsStatsSeasonOpen] = useState(false);
   const [isH2hDropdownAOpen, setIsH2hDropdownAOpen] = useState(false);
@@ -4353,10 +4354,10 @@ export default function HyeneScores() {
                       ) : statsResult.records.biggestWins.map((m, i) => (
                         <div key={i} className={`py-2 ${i > 0 ? 'border-t border-white/5' : ''}`}>
                           <div className="flex items-center">
-                            <span className={`font-extrabold text-sm w-6 flex-shrink-0 ${i === 0 ? 'text-yellow-400' : 'text-gray-500'}`}>{i + 1}.</span>
-                            <span className={`flex-1 text-right font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>{m.homeTeam}</span>
-                            <span className="flex-shrink-0 mx-2 font-extrabold text-base text-center w-16"><span className={m.homeScore > m.awayScore ? 'text-green-400' : 'text-red-400'}>{m.homeScore}</span> - <span className={m.awayScore > m.homeScore ? 'text-green-400' : 'text-red-400'}>{m.awayScore}</span></span>
-                            <span className={`flex-1 text-left font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>{m.awayTeam}</span>
+                            <span className={`font-extrabold text-sm w-6 flex-shrink-0 text-center ${i === 0 ? 'text-yellow-400' : 'text-gray-500'}`}>{i + 1}.</span>
+                            <span className={`w-[calc(50%-40px)] text-right font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>{m.homeTeam}</span>
+                            <span className="flex-shrink-0 mx-1.5 font-extrabold text-base text-center w-16"><span className={m.homeScore > m.awayScore ? 'text-green-400' : 'text-red-400'}>{m.homeScore}</span> - <span className={m.awayScore > m.homeScore ? 'text-green-400' : 'text-red-400'}>{m.awayScore}</span></span>
+                            <span className={`w-[calc(50%-40px)] text-left font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>{m.awayTeam}</span>
                           </div>
                           <div className="text-gray-500 text-xs text-center mt-0.5">{CHAMP_ICON[m.championship] || ''} Saison {m.season} — Journée {m.matchday}</div>
                         </div>
@@ -4369,10 +4370,10 @@ export default function HyeneScores() {
                       {statsResult.records.highestScoring.map((m, i) => (
                         <div key={i} className={`py-2 ${i > 0 ? 'border-t border-white/5' : ''}`}>
                           <div className="flex items-center">
-                            <span className={`font-extrabold text-sm w-6 flex-shrink-0 ${i === 0 ? 'text-yellow-400' : 'text-gray-500'}`}>{i + 1}.</span>
-                            <span className={`flex-1 text-right font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>{m.homeTeam}</span>
-                            <span className="flex-shrink-0 mx-2 font-extrabold text-base text-center w-16"><span className="text-cyan-400">{m.homeScore}</span> - <span className="text-cyan-400">{m.awayScore}</span></span>
-                            <span className={`flex-1 text-left font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>{m.awayTeam}</span>
+                            <span className={`font-extrabold text-sm w-6 flex-shrink-0 text-center ${i === 0 ? 'text-yellow-400' : 'text-gray-500'}`}>{i + 1}.</span>
+                            <span className={`w-[calc(50%-40px)] text-right font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>{m.homeTeam}</span>
+                            <span className="flex-shrink-0 mx-1.5 font-extrabold text-base text-center w-16"><span className="text-cyan-400">{m.homeScore}</span> - <span className="text-cyan-400">{m.awayScore}</span></span>
+                            <span className={`w-[calc(50%-40px)] text-left font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>{m.awayTeam}</span>
                           </div>
                           <div className="text-gray-500 text-xs text-center mt-0.5">{CHAMP_ICON[m.championship] || ''} Saison {m.season} — <span className="text-cyan-400 font-bold">{m.total} buts</span></div>
                         </div>
@@ -4429,12 +4430,12 @@ export default function HyeneScores() {
                       <h3 className="text-cyan-400 text-sm font-bold mb-2">📊 Points Par Match</h3>
                       {statsResult.performance.ppg.map((s, i) => (
                         <div key={i} className="flex items-center gap-2 py-1 text-xs">
-                          <span className="text-gray-500 w-5 font-bold">{i + 1}.</span>
-                          <span className="text-gray-300 w-24 truncate font-semibold">{s.name}</span>
+                          <span className="text-gray-500 w-6 font-bold text-center flex-shrink-0">{i + 1}.</span>
+                          <span className="text-gray-300 w-20 truncate font-semibold flex-shrink-0">{s.name}</span>
                           <div className="flex-1 h-5 rounded-full overflow-hidden bg-white/5">
                             <div className="stats-bar h-full rounded-full" style={{ width: `${Math.min(100, (parseFloat(s.value) / 3) * 100)}%`, background: 'linear-gradient(90deg, rgba(34,211,238,0.4), rgba(34,211,238,0.7))' }} />
                           </div>
-                          <span className="text-cyan-400 font-bold w-10 text-right">{s.value}</span>
+                          <span className="text-cyan-400 font-bold w-12 text-right flex-shrink-0">{s.value}</span>
                         </div>
                       ))}
                     </div>
@@ -4444,12 +4445,12 @@ export default function HyeneScores() {
                       <h3 className="text-green-400 text-sm font-bold mb-2">🏆 Taux de Victoire</h3>
                       {statsResult.performance.winRate.map((s, i) => (
                         <div key={i} className="flex items-center gap-2 py-1 text-xs">
-                          <span className="text-gray-500 w-5 font-bold">{i + 1}.</span>
-                          <span className="text-gray-300 w-24 truncate font-semibold">{s.name}</span>
+                          <span className="text-gray-500 w-6 font-bold text-center flex-shrink-0">{i + 1}.</span>
+                          <span className="text-gray-300 w-20 truncate font-semibold flex-shrink-0">{s.name}</span>
                           <div className="flex-1 h-5 rounded-full overflow-hidden bg-white/5">
                             <div className="stats-bar h-full rounded-full" style={{ width: `${Math.min(100, parseFloat(s.value))}%`, background: `linear-gradient(90deg, rgba(34,197,94,0.4), rgba(34,197,94,0.7))` }} />
                           </div>
-                          <span className="text-green-400 font-bold w-12 text-right">{s.value}%</span>
+                          <span className="text-green-400 font-bold w-12 text-right flex-shrink-0">{s.value}%</span>
                         </div>
                       ))}
                     </div>
@@ -4459,12 +4460,12 @@ export default function HyeneScores() {
                       <h3 className="text-cyan-400 text-sm font-bold mb-2">⚔️ Classement Offensif <span className="text-gray-500 font-normal">(buts/match)</span></h3>
                       {statsResult.performance.attack.map((s, i) => (
                         <div key={i} className="flex items-center gap-2 py-1 text-xs">
-                          <span className="text-gray-500 w-5 font-bold">{i + 1}.</span>
-                          <span className="text-gray-300 w-24 truncate font-semibold">{s.name}</span>
+                          <span className="text-gray-500 w-6 font-bold text-center flex-shrink-0">{i + 1}.</span>
+                          <span className="text-gray-300 w-20 truncate font-semibold flex-shrink-0">{s.name}</span>
                           <div className="flex-1 h-5 rounded-full overflow-hidden bg-white/5">
                             <div className="stats-bar h-full rounded-full" style={{ width: `${Math.min(100, (parseFloat(s.value) / maxAttack) * 100)}%`, background: 'linear-gradient(90deg, rgba(34,211,238,0.4), rgba(34,211,238,0.7))' }} />
                           </div>
-                          <span className="text-cyan-400 font-bold w-10 text-right">{s.value}</span>
+                          <span className="text-cyan-400 font-bold w-12 text-right flex-shrink-0">{s.value}</span>
                         </div>
                       ))}
                     </div>
@@ -4474,12 +4475,12 @@ export default function HyeneScores() {
                       <h3 className="text-green-400 text-sm font-bold mb-2">🛡️ Classement Défensif <span className="text-gray-500 font-normal">(buts encaissés/match)</span></h3>
                       {statsResult.performance.defense.map((s, i) => (
                         <div key={i} className="flex items-center gap-2 py-1 text-xs">
-                          <span className="text-gray-500 w-5 font-bold">{i + 1}.</span>
-                          <span className="text-gray-300 w-24 truncate font-semibold">{s.name}</span>
+                          <span className="text-gray-500 w-6 font-bold text-center flex-shrink-0">{i + 1}.</span>
+                          <span className="text-gray-300 w-20 truncate font-semibold flex-shrink-0">{s.name}</span>
                           <div className="flex-1 h-5 rounded-full overflow-hidden bg-white/5">
                             <div className="stats-bar h-full rounded-full" style={{ width: `${Math.min(100, (parseFloat(s.value) / maxDefense) * 100)}%`, background: `linear-gradient(90deg, rgba(${parseFloat(s.value) < 1.5 ? '34,197,94' : parseFloat(s.value) < 2.5 ? '234,179,8' : '248,113,113'},0.4), rgba(${parseFloat(s.value) < 1.5 ? '34,197,94' : parseFloat(s.value) < 2.5 ? '234,179,8' : '248,113,113'},0.7))` }} />
                           </div>
-                          <span className={`font-bold w-10 text-right ${parseFloat(s.value) < 1.5 ? 'text-green-400' : parseFloat(s.value) < 2.5 ? 'text-yellow-400' : 'text-red-400'}`}>{s.value}</span>
+                          <span className={`font-bold w-12 text-right flex-shrink-0 ${parseFloat(s.value) < 1.5 ? 'text-green-400' : parseFloat(s.value) < 2.5 ? 'text-yellow-400' : 'text-red-400'}`}>{s.value}</span>
                         </div>
                       ))}
                     </div>
@@ -4515,7 +4516,7 @@ export default function HyeneScores() {
                                   <div className="fixed inset-0 z-40" onClick={() => setIsH2hDropdownAOpen(false)}></div>
                                   <div className="absolute left-0 right-0 top-full mt-1 ios26-dropdown rounded-xl z-50 max-h-60 overflow-y-auto">
                                     {statsResult.h2h.managers.map(m => (
-                                      <button key={m} onClick={() => { setH2hTeamA(m); setIsH2hDropdownAOpen(false); if (h2hTeamB === m) setH2hTeamB(null); }}
+                                      <button key={m} onClick={() => { setH2hTeamA(m); setIsH2hDropdownAOpen(false); setH2hShowAllHistory(false); if (h2hTeamB === m) setH2hTeamB(null); }}
                                         className={`w-full px-3 py-2.5 text-sm font-semibold text-left ${h2hTeamA === m ? 'bg-cyan-500/20 text-cyan-400' : 'text-white hover:bg-white/10'}`}>
                                         {m}
                                       </button>
@@ -4546,7 +4547,7 @@ export default function HyeneScores() {
                                       const rec = statsResult.h2h.matrix[h2hTeamA]?.[m];
                                       const hasMatches = rec && rec.played > 0;
                                       return (
-                                        <button key={m} onClick={() => { if (hasMatches) { setH2hTeamB(m); setIsH2hDropdownBOpen(false); } }}
+                                        <button key={m} onClick={() => { if (hasMatches) { setH2hTeamB(m); setIsH2hDropdownBOpen(false); setH2hShowAllHistory(false); } }}
                                           className={`w-full px-3 py-2.5 text-sm font-semibold text-left ${h2hTeamB === m ? 'bg-orange-500/20 text-orange-400' : hasMatches ? 'text-white hover:bg-white/10' : 'text-gray-600 opacity-50 cursor-not-allowed'}`}>
                                           {m} {hasMatches ? <span className="text-gray-600 text-[10px]">({rec.played})</span> : ''}
                                         </button>
@@ -4569,6 +4570,19 @@ export default function HyeneScores() {
                           const winPctA = totalGames > 0 ? ((rec.w / totalGames) * 100).toFixed(0) : 0;
                           const drawPct = totalGames > 0 ? ((rec.d / totalGames) * 100).toFixed(0) : 0;
                           const winPctB = totalGames > 0 ? ((rec.l / totalGames) * 100).toFixed(0) : 0;
+                          const totalGoalsH2H = rec.gf + rec.ga;
+                          const avgGoalsH2H = totalGames > 0 ? (totalGoalsH2H / totalGames).toFixed(1) : '0';
+                          // Biggest wins
+                          const biggestWinA = matchList.filter(match => (match.home === h2hTeamA && match.homeScore > match.awayScore) || (match.away === h2hTeamA && match.awayScore > match.homeScore)).reduce((best, match) => {
+                            const diff = match.home === h2hTeamA ? match.homeScore - match.awayScore : match.awayScore - match.homeScore;
+                            return diff > (best?.diff || 0) ? { ...match, diff } : best;
+                          }, null);
+                          const biggestWinB = matchList.filter(match => (match.home === h2hTeamB && match.homeScore > match.awayScore) || (match.away === h2hTeamB && match.awayScore > match.homeScore)).reduce((best, match) => {
+                            const diff = match.home === h2hTeamB ? match.homeScore - match.awayScore : match.awayScore - match.homeScore;
+                            return diff > (best?.diff || 0) ? { ...match, diff } : best;
+                          }, null);
+                          const H2H_PREVIEW_COUNT = 3;
+                          const visibleMatches = h2hShowAllHistory ? matchList : matchList.slice(0, H2H_PREVIEW_COUNT);
                           return (
                             <>
                               {/* Summary card */}
@@ -4592,51 +4606,93 @@ export default function HyeneScores() {
                                 </div>
 
                                 {/* Stats comparison */}
-                                <div className="space-y-2">
+                                <div className="space-y-1.5">
                                   <div className="flex items-center justify-between text-xs">
-                                    <span className="text-cyan-400 font-bold w-8 text-left">{rec.gf}</span>
+                                    <span className="text-cyan-400 font-bold w-10 text-left">{rec.gf}</span>
                                     <span className="text-gray-500 flex-1 text-center text-[10px]">Buts marqués</span>
-                                    <span className="text-orange-400 font-bold w-8 text-right">{recB.gf}</span>
+                                    <span className="text-orange-400 font-bold w-10 text-right">{recB.gf}</span>
                                   </div>
                                   <div className="flex items-center justify-between text-xs">
-                                    <span className="text-cyan-400 font-bold w-8 text-left">{rec.ga}</span>
+                                    <span className="text-cyan-400 font-bold w-10 text-left">{rec.ga}</span>
                                     <span className="text-gray-500 flex-1 text-center text-[10px]">Buts encaissés</span>
-                                    <span className="text-orange-400 font-bold w-8 text-right">{recB.ga}</span>
+                                    <span className="text-orange-400 font-bold w-10 text-right">{recB.ga}</span>
                                   </div>
                                   <div className="flex items-center justify-between text-xs">
-                                    <span className="text-cyan-400 font-bold w-8 text-left">{totalGames > 0 ? (rec.gf / totalGames).toFixed(1) : '0'}</span>
-                                    <span className="text-gray-500 flex-1 text-center text-[10px]">Moyenne buts/match</span>
-                                    <span className="text-orange-400 font-bold w-8 text-right">{totalGames > 0 ? (recB.gf / totalGames).toFixed(1) : '0'}</span>
+                                    <span className="text-cyan-400 font-bold w-10 text-left">{totalGames > 0 ? (rec.gf / totalGames).toFixed(1) : '0'}</span>
+                                    <span className="text-gray-500 flex-1 text-center text-[10px]">Moy. buts marqués/match</span>
+                                    <span className="text-orange-400 font-bold w-10 text-right">{totalGames > 0 ? (recB.gf / totalGames).toFixed(1) : '0'}</span>
+                                  </div>
+                                  <div className="border-t border-white/5 pt-1.5 mt-1.5">
+                                    <div className="flex items-center justify-between text-xs">
+                                      <span className="text-gray-300 font-bold w-10 text-left">{totalGoalsH2H}</span>
+                                      <span className="text-gray-500 flex-1 text-center text-[10px]">Total buts</span>
+                                      <span className="text-gray-300 font-bold w-10 text-right">{avgGoalsH2H}/match</span>
+                                    </div>
                                   </div>
                                 </div>
+
+                                {/* Biggest wins */}
+                                {(biggestWinA || biggestWinB) && (
+                                  <div className="border-t border-white/5 mt-3 pt-2">
+                                    <div className="text-gray-500 text-[10px] font-bold mb-1.5 text-center">Plus large victoire</div>
+                                    <div className="space-y-1">
+                                      {biggestWinA && (
+                                        <div className="flex items-center justify-between text-[10px]">
+                                          <span className="text-cyan-400 font-bold">{h2hTeamA}</span>
+                                          <span className="text-gray-300 font-bold">{biggestWinA.homeScore} - {biggestWinA.awayScore}</span>
+                                          <span className="text-gray-500">S{biggestWinA.season} J{biggestWinA.matchday}</span>
+                                        </div>
+                                      )}
+                                      {biggestWinB && (
+                                        <div className="flex items-center justify-between text-[10px]">
+                                          <span className="text-orange-400 font-bold">{h2hTeamB}</span>
+                                          <span className="text-gray-300 font-bold">{biggestWinB.homeScore} - {biggestWinB.awayScore}</span>
+                                          <span className="text-gray-500">S{biggestWinB.season} J{biggestWinB.matchday}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
 
                                 <div className="text-center mt-3">
                                   <span className="text-gray-500 text-[10px]">{totalGames} confrontation{totalGames > 1 ? 's' : ''}</span>
                                 </div>
                               </div>
 
-                              {/* Match history */}
+                              {/* Match history - collapsible */}
                               <div className="ios26-card rounded-xl p-3">
                                 <h3 className="text-cyan-400 text-sm font-bold mb-2">📋 Historique des Confrontations</h3>
                                 {matchList.length === 0 ? (
                                   <p className="text-gray-500 text-xs">Aucun match</p>
-                                ) : matchList.map((match, i) => {
-                                  const isWinA = (match.home === h2hTeamA && match.homeScore > match.awayScore) || (match.away === h2hTeamA && match.awayScore > match.homeScore);
-                                  const isWinB = (match.home === h2hTeamB && match.homeScore > match.awayScore) || (match.away === h2hTeamB && match.awayScore > match.homeScore);
-                                  const borderColor = isWinA ? 'border-l-green-500' : isWinB ? 'border-l-red-500' : 'border-l-gray-500';
-                                  return (
-                                    <div key={i} className={`border-l-2 ${borderColor} pl-2 py-1.5 ${i > 0 ? 'border-t border-white/5' : ''}`}>
-                                      <div className="flex items-center justify-between text-xs">
-                                        <span className={`font-semibold ${match.home === h2hTeamA ? 'text-cyan-400' : 'text-orange-400'}`}>{match.home}</span>
-                                        <span className="font-extrabold text-gray-200 mx-2">{match.homeScore} - {match.awayScore}</span>
-                                        <span className={`font-semibold ${match.away === h2hTeamA ? 'text-cyan-400' : 'text-orange-400'}`}>{match.away}</span>
-                                      </div>
-                                      <div className="text-[10px] text-gray-500 text-center mt-0.5">
-                                        {CHAMP_ICON[match.championship] || ''} Saison {match.season} — Journée {match.matchday}
-                                      </div>
-                                    </div>
-                                  );
-                                })}
+                                ) : (
+                                  <>
+                                    {visibleMatches.map((match, i) => {
+                                      const isWinA = (match.home === h2hTeamA && match.homeScore > match.awayScore) || (match.away === h2hTeamA && match.awayScore > match.homeScore);
+                                      const isWinB = (match.home === h2hTeamB && match.homeScore > match.awayScore) || (match.away === h2hTeamB && match.awayScore > match.homeScore);
+                                      const borderColor = isWinA ? 'border-l-green-500' : isWinB ? 'border-l-red-500' : 'border-l-gray-500';
+                                      return (
+                                        <div key={i} className={`border-l-2 ${borderColor} pl-2 py-1.5 ${i > 0 ? 'border-t border-white/5' : ''}`}>
+                                          <div className="flex items-center justify-between text-xs">
+                                            <span className={`font-semibold ${match.home === h2hTeamA ? 'text-cyan-400' : 'text-orange-400'}`}>{match.home}</span>
+                                            <span className="font-extrabold text-gray-200 mx-2">{match.homeScore} - {match.awayScore}</span>
+                                            <span className={`font-semibold ${match.away === h2hTeamA ? 'text-cyan-400' : 'text-orange-400'}`}>{match.away}</span>
+                                          </div>
+                                          <div className="text-[10px] text-gray-500 text-center mt-0.5">
+                                            {CHAMP_ICON[match.championship] || ''} Saison {match.season} — Journée {match.matchday}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                    {matchList.length > H2H_PREVIEW_COUNT && (
+                                      <button
+                                        onClick={() => setH2hShowAllHistory(!h2hShowAllHistory)}
+                                        className="w-full mt-2 py-2 rounded-xl text-xs font-bold text-cyan-400 ios26-btn hover:bg-white/10 transition-all"
+                                      >
+                                        {h2hShowAllHistory ? 'Voir moins' : `Voir plus (${matchList.length - H2H_PREVIEW_COUNT} matchs restants)`}
+                                      </button>
+                                    )}
+                                  </>
+                                )}
                               </div>
                             </>
                           );
@@ -4736,7 +4792,7 @@ export default function HyeneScores() {
                           <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={statsResult.trends.timeline} margin={{ top: 5, right: 0, left: -30, bottom: 5 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                              <XAxis dataKey="matchday" tick={{ fill: '#9ca3af', fontSize: 10 }} tickFormatter={v => `J${v}`} />
+                              <XAxis dataKey="matchday" tick={{ fill: '#9ca3af', fontSize: 9 }} tickFormatter={v => `J${v}`} interval={0} />
                               <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} reversed={timelineMode === 'position'} domain={timelineMode === 'position' ? [1, 'auto'] : ['auto', 'auto']} />
                               <Tooltip contentStyle={{ background: 'rgba(20,20,30,0.95)', border: '1px solid rgba(34,211,238,0.3)', borderRadius: '8px', fontSize: '11px', color: '#e5e7eb' }} />
                               {appData?.entities?.managers && Object.values(appData.entities.managers).map((m, idx) => {
@@ -4771,18 +4827,18 @@ export default function HyeneScores() {
                           <div className="text-gray-200 font-bold text-xs mb-2">{s.name}</div>
                           <div className="space-y-1.5">
                             <div className="flex items-center gap-2">
-                              <span className="text-cyan-400 font-extrabold text-sm w-12 text-right">{s.homeRate}%</span>
+                              <span className="text-cyan-400 font-extrabold text-sm w-12 text-right flex-shrink-0">{s.homeRate}%</span>
                               <div className="flex-1 h-4 rounded-full overflow-hidden bg-white/5">
                                 <div className="h-full rounded-full" style={{ width: `${Math.min(100, parseFloat(s.homeRate))}%`, background: 'linear-gradient(90deg, rgba(34,211,238,0.4), rgba(34,211,238,0.7))' }} />
                               </div>
-                              <span className="text-gray-500 text-[10px] w-8 text-right">{s.homeJ}m</span>
+                              <span className="text-gray-500 text-[10px] w-14 text-right flex-shrink-0">{s.homeJ} match{s.homeJ > 1 ? 's' : ''}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-orange-400 font-extrabold text-sm w-12 text-right">{s.awayRate}%</span>
+                              <span className="text-orange-400 font-extrabold text-sm w-12 text-right flex-shrink-0">{s.awayRate}%</span>
                               <div className="flex-1 h-4 rounded-full overflow-hidden bg-white/5">
                                 <div className="h-full rounded-full" style={{ width: `${Math.min(100, parseFloat(s.awayRate))}%`, background: 'linear-gradient(90deg, rgba(251,146,60,0.4), rgba(251,146,60,0.7))' }} />
                               </div>
-                              <span className="text-gray-500 text-[10px] w-8 text-right">{s.awayJ}m</span>
+                              <span className="text-gray-500 text-[10px] w-14 text-right flex-shrink-0">{s.awayJ} match{s.awayJ > 1 ? 's' : ''}</span>
                             </div>
                           </div>
                         </div>
@@ -4794,13 +4850,13 @@ export default function HyeneScores() {
                       <h3 className="text-cyan-400 text-sm font-bold mb-2">🏰 Forteresses <span className="text-gray-500 font-normal">(meilleur taux domicile)</span></h3>
                       {statsResult.homeAway.homeWinRate.map((s, i) => (
                         <div key={i} className="flex items-center gap-2 py-1 text-xs">
-                          <span className="text-gray-500 w-5 font-bold">{i + 1}.</span>
-                          <span className="text-gray-300 w-24 truncate font-semibold">{s.name}</span>
-                          <div className="flex-1 h-4 rounded-full overflow-hidden bg-white/5">
+                          <span className="text-gray-500 w-6 font-bold text-center flex-shrink-0">{i + 1}.</span>
+                          <span className="text-gray-300 w-20 truncate font-semibold flex-shrink-0">{s.name}</span>
+                          <div className="flex-1 h-5 rounded-full overflow-hidden bg-white/5">
                             <div className="h-full rounded-full" style={{ width: `${Math.min(100, parseFloat(s.value))}%`, background: 'linear-gradient(90deg, rgba(34,211,238,0.4), rgba(34,211,238,0.7))' }} />
                           </div>
-                          <span className="text-cyan-400 font-bold w-12 text-right">{s.value}%</span>
-                          <span className="text-gray-600 text-[10px] w-6 text-right">{s.j}m</span>
+                          <span className="text-cyan-400 font-bold w-12 text-right flex-shrink-0">{s.value}%</span>
+                          <span className="text-gray-500 text-[10px] w-14 text-right flex-shrink-0">{s.j} match{s.j > 1 ? 's' : ''}</span>
                         </div>
                       ))}
                     </div>
@@ -4810,13 +4866,13 @@ export default function HyeneScores() {
                       <h3 className="text-orange-400 text-sm font-bold mb-2">✈️ Guerriers d'Extérieur <span className="text-gray-500 font-normal">(meilleur taux extérieur)</span></h3>
                       {statsResult.homeAway.awayWinRate.map((s, i) => (
                         <div key={i} className="flex items-center gap-2 py-1 text-xs">
-                          <span className="text-gray-500 w-5 font-bold">{i + 1}.</span>
-                          <span className="text-gray-300 w-24 truncate font-semibold">{s.name}</span>
-                          <div className="flex-1 h-4 rounded-full overflow-hidden bg-white/5">
+                          <span className="text-gray-500 w-6 font-bold text-center flex-shrink-0">{i + 1}.</span>
+                          <span className="text-gray-300 w-20 truncate font-semibold flex-shrink-0">{s.name}</span>
+                          <div className="flex-1 h-5 rounded-full overflow-hidden bg-white/5">
                             <div className="h-full rounded-full" style={{ width: `${Math.min(100, parseFloat(s.value))}%`, background: 'linear-gradient(90deg, rgba(251,146,60,0.4), rgba(251,146,60,0.7))' }} />
                           </div>
-                          <span className="text-orange-400 font-bold w-12 text-right">{s.value}%</span>
-                          <span className="text-gray-600 text-[10px] w-6 text-right">{s.j}m</span>
+                          <span className="text-orange-400 font-bold w-12 text-right flex-shrink-0">{s.value}%</span>
+                          <span className="text-gray-500 text-[10px] w-14 text-right flex-shrink-0">{s.j} match{s.j > 1 ? 's' : ''}</span>
                         </div>
                       ))}
                     </div>
@@ -4831,13 +4887,13 @@ export default function HyeneScores() {
                       <h3 className="text-green-400 text-sm font-bold mb-2">🧤 Clean Sheets</h3>
                       {statsResult.scoring.cleanSheets.map((s, i) => (
                         <div key={i} className="flex items-center gap-2 py-1 text-xs">
-                          <span className="text-gray-500 w-5 font-bold">{i + 1}.</span>
-                          <span className="text-gray-300 w-24 truncate font-semibold">{s.name}</span>
-                          <div className="flex-1 h-4 rounded-full overflow-hidden bg-white/5">
+                          <span className="text-gray-500 w-6 font-bold text-center flex-shrink-0">{i + 1}.</span>
+                          <span className="text-gray-300 w-20 truncate font-semibold flex-shrink-0">{s.name}</span>
+                          <div className="flex-1 h-5 rounded-full overflow-hidden bg-white/5">
                             <div className="h-full rounded-full" style={{ width: `${Math.min(100, s.j > 0 ? (s.cleanSheets / s.j) * 100 : 0)}%`, background: 'linear-gradient(90deg, rgba(34,197,94,0.4), rgba(34,197,94,0.7))' }} />
                           </div>
-                          <span className="text-green-400 font-bold w-6 text-right">{s.cleanSheets}</span>
-                          <span className="text-gray-600 text-[10px] w-8 text-right">{s.j}m</span>
+                          <span className="text-green-400 font-bold w-6 text-right flex-shrink-0">{s.cleanSheets}</span>
+                          <span className="text-gray-500 text-[10px] w-14 text-right flex-shrink-0">{s.j} match{s.j > 1 ? 's' : ''}</span>
                         </div>
                       ))}
                     </div>
@@ -4847,13 +4903,13 @@ export default function HyeneScores() {
                       <h3 className="text-red-400 text-sm font-bold mb-2">❌ Matchs Sans Marquer</h3>
                       {statsResult.scoring.failedToScore.map((s, i) => (
                         <div key={i} className="flex items-center gap-2 py-1 text-xs">
-                          <span className="text-gray-500 w-5 font-bold">{i + 1}.</span>
-                          <span className="text-gray-300 w-24 truncate font-semibold">{s.name}</span>
-                          <div className="flex-1 h-4 rounded-full overflow-hidden bg-white/5">
+                          <span className="text-gray-500 w-6 font-bold text-center flex-shrink-0">{i + 1}.</span>
+                          <span className="text-gray-300 w-20 truncate font-semibold flex-shrink-0">{s.name}</span>
+                          <div className="flex-1 h-5 rounded-full overflow-hidden bg-white/5">
                             <div className="h-full rounded-full" style={{ width: `${Math.min(100, s.j > 0 ? (s.failedToScore / s.j) * 100 : 0)}%`, background: 'linear-gradient(90deg, rgba(248,113,113,0.4), rgba(248,113,113,0.7))' }} />
                           </div>
-                          <span className="text-red-400 font-bold w-6 text-right">{s.failedToScore}</span>
-                          <span className="text-gray-600 text-[10px] w-8 text-right">{s.j}m</span>
+                          <span className="text-red-400 font-bold w-6 text-right flex-shrink-0">{s.failedToScore}</span>
+                          <span className="text-gray-500 text-[10px] w-14 text-right flex-shrink-0">{s.j} match{s.j > 1 ? 's' : ''}</span>
                         </div>
                       ))}
                     </div>
