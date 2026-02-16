@@ -672,6 +672,8 @@ export default function HyeneScores() {
   const [statsCategory, setStatsCategory] = useState('records');
   const [visibleManagers, setVisibleManagers] = useState(new Set());
   const [timelineMode, setTimelineMode] = useState('points');
+  const [cleanSheetMode, setCleanSheetMode] = useState('count');
+  const [failedToScoreMode, setFailedToScoreMode] = useState('count');
   const [h2hTeamA, setH2hTeamA] = useState(null);
   const [h2hTeamB, setH2hTeamB] = useState(null);
   const [h2hShowAllHistory, setH2hShowAllHistory] = useState(false);
@@ -3420,7 +3422,7 @@ export default function HyeneScores() {
                               !isAdmin ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
                             } ${
                               match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
-                                ? 'bg-emerald-500/15 border border-emerald-500/40 shadow-lg shadow-emerald-500/10'
+                                ? 'bg-emerald-500/15 border border-emerald-500/40 '
                                 : 'ios26-btn'
                             }`}
                           >
@@ -3487,7 +3489,7 @@ export default function HyeneScores() {
                               !isAdmin
                                 ? 'ios26-input text-gray-400 cursor-not-allowed'
                                 : match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
-                                  ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 shadow-lg shadow-emerald-500/10'
+                                  ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 '
                                   : 'ios26-input text-cyan-400'
                             }`}
                           />
@@ -3511,7 +3513,7 @@ export default function HyeneScores() {
                               !isAdmin
                                 ? 'ios26-input text-gray-400 cursor-not-allowed'
                                 : match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
-                                  ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 shadow-lg shadow-emerald-500/10'
+                                  ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 '
                                   : 'ios26-input text-cyan-400'
                             }`}
                           />
@@ -3526,7 +3528,7 @@ export default function HyeneScores() {
                               !isAdmin ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
                             } ${
                               match.homeTeam && match.awayTeam && match.homeScore !== null && match.awayScore !== null
-                                ? 'bg-emerald-500/15 border border-emerald-500/40 shadow-lg shadow-emerald-500/10'
+                                ? 'bg-emerald-500/15 border border-emerald-500/40 '
                                 : 'ios26-btn'
                             }`}
                           >
@@ -4351,6 +4353,77 @@ export default function HyeneScores() {
                     ) : (
                       <div className="text-center py-6 text-gray-500 text-xs">Aucun trophée enregistré</div>
                     )}
+
+                    {/* Biggest Wins */}
+                    <div className="ios26-card rounded-xl px-4 py-3">
+                      <h3 className="text-cyan-400 text-sm font-extrabold mb-1">🥊 Plus Larges Victoires</h3>
+                      {statsResult.records.biggestWins.length === 0 ? (
+                        <p className="text-gray-500 text-sm">Aucun résultat</p>
+                      ) : statsResult.records.biggestWins.map((m, i) => (
+                        <div key={i} className={`py-2 ${i > 0 ? 'border-t border-white/5' : ''}`}>
+                          <div className="flex items-center">
+                            <span className={`font-extrabold text-sm w-6 flex-shrink-0 text-center ${i === 0 ? 'text-yellow-400' : 'text-gray-500'}`}>{i + 1}.</span>
+                            <span className={`w-[calc(50%-40px)] text-right font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>{m.homeTeam}</span>
+                            <span className="flex-shrink-0 mx-1.5 font-extrabold text-base text-center w-16"><span className={m.homeScore > m.awayScore ? 'text-green-400' : 'text-red-400'}>{m.homeScore}</span> - <span className={m.awayScore > m.homeScore ? 'text-green-400' : 'text-red-400'}>{m.awayScore}</span></span>
+                            <span className={`w-[calc(50%-40px)] text-left font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>{m.awayTeam}</span>
+                          </div>
+                          <div className="text-gray-500 text-xs text-center mt-0.5">{CHAMP_ICON[m.championship] || ''} Saison {m.season} — Journée {m.matchday}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Highest Scoring */}
+                    <div className="ios26-card rounded-xl px-4 py-3">
+                      <h3 className="text-cyan-400 text-sm font-extrabold mb-1">⚡ Matchs les Plus Prolifiques</h3>
+                      {statsResult.records.highestScoring.map((m, i) => (
+                        <div key={i} className={`py-2 ${i > 0 ? 'border-t border-white/5' : ''}`}>
+                          <div className="flex items-center">
+                            <span className={`font-extrabold text-sm w-6 flex-shrink-0 text-center ${i === 0 ? 'text-yellow-400' : 'text-gray-500'}`}>{i + 1}.</span>
+                            <span className={`w-[calc(50%-40px)] text-right font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>{m.homeTeam}</span>
+                            <span className="flex-shrink-0 mx-1.5 font-extrabold text-base text-center w-16"><span className="text-cyan-400">{m.homeScore}</span> - <span className="text-cyan-400">{m.awayScore}</span></span>
+                            <span className={`w-[calc(50%-40px)] text-left font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>{m.awayTeam}</span>
+                          </div>
+                          <div className="text-gray-500 text-xs text-center mt-0.5">{CHAMP_ICON[m.championship] || ''} Saison {m.season} — <span className="text-cyan-400 font-bold">{m.total} buts</span></div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Streaks */}
+                    <div className="ios26-card rounded-xl px-4 py-3">
+                      <h3 className="text-cyan-400 text-sm font-extrabold mb-2">🔥 Records de Séries</h3>
+                      <div className="space-y-3">
+                        {statsResult.records.streaks.longestWin.length > 0 && (
+                          <div>
+                            <div className="text-green-400 font-bold text-xs mb-0.5">Victoires consécutives</div>
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-green-400 font-extrabold text-xl">{statsResult.records.streaks.longestWin.length}</span>
+                              <span className="text-gray-300 text-sm font-semibold">{statsResult.records.streaks.longestWin.manager}</span>
+                              <span className="text-gray-500 text-xs ml-auto">{CHAMP_ICON[statsResult.records.streaks.longestWin.championship] || ''} S{statsResult.records.streaks.longestWin.season}</span>
+                            </div>
+                          </div>
+                        )}
+                        {statsResult.records.streaks.longestUnbeaten.length > 0 && (
+                          <div>
+                            <div className="text-cyan-400 font-bold text-xs mb-0.5">Invincibilité</div>
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-cyan-400 font-extrabold text-xl">{statsResult.records.streaks.longestUnbeaten.length}</span>
+                              <span className="text-gray-300 text-sm font-semibold">{statsResult.records.streaks.longestUnbeaten.manager}</span>
+                              <span className="text-gray-500 text-xs ml-auto">{CHAMP_ICON[statsResult.records.streaks.longestUnbeaten.championship] || ''} S{statsResult.records.streaks.longestUnbeaten.season}</span>
+                            </div>
+                          </div>
+                        )}
+                        {statsResult.records.streaks.longestLosing.length > 0 && (
+                          <div>
+                            <div className="text-red-400 font-bold text-xs mb-0.5">Défaites consécutives</div>
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-red-400 font-extrabold text-xl">{statsResult.records.streaks.longestLosing.length}</span>
+                              <span className="text-gray-300 text-sm font-semibold">{statsResult.records.streaks.longestLosing.manager}</span>
+                              <span className="text-gray-500 text-xs ml-auto">{CHAMP_ICON[statsResult.records.streaks.longestLosing.championship] || ''} S{statsResult.records.streaks.longestLosing.season}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </>
                 )}
 
@@ -4433,7 +4506,7 @@ export default function HyeneScores() {
                     ) : (
                       <>
                         {/* Team selectors - two side-by-side dropdowns */}
-                        <div className="ios26-card rounded-xl p-3">
+                        <div className="ios26-card rounded-xl p-3 relative z-10">
                           <div className="flex gap-2">
                             {/* Team A dropdown */}
                             <div className="flex-1 relative">
@@ -4685,9 +4758,9 @@ export default function HyeneScores() {
                         <div className="h-64">
                           <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={statsResult.trends.timeline} margin={{ top: 5, right: 10, left: -30, bottom: 5 }}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" horizontal={true} vertical={true} />
                               <XAxis dataKey="matchday" tick={{ fill: '#9ca3af', fontSize: 9 }} tickFormatter={v => `J${v}`} interval={0} />
-                              <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} reversed={timelineMode === 'position'} domain={timelineMode === 'position' ? [1, 'auto'] : ['auto', 'auto']} />
+                              <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} reversed={timelineMode === 'position'} domain={timelineMode === 'position' ? [1, 10] : ['auto', 'auto']} tickCount={timelineMode === 'position' ? 10 : undefined} allowDecimals={false} />
                               <Tooltip contentStyle={{ background: 'rgba(20,20,30,0.95)', border: '1px solid rgba(34,211,238,0.3)', borderRadius: '8px', fontSize: '11px', color: '#e5e7eb' }} />
                               {appData?.entities?.managers && Object.values(appData.entities.managers).map((m, idx) => {
                                 if (!m.name || !visibleManagers.has(m.name)) return null;
@@ -4778,32 +4851,52 @@ export default function HyeneScores() {
                   <>
                     {/* Clean sheets */}
                     <div className="ios26-card rounded-xl p-3">
-                      <h3 className="text-green-400 text-sm font-bold mb-2">🧤 Clean Sheets</h3>
-                      {statsResult.scoring.cleanSheets.map((s, i) => (
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-green-400 text-sm font-bold">🧤 Clean Sheets</h3>
+                        <div className="flex rounded-xl overflow-hidden flex-shrink-0">
+                          <button onClick={() => setCleanSheetMode('count')} className={`px-3 py-1.5 text-[10px] font-bold transition-all ${cleanSheetMode === 'count' ? 'bg-green-500/20 text-green-400 border border-green-500/40' : 'ios26-btn text-gray-400'}`} style={{ borderRadius: '12px 0 0 12px' }}>
+                            Décroissant
+                          </button>
+                          <button onClick={() => setCleanSheetMode('ratio')} className={`px-3 py-1.5 text-[10px] font-bold transition-all ${cleanSheetMode === 'ratio' ? 'bg-green-500/20 text-green-400 border border-green-500/40' : 'ios26-btn text-gray-400'}`} style={{ borderRadius: '0 12px 12px 0' }}>
+                            Ratio
+                          </button>
+                        </div>
+                      </div>
+                      {[...statsResult.scoring.cleanSheets].sort((a, b) => cleanSheetMode === 'ratio' ? ((b.j > 0 ? b.cleanSheets / b.j : 0) - (a.j > 0 ? a.cleanSheets / a.j : 0)) : (b.cleanSheets - a.cleanSheets)).map((s, i) => (
                         <div key={i} className="flex items-center gap-2 py-1 text-xs">
                           <span className="text-gray-500 w-6 font-bold text-center flex-shrink-0">{i + 1}.</span>
                           <span className="text-gray-300 w-20 truncate font-semibold flex-shrink-0">{s.name}</span>
                           <div className="flex-1 h-5 rounded-full overflow-hidden bg-white/5">
                             <div className="h-full rounded-full" style={{ width: `${Math.min(100, s.j > 0 ? (s.cleanSheets / s.j) * 100 : 0)}%`, background: 'linear-gradient(90deg, rgba(34,197,94,0.4), rgba(34,197,94,0.7))' }} />
                           </div>
-                          <span className="text-green-400 font-bold w-6 text-right flex-shrink-0">{s.cleanSheets}</span>
-                          <span className="text-gray-500 text-[10px] w-14 text-right flex-shrink-0">{s.j} match{s.j > 1 ? 's' : ''}</span>
+                          <span className="text-green-400 font-bold w-8 text-right flex-shrink-0">{cleanSheetMode === 'ratio' ? (s.j > 0 ? (s.cleanSheets / s.j * 100).toFixed(0) + '%' : '0%') : s.cleanSheets}</span>
+                          <span className="text-gray-500 text-[10px] w-16 text-right flex-shrink-0 whitespace-nowrap">{s.j} match{s.j > 1 ? 's' : ''}</span>
                         </div>
                       ))}
                     </div>
 
                     {/* Failed to score */}
                     <div className="ios26-card rounded-xl p-3">
-                      <h3 className="text-red-400 text-sm font-bold mb-2">❌ Matchs Sans Marquer</h3>
-                      {statsResult.scoring.failedToScore.map((s, i) => (
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-red-400 text-sm font-bold">❌ Matchs Sans Marquer</h3>
+                        <div className="flex rounded-xl overflow-hidden flex-shrink-0">
+                          <button onClick={() => setFailedToScoreMode('count')} className={`px-3 py-1.5 text-[10px] font-bold transition-all ${failedToScoreMode === 'count' ? 'bg-red-500/20 text-red-400 border border-red-500/40' : 'ios26-btn text-gray-400'}`} style={{ borderRadius: '12px 0 0 12px' }}>
+                            Décroissant
+                          </button>
+                          <button onClick={() => setFailedToScoreMode('ratio')} className={`px-3 py-1.5 text-[10px] font-bold transition-all ${failedToScoreMode === 'ratio' ? 'bg-red-500/20 text-red-400 border border-red-500/40' : 'ios26-btn text-gray-400'}`} style={{ borderRadius: '0 12px 12px 0' }}>
+                            Ratio
+                          </button>
+                        </div>
+                      </div>
+                      {[...statsResult.scoring.failedToScore].sort((a, b) => failedToScoreMode === 'ratio' ? ((b.j > 0 ? b.failedToScore / b.j : 0) - (a.j > 0 ? a.failedToScore / a.j : 0)) : (b.failedToScore - a.failedToScore)).map((s, i) => (
                         <div key={i} className="flex items-center gap-2 py-1 text-xs">
                           <span className="text-gray-500 w-6 font-bold text-center flex-shrink-0">{i + 1}.</span>
                           <span className="text-gray-300 w-20 truncate font-semibold flex-shrink-0">{s.name}</span>
                           <div className="flex-1 h-5 rounded-full overflow-hidden bg-white/5">
                             <div className="h-full rounded-full" style={{ width: `${Math.min(100, s.j > 0 ? (s.failedToScore / s.j) * 100 : 0)}%`, background: 'linear-gradient(90deg, rgba(248,113,113,0.4), rgba(248,113,113,0.7))' }} />
                           </div>
-                          <span className="text-red-400 font-bold w-6 text-right flex-shrink-0">{s.failedToScore}</span>
-                          <span className="text-gray-500 text-[10px] w-14 text-right flex-shrink-0">{s.j} match{s.j > 1 ? 's' : ''}</span>
+                          <span className="text-red-400 font-bold w-8 text-right flex-shrink-0">{failedToScoreMode === 'ratio' ? (s.j > 0 ? (s.failedToScore / s.j * 100).toFixed(0) + '%' : '0%') : s.failedToScore}</span>
+                          <span className="text-gray-500 text-[10px] w-16 text-right flex-shrink-0 whitespace-nowrap">{s.j} match{s.j > 1 ? 's' : ''}</span>
                         </div>
                       ))}
                     </div>
