@@ -234,88 +234,108 @@ function computeRecords(flatMatches, matchBlocks, appData, champFilter, seasonFi
   // Streaks (wins, unbeaten, losses)
   const streaks = computeStreakRecords(matchBlocks);
 
-  // Trophy wins record
+  // Trophy wins record — computed entirely from match data (source of truth).
+  // Standings in appData.entities.seasons are unreliable: they are recomputed
+  // in-memory by loadDataFromAppData (useEffect, post-render) but never saved
+  // back to Supabase, so every auto-refresh (30s) replaces them with stale data.
   const trophyWins = {};
-  if (appData?.entities?.seasons) {
-    // Build effective seasons map: compute Hyènes standings dynamically if missing
-    // (Hyènes standings are aggregated from 4 European championships and only exist
-    // in-memory after loadDataFromAppData runs; fresh Supabase data won't have them)
-    const seasons = appData.entities.seasons;
-    const effectiveSeasons = {};
-    const seasonNums = new Set();
+  const allMatchBlocks = appData?.entities?.matches || [];
 
-    Object.entries(seasons).forEach(([key, s]) => {
-      effectiveSeasons[key] = s;
-      const num = s.season || parseInt(key.match(/_s(\d+)$/)?.[1] || '0');
-      if (num > 0) seasonNums.add(num);
-    });
+  // Group match blocks by (championship, season)
+  const champSeasonGroups = {};
+  allMatchBlocks.forEach(block => {
+    const champ = (block.championship || '').toLowerCase();
+    const sNum = Number(block.season);
+    if (!champ || !sNum) return;
+    const key = `${champ}_${sNum}`;
+    if (!champSeasonGroups[key]) champSeasonGroups[key] = { champ, sNum, blocks: [] };
+    champSeasonGroups[key].blocks.push(block);
+  });
 
-    const euroKeys = ['france', 'espagne', 'italie', 'angleterre'];
-    seasonNums.forEach(sNum => {
-      const hyenesKey = `ligue_hyenes_s${sNum}`;
-      if (effectiveSeasons[hyenesKey]?.standings?.length > 0) return;
-      // Aggregate standings from the 4 European championships
-      const managerStats = {};
-      euroKeys.forEach(champ => {
-        const champSeason = effectiveSeasons[`${champ}_s${sNum}`];
-        if (!champSeason?.standings?.length) return;
-        champSeason.standings.forEach(t => {
-          const name = t.mgr || t.name || '?';
-          if (name === '?') return;
-          if (!managerStats[name]) managerStats[name] = { mgr: name, pts: 0, j: 0, diff: 0, bp: 0 };
-          managerStats[name].pts += (t.pts || 0);
-          managerStats[name].j += (t.j || 0);
-          managerStats[name].bp += (t.bp || 0);
-          const d = typeof t.diff === 'string' ? parseInt(t.diff.replace('+', '')) : (t.diff || 0);
-          managerStats[name].diff += d;
-        });
+  // Helper: compute the champion (top team by pts > diff > bp) from match blocks
+  const findChampionFromBlocks = (blocks) => {
+    const stats = {};
+    blocks.forEach(block => {
+      (block.games || []).forEach(game => {
+        const { homeTeam, awayTeam, homeScore, awayScore } = normalizeMatch(game);
+        if (homeScore === null || awayScore === null) return;
+        const hs = parseInt(homeScore), as2 = parseInt(awayScore);
+        if (isNaN(hs) || isNaN(as2) || !homeTeam || !awayTeam) return;
+        if (!stats[homeTeam]) stats[homeTeam] = { name: homeTeam, pts: 0, j: 0, diff: 0, bp: 0 };
+        if (!stats[awayTeam]) stats[awayTeam] = { name: awayTeam, pts: 0, j: 0, diff: 0, bp: 0 };
+        stats[homeTeam].j++; stats[awayTeam].j++;
+        stats[homeTeam].bp += hs; stats[awayTeam].bp += as2;
+        stats[homeTeam].diff += (hs - as2); stats[awayTeam].diff += (as2 - hs);
+        if (hs > as2) { stats[homeTeam].pts += 3; }
+        else if (hs < as2) { stats[awayTeam].pts += 3; }
+        else { stats[homeTeam].pts += 1; stats[awayTeam].pts += 1; }
       });
-      if (Object.keys(managerStats).length > 0) {
-        const sorted = Object.values(managerStats)
-          .sort((a, b) => b.pts - a.pts || b.diff - a.diff || b.bp - a.bp);
-        effectiveSeasons[hyenesKey] = { season: sNum, standings: sorted };
-      }
     });
+    const sorted = Object.values(stats).sort((a, b) => b.pts - a.pts || b.diff - a.diff || b.bp - a.bp);
+    return sorted.length > 0 ? sorted[0] : null;
+  };
 
-    Object.entries(effectiveSeasons).forEach(([key, season]) => {
-      if (!season.standings || !Array.isArray(season.standings) || season.standings.length === 0) return;
-      const champ = key.replace(/_s\d+$/, '');
-      const sNum = season.season || parseInt(key.match(/_s(\d+)$/)?.[1] || '0');
+  // Individual championships
+  if (champFilter === 'all' || champFilter !== 'hyenes') {
+    Object.values(champSeasonGroups).forEach(({ champ, sNum, blocks }) => {
+      if (champ === 'ligue_hyenes') return;
+      // Apply championship filter
       if (champFilter !== 'all') {
-        const mappedChamp = CHAMPIONSHIP_MAPPING[champFilter] || champFilter;
-        if (champFilter === 'hyenes') {
-          if (champ !== 'ligue_hyenes') return;
-        } else if (champ.toLowerCase() !== mappedChamp.toLowerCase()) return;
+        const mappedChamp = (CHAMPIONSHIP_MAPPING[champFilter] || champFilter).toLowerCase();
+        if (champ !== mappedChamp) return;
       }
       if (seasonFilter !== 'all' && sNum !== Number(seasonFilter)) return;
 
       // Check if season is complete
-      const championshipId = Object.entries(CHAMPIONSHIP_MAPPING).find(([, v]) => v === champ)?.[0] || champ;
-      const isHyenesS6 = championshipId === 'hyenes' && sNum === 6;
+      const championshipId = Object.entries(CHAMPIONSHIP_MAPPING).find(([, v]) => v.toLowerCase() === champ)?.[0] || champ;
       const isFranceS6 = championshipId === 'france' && sNum === 6;
-      const totalMatchdays = championshipId === 'hyenes'
-        ? (isHyenesS6 ? HYENES_S6_MATCHDAYS : HYENES_MATCHDAYS)
-        : (isFranceS6 ? FRANCE_S6_MATCHDAYS : STANDARD_MATCHDAYS);
-      // Use max j across all teams to avoid exempt team having lower j
-      const maxJ = Math.max(0, ...season.standings.map(t => t.j || 0));
-      const currentMatchday = season.playedMatchdays || maxJ;
-      if (!isFranceS6 && currentMatchday < totalMatchdays) return;
+      const totalMatchdays = isFranceS6 ? FRANCE_S6_MATCHDAYS : STANDARD_MATCHDAYS;
+      const playedMatchdays = new Set(blocks.map(b => b.matchday)).size;
+      if (!isFranceS6 && playedMatchdays < totalMatchdays) return;
 
-      // Find the champion
-      const sorted = [...season.standings].sort((a, b) => {
-        const ptsA = a.pts || a.points || 0;
-        const ptsB = b.pts || b.points || 0;
-        if (ptsB !== ptsA) return ptsB - ptsA;
-        const diffA = parseInt(String(a.diff || 0).replace('+', '')) || 0;
-        const diffB = parseInt(String(b.diff || 0).replace('+', '')) || 0;
-        return diffB - diffA;
-      });
-      const championName = sorted[0]?.mgr || sorted[0]?.name || '?';
-      if (!trophyWins[championName]) trophyWins[championName] = { name: championName, titles: 0, seasons: [] };
-      trophyWins[championName].titles++;
-      trophyWins[championName].seasons.push({ championship: champ, season: sNum });
+      const champion = findChampionFromBlocks(blocks);
+      if (!champion) return;
+      if (!trophyWins[champion.name]) trophyWins[champion.name] = { name: champion.name, titles: 0, seasons: [] };
+      trophyWins[champion.name].titles++;
+      trophyWins[champion.name].seasons.push({ championship: champ, season: sNum });
     });
   }
+
+  // Hyènes league (aggregated from 4 European championships)
+  if (champFilter === 'all' || champFilter === 'hyenes') {
+    const hyenesSeasonNums = new Set();
+    allMatchBlocks.forEach(block => {
+      if (EURO_CHAMPIONSHIPS.includes((block.championship || '').toLowerCase())) {
+        const sNum = Number(block.season);
+        if (sNum) hyenesSeasonNums.add(sNum);
+      }
+    });
+
+    hyenesSeasonNums.forEach(sNum => {
+      if (seasonFilter !== 'all' && sNum !== Number(seasonFilter)) return;
+      const isS6 = sNum === 6;
+      const totalMatchdays = isS6 ? HYENES_S6_MATCHDAYS : HYENES_MATCHDAYS;
+
+      // Collect all European match blocks for this season and count matchdays
+      const allBlocks = [];
+      let totalPlayed = 0;
+      EURO_CHAMPIONSHIPS.forEach(ec => {
+        const entry = champSeasonGroups[`${ec}_${sNum}`];
+        if (entry) {
+          allBlocks.push(...entry.blocks);
+          totalPlayed += new Set(entry.blocks.map(b => b.matchday)).size;
+        }
+      });
+      if (totalPlayed < totalMatchdays) return;
+
+      const champion = findChampionFromBlocks(allBlocks);
+      if (!champion) return;
+      if (!trophyWins[champion.name]) trophyWins[champion.name] = { name: champion.name, titles: 0, seasons: [] };
+      trophyWins[champion.name].titles++;
+      trophyWins[champion.name].seasons.push({ championship: 'ligue_hyenes', season: sNum });
+    });
+  }
+
   const trophyRanking = Object.values(trophyWins).sort((a, b) => b.titles - a.titles).slice(0, 3);
 
   return { biggestWins, highestScoring, streaks, trophyRanking };
