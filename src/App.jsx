@@ -704,9 +704,13 @@ export default function HyeneScores() {
   }, [appData]);
 
   // Auto-select latest season when switching to Evolution tab with "All time"
+  // Auto-select "All time" when switching to Records tab
   useEffect(() => {
     if (statsCategory === 'trends' && statsSeason === 'all' && availableSeasons.length > 0) {
       setStatsSeason(String(availableSeasons[availableSeasons.length - 1]));
+    }
+    if (statsCategory === 'records' && statsSeason !== 'all') {
+      setStatsSeason('all');
     }
   }, [statsCategory, availableSeasons]);
 
@@ -4314,10 +4318,10 @@ export default function HyeneScores() {
               </div>
             </div>
 
-            {/* Category Selector */}
-            <div className="flex gap-1.5 overflow-x-auto py-1 scrollbar-hide">
+            {/* Category Selector - 3x2 grid */}
+            <div className="grid grid-cols-3 gap-1.5 py-1">
               {STATS_CATEGORIES.map(cat => (
-                <button key={cat.id} onClick={() => setStatsCategory(cat.id)} className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${statsCategory === cat.id ? 'ios26-tab-active text-cyan-400' : 'ios26-btn text-gray-500'}`}>
+                <button key={cat.id} onClick={() => setStatsCategory(cat.id)} className={`py-2 rounded-xl text-[11px] font-bold transition-all text-center ${statsCategory === cat.id ? 'ios26-tab-active text-cyan-400' : 'ios26-btn text-gray-500'}`}>
                   {cat.icon} {cat.label}
                 </button>
               ))}
@@ -4332,8 +4336,8 @@ export default function HyeneScores() {
                 {/* === RECORDS === */}
                 {statsCategory === 'records' && statsResult.records && (
                   <>
-                    {/* Trophy Wins */}
-                    {statsResult.records.trophyRanking.length > 0 && (
+                    {/* Trophy Wins - All time only */}
+                    {statsResult.records.trophyRanking.length > 0 ? (
                       <div className="ios26-card rounded-xl px-4 py-3">
                         <h3 className="text-yellow-400 text-sm font-extrabold mb-2">🏆 Palmarès des Trophées</h3>
                         {statsResult.records.trophyRanking.map((t, i) => (
@@ -4344,78 +4348,9 @@ export default function HyeneScores() {
                           </div>
                         ))}
                       </div>
+                    ) : (
+                      <div className="text-center py-6 text-gray-500 text-xs">Aucun trophée enregistré</div>
                     )}
-
-                    {/* Biggest Wins */}
-                    <div className="ios26-card rounded-xl px-4 py-3">
-                      <h3 className="text-cyan-400 text-sm font-extrabold mb-1">🥊 Plus Larges Victoires</h3>
-                      {statsResult.records.biggestWins.length === 0 ? (
-                        <p className="text-gray-500 text-sm">Aucun résultat</p>
-                      ) : statsResult.records.biggestWins.map((m, i) => (
-                        <div key={i} className={`py-2 ${i > 0 ? 'border-t border-white/5' : ''}`}>
-                          <div className="flex items-center">
-                            <span className={`font-extrabold text-sm w-6 flex-shrink-0 text-center ${i === 0 ? 'text-yellow-400' : 'text-gray-500'}`}>{i + 1}.</span>
-                            <span className={`w-[calc(50%-40px)] text-right font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>{m.homeTeam}</span>
-                            <span className="flex-shrink-0 mx-1.5 font-extrabold text-base text-center w-16"><span className={m.homeScore > m.awayScore ? 'text-green-400' : 'text-red-400'}>{m.homeScore}</span> - <span className={m.awayScore > m.homeScore ? 'text-green-400' : 'text-red-400'}>{m.awayScore}</span></span>
-                            <span className={`w-[calc(50%-40px)] text-left font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>{m.awayTeam}</span>
-                          </div>
-                          <div className="text-gray-500 text-xs text-center mt-0.5">{CHAMP_ICON[m.championship] || ''} Saison {m.season} — Journée {m.matchday}</div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Highest Scoring */}
-                    <div className="ios26-card rounded-xl px-4 py-3">
-                      <h3 className="text-cyan-400 text-sm font-extrabold mb-1">⚡ Matchs les Plus Prolifiques</h3>
-                      {statsResult.records.highestScoring.map((m, i) => (
-                        <div key={i} className={`py-2 ${i > 0 ? 'border-t border-white/5' : ''}`}>
-                          <div className="flex items-center">
-                            <span className={`font-extrabold text-sm w-6 flex-shrink-0 text-center ${i === 0 ? 'text-yellow-400' : 'text-gray-500'}`}>{i + 1}.</span>
-                            <span className={`w-[calc(50%-40px)] text-right font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>{m.homeTeam}</span>
-                            <span className="flex-shrink-0 mx-1.5 font-extrabold text-base text-center w-16"><span className="text-cyan-400">{m.homeScore}</span> - <span className="text-cyan-400">{m.awayScore}</span></span>
-                            <span className={`w-[calc(50%-40px)] text-left font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>{m.awayTeam}</span>
-                          </div>
-                          <div className="text-gray-500 text-xs text-center mt-0.5">{CHAMP_ICON[m.championship] || ''} Saison {m.season} — <span className="text-cyan-400 font-bold">{m.total} buts</span></div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Streaks */}
-                    <div className="ios26-card rounded-xl px-4 py-3">
-                      <h3 className="text-cyan-400 text-sm font-extrabold mb-2">🔥 Records de Séries</h3>
-                      <div className="space-y-3">
-                        {statsResult.records.streaks.longestWin.length > 0 && (
-                          <div>
-                            <div className="text-green-400 font-bold text-xs mb-0.5">Victoires consécutives</div>
-                            <div className="flex items-baseline gap-2">
-                              <span className="text-green-400 font-extrabold text-xl">{statsResult.records.streaks.longestWin.length}</span>
-                              <span className="text-gray-300 text-sm font-semibold">{statsResult.records.streaks.longestWin.manager}</span>
-                              <span className="text-gray-500 text-xs ml-auto">{CHAMP_ICON[statsResult.records.streaks.longestWin.championship] || ''} S{statsResult.records.streaks.longestWin.season}</span>
-                            </div>
-                          </div>
-                        )}
-                        {statsResult.records.streaks.longestUnbeaten.length > 0 && (
-                          <div>
-                            <div className="text-cyan-400 font-bold text-xs mb-0.5">Invincibilité</div>
-                            <div className="flex items-baseline gap-2">
-                              <span className="text-cyan-400 font-extrabold text-xl">{statsResult.records.streaks.longestUnbeaten.length}</span>
-                              <span className="text-gray-300 text-sm font-semibold">{statsResult.records.streaks.longestUnbeaten.manager}</span>
-                              <span className="text-gray-500 text-xs ml-auto">{CHAMP_ICON[statsResult.records.streaks.longestUnbeaten.championship] || ''} S{statsResult.records.streaks.longestUnbeaten.season}</span>
-                            </div>
-                          </div>
-                        )}
-                        {statsResult.records.streaks.longestLosing.length > 0 && (
-                          <div>
-                            <div className="text-red-400 font-bold text-xs mb-0.5">Défaites consécutives</div>
-                            <div className="flex items-baseline gap-2">
-                              <span className="text-red-400 font-extrabold text-xl">{statsResult.records.streaks.longestLosing.length}</span>
-                              <span className="text-gray-300 text-sm font-semibold">{statsResult.records.streaks.longestLosing.manager}</span>
-                              <span className="text-gray-500 text-xs ml-auto">{CHAMP_ICON[statsResult.records.streaks.longestLosing.championship] || ''} S{statsResult.records.streaks.longestLosing.season}</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
                   </>
                 )}
 
@@ -4570,17 +4505,6 @@ export default function HyeneScores() {
                           const winPctA = totalGames > 0 ? ((rec.w / totalGames) * 100).toFixed(0) : 0;
                           const drawPct = totalGames > 0 ? ((rec.d / totalGames) * 100).toFixed(0) : 0;
                           const winPctB = totalGames > 0 ? ((rec.l / totalGames) * 100).toFixed(0) : 0;
-                          const totalGoalsH2H = rec.gf + rec.ga;
-                          const avgGoalsH2H = totalGames > 0 ? (totalGoalsH2H / totalGames).toFixed(1) : '0';
-                          // Biggest wins
-                          const biggestWinA = matchList.filter(match => (match.home === h2hTeamA && match.homeScore > match.awayScore) || (match.away === h2hTeamA && match.awayScore > match.homeScore)).reduce((best, match) => {
-                            const diff = match.home === h2hTeamA ? match.homeScore - match.awayScore : match.awayScore - match.homeScore;
-                            return diff > (best?.diff || 0) ? { ...match, diff } : best;
-                          }, null);
-                          const biggestWinB = matchList.filter(match => (match.home === h2hTeamB && match.homeScore > match.awayScore) || (match.away === h2hTeamB && match.awayScore > match.homeScore)).reduce((best, match) => {
-                            const diff = match.home === h2hTeamB ? match.homeScore - match.awayScore : match.awayScore - match.homeScore;
-                            return diff > (best?.diff || 0) ? { ...match, diff } : best;
-                          }, null);
                           const H2H_PREVIEW_COUNT = 3;
                           const visibleMatches = h2hShowAllHistory ? matchList : matchList.slice(0, H2H_PREVIEW_COUNT);
                           return (
@@ -4606,53 +4530,23 @@ export default function HyeneScores() {
                                 </div>
 
                                 {/* Stats comparison */}
-                                <div className="space-y-1.5">
-                                  <div className="flex items-center justify-between text-xs">
-                                    <span className="text-cyan-400 font-bold w-10 text-left">{rec.gf}</span>
+                                <div className="space-y-2">
+                                  <div className="flex items-center text-xs">
+                                    <span className="text-cyan-400 font-bold w-8 text-center flex-shrink-0">{rec.gf}</span>
                                     <span className="text-gray-500 flex-1 text-center text-[10px]">Buts marqués</span>
-                                    <span className="text-orange-400 font-bold w-10 text-right">{recB.gf}</span>
+                                    <span className="text-orange-400 font-bold w-8 text-center flex-shrink-0">{recB.gf}</span>
                                   </div>
-                                  <div className="flex items-center justify-between text-xs">
-                                    <span className="text-cyan-400 font-bold w-10 text-left">{rec.ga}</span>
+                                  <div className="flex items-center text-xs">
+                                    <span className="text-cyan-400 font-bold w-8 text-center flex-shrink-0">{rec.ga}</span>
                                     <span className="text-gray-500 flex-1 text-center text-[10px]">Buts encaissés</span>
-                                    <span className="text-orange-400 font-bold w-10 text-right">{recB.ga}</span>
+                                    <span className="text-orange-400 font-bold w-8 text-center flex-shrink-0">{recB.ga}</span>
                                   </div>
-                                  <div className="flex items-center justify-between text-xs">
-                                    <span className="text-cyan-400 font-bold w-10 text-left">{totalGames > 0 ? (rec.gf / totalGames).toFixed(1) : '0'}</span>
-                                    <span className="text-gray-500 flex-1 text-center text-[10px]">Moy. buts marqués/match</span>
-                                    <span className="text-orange-400 font-bold w-10 text-right">{totalGames > 0 ? (recB.gf / totalGames).toFixed(1) : '0'}</span>
-                                  </div>
-                                  <div className="border-t border-white/5 pt-1.5 mt-1.5">
-                                    <div className="flex items-center justify-between text-xs">
-                                      <span className="text-gray-300 font-bold w-10 text-left">{totalGoalsH2H}</span>
-                                      <span className="text-gray-500 flex-1 text-center text-[10px]">Total buts</span>
-                                      <span className="text-gray-300 font-bold w-10 text-right">{avgGoalsH2H}/match</span>
-                                    </div>
+                                  <div className="flex items-center text-xs">
+                                    <span className="text-cyan-400 font-bold w-8 text-center flex-shrink-0">{totalGames > 0 ? (rec.gf / totalGames).toFixed(1) : '0'}</span>
+                                    <span className="text-gray-500 flex-1 text-center text-[10px]">Moyenne buts/match</span>
+                                    <span className="text-orange-400 font-bold w-8 text-center flex-shrink-0">{totalGames > 0 ? (recB.gf / totalGames).toFixed(1) : '0'}</span>
                                   </div>
                                 </div>
-
-                                {/* Biggest wins */}
-                                {(biggestWinA || biggestWinB) && (
-                                  <div className="border-t border-white/5 mt-3 pt-2">
-                                    <div className="text-gray-500 text-[10px] font-bold mb-1.5 text-center">Plus large victoire</div>
-                                    <div className="space-y-1">
-                                      {biggestWinA && (
-                                        <div className="flex items-center justify-between text-[10px]">
-                                          <span className="text-cyan-400 font-bold">{h2hTeamA}</span>
-                                          <span className="text-gray-300 font-bold">{biggestWinA.homeScore} - {biggestWinA.awayScore}</span>
-                                          <span className="text-gray-500">S{biggestWinA.season} J{biggestWinA.matchday}</span>
-                                        </div>
-                                      )}
-                                      {biggestWinB && (
-                                        <div className="flex items-center justify-between text-[10px]">
-                                          <span className="text-orange-400 font-bold">{h2hTeamB}</span>
-                                          <span className="text-gray-300 font-bold">{biggestWinB.homeScore} - {biggestWinB.awayScore}</span>
-                                          <span className="text-gray-500">S{biggestWinB.season} J{biggestWinB.matchday}</span>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
 
                                 <div className="text-center mt-3">
                                   <span className="text-gray-500 text-[10px]">{totalGames} confrontation{totalGames > 1 ? 's' : ''}</span>
@@ -4672,10 +4566,10 @@ export default function HyeneScores() {
                                       const borderColor = isWinA ? 'border-l-green-500' : isWinB ? 'border-l-red-500' : 'border-l-gray-500';
                                       return (
                                         <div key={i} className={`border-l-2 ${borderColor} pl-2 py-1.5 ${i > 0 ? 'border-t border-white/5' : ''}`}>
-                                          <div className="flex items-center justify-between text-xs">
-                                            <span className={`font-semibold ${match.home === h2hTeamA ? 'text-cyan-400' : 'text-orange-400'}`}>{match.home}</span>
-                                            <span className="font-extrabold text-gray-200 mx-2">{match.homeScore} - {match.awayScore}</span>
-                                            <span className={`font-semibold ${match.away === h2hTeamA ? 'text-cyan-400' : 'text-orange-400'}`}>{match.away}</span>
+                                          <div className="flex items-center text-xs">
+                                            <span className={`flex-1 text-right font-semibold truncate ${match.home === h2hTeamA ? 'text-cyan-400' : 'text-orange-400'}`}>{match.home}</span>
+                                            <span className="font-extrabold text-gray-200 w-14 text-center flex-shrink-0">{match.homeScore} - {match.awayScore}</span>
+                                            <span className={`flex-1 text-left font-semibold truncate ${match.away === h2hTeamA ? 'text-cyan-400' : 'text-orange-400'}`}>{match.away}</span>
                                           </div>
                                           <div className="text-[10px] text-gray-500 text-center mt-0.5">
                                             {CHAMP_ICON[match.championship] || ''} Saison {match.season} — Journée {match.matchday}
@@ -4790,7 +4684,7 @@ export default function HyeneScores() {
 
                         <div className="h-64">
                           <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={statsResult.trends.timeline} margin={{ top: 5, right: 0, left: -30, bottom: 5 }}>
+                            <LineChart data={statsResult.trends.timeline} margin={{ top: 5, right: 10, left: -30, bottom: 5 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
                               <XAxis dataKey="matchday" tick={{ fill: '#9ca3af', fontSize: 9 }} tickFormatter={v => `J${v}`} interval={0} />
                               <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} reversed={timelineMode === 'position'} domain={timelineMode === 'position' ? [1, 'auto'] : ['auto', 'auto']} />
