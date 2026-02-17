@@ -4772,6 +4772,23 @@ export default function HyeneScores() {
                             </LineChart>
                           </ResponsiveContainer>
                         </div>
+
+                        {/* Légende des équipes sélectionnées */}
+                        {appData?.entities?.managers && (() => {
+                          const visibleTeams = Object.values(appData.entities.managers)
+                            .map((m, idx) => ({ name: m.name, color: MANAGER_COLORS[idx % MANAGER_COLORS.length] }))
+                            .filter(t => t.name && visibleManagers.has(t.name));
+                          return visibleTeams.length > 0 ? (
+                            <div className="flex flex-wrap gap-x-3 gap-y-1.5 mt-3 px-1 justify-center">
+                              {visibleTeams.map(t => (
+                                <div key={t.name} className="flex items-center gap-1.5">
+                                  <span className="w-5 h-[3px] rounded-full flex-shrink-0" style={{ background: t.color }}></span>
+                                  <span className="text-[10px] font-semibold" style={{ color: t.color }}>{t.name}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : null;
+                        })()}
                       </div>
                     ) : (
                       <div className="text-center py-6 text-gray-500 text-xs">Aucune donnée pour cette saison</div>
