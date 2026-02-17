@@ -217,7 +217,7 @@ function flattenMatches(matchBlocks) {
   return flat;
 }
 
-function computeRecords(flatMatches, matchBlocks, appData, champFilter, seasonFilter) {
+function computeRecords(flatMatches, matchBlocks) {
   // Biggest victories (top 3)
   const biggestWins = [...flatMatches]
     .map(m => ({ ...m, diff: Math.abs(m.homeScore - m.awayScore), total: m.homeScore + m.awayScore, winner: m.homeScore > m.awayScore ? m.homeTeam : m.awayTeam, loser: m.homeScore > m.awayScore ? m.awayTeam : m.homeTeam, winScore: Math.max(m.homeScore, m.awayScore), loseScore: Math.min(m.homeScore, m.awayScore) }))
@@ -234,111 +234,7 @@ function computeRecords(flatMatches, matchBlocks, appData, champFilter, seasonFi
   // Streaks (wins, unbeaten, losses)
   const streaks = computeStreakRecords(matchBlocks);
 
-  // Trophy wins record — computed entirely from match data (source of truth).
-  // Standings in appData.entities.seasons are unreliable: they are recomputed
-  // in-memory by loadDataFromAppData (useEffect, post-render) but never saved
-  // back to Supabase, so every auto-refresh (30s) replaces them with stale data.
-  const trophyWins = {};
-  const allMatchBlocks = appData?.entities?.matches || [];
-
-  // Group match blocks by (championship, season)
-  const champSeasonGroups = {};
-  allMatchBlocks.forEach(block => {
-    const champ = (block.championship || '').toLowerCase();
-    const sNum = Number(block.season);
-    if (!champ || !sNum) return;
-    const key = `${champ}_${sNum}`;
-    if (!champSeasonGroups[key]) champSeasonGroups[key] = { champ, sNum, blocks: [] };
-    champSeasonGroups[key].blocks.push(block);
-  });
-
-  // Helper: compute the champion (top team by pts > diff > bp) from match blocks
-  const findChampionFromBlocks = (blocks) => {
-    const stats = {};
-    blocks.forEach(block => {
-      (block.games || []).forEach(game => {
-        const { homeTeam, awayTeam, homeScore, awayScore } = normalizeMatch(game);
-        if (homeScore === null || awayScore === null) return;
-        const hs = parseInt(homeScore), as2 = parseInt(awayScore);
-        if (isNaN(hs) || isNaN(as2) || !homeTeam || !awayTeam) return;
-        if (!stats[homeTeam]) stats[homeTeam] = { name: homeTeam, pts: 0, j: 0, diff: 0, bp: 0 };
-        if (!stats[awayTeam]) stats[awayTeam] = { name: awayTeam, pts: 0, j: 0, diff: 0, bp: 0 };
-        stats[homeTeam].j++; stats[awayTeam].j++;
-        stats[homeTeam].bp += hs; stats[awayTeam].bp += as2;
-        stats[homeTeam].diff += (hs - as2); stats[awayTeam].diff += (as2 - hs);
-        if (hs > as2) { stats[homeTeam].pts += 3; }
-        else if (hs < as2) { stats[awayTeam].pts += 3; }
-        else { stats[homeTeam].pts += 1; stats[awayTeam].pts += 1; }
-      });
-    });
-    const sorted = Object.values(stats).sort((a, b) => b.pts - a.pts || b.diff - a.diff || b.bp - a.bp);
-    return sorted.length > 0 ? sorted[0] : null;
-  };
-
-  // Individual championships
-  if (champFilter === 'all' || champFilter !== 'hyenes') {
-    Object.values(champSeasonGroups).forEach(({ champ, sNum, blocks }) => {
-      if (champ === 'ligue_hyenes') return;
-      // Apply championship filter
-      if (champFilter !== 'all') {
-        const mappedChamp = (CHAMPIONSHIP_MAPPING[champFilter] || champFilter).toLowerCase();
-        if (champ !== mappedChamp) return;
-      }
-      if (seasonFilter !== 'all' && sNum !== Number(seasonFilter)) return;
-
-      // Check if season is complete
-      const championshipId = Object.entries(CHAMPIONSHIP_MAPPING).find(([, v]) => v.toLowerCase() === champ)?.[0] || champ;
-      const isFranceS6 = championshipId === 'france' && sNum === 6;
-      const totalMatchdays = isFranceS6 ? FRANCE_S6_MATCHDAYS : STANDARD_MATCHDAYS;
-      const playedMatchdays = new Set(blocks.map(b => b.matchday)).size;
-      if (!isFranceS6 && playedMatchdays < totalMatchdays) return;
-
-      const champion = findChampionFromBlocks(blocks);
-      if (!champion) return;
-      if (!trophyWins[champion.name]) trophyWins[champion.name] = { name: champion.name, titles: 0, seasons: [] };
-      trophyWins[champion.name].titles++;
-      trophyWins[champion.name].seasons.push({ championship: champ, season: sNum });
-    });
-  }
-
-  // Hyènes league (aggregated from 4 European championships)
-  if (champFilter === 'all' || champFilter === 'hyenes') {
-    const hyenesSeasonNums = new Set();
-    allMatchBlocks.forEach(block => {
-      if (EURO_CHAMPIONSHIPS.includes((block.championship || '').toLowerCase())) {
-        const sNum = Number(block.season);
-        if (sNum) hyenesSeasonNums.add(sNum);
-      }
-    });
-
-    hyenesSeasonNums.forEach(sNum => {
-      if (seasonFilter !== 'all' && sNum !== Number(seasonFilter)) return;
-      const isS6 = sNum === 6;
-      const totalMatchdays = isS6 ? HYENES_S6_MATCHDAYS : HYENES_MATCHDAYS;
-
-      // Collect all European match blocks for this season and count matchdays
-      const allBlocks = [];
-      let totalPlayed = 0;
-      EURO_CHAMPIONSHIPS.forEach(ec => {
-        const entry = champSeasonGroups[`${ec}_${sNum}`];
-        if (entry) {
-          allBlocks.push(...entry.blocks);
-          totalPlayed += new Set(entry.blocks.map(b => b.matchday)).size;
-        }
-      });
-      if (totalPlayed < totalMatchdays) return;
-
-      const champion = findChampionFromBlocks(allBlocks);
-      if (!champion) return;
-      if (!trophyWins[champion.name]) trophyWins[champion.name] = { name: champion.name, titles: 0, seasons: [] };
-      trophyWins[champion.name].titles++;
-      trophyWins[champion.name].seasons.push({ championship: 'ligue_hyenes', season: sNum });
-    });
-  }
-
-  const trophyRanking = Object.values(trophyWins).sort((a, b) => b.titles - a.titles).slice(0, 3);
-
-  return { biggestWins, highestScoring, streaks, trophyRanking };
+  return { biggestWins, highestScoring, streaks };
 }
 
 function computeStreakRecords(matchBlocks) {
@@ -553,7 +449,7 @@ function computeAllStats(appData, champFilter, seasonFilter) {
   if (flat.length === 0 && managers.length === 0) return null;
 
   return {
-    records: computeRecords(flat, matchBlocks, appData, champFilter, seasonFilter),
+    records: computeRecords(flat, matchBlocks),
     performance: computePerformance(flat, managers),
     h2h: computeHeadToHead(flat, managers),
     trends: computeTrends(appData, managers, champFilter, seasonFilter),
@@ -706,13 +602,9 @@ export default function HyeneScores() {
   }, [appData]);
 
   // Auto-select latest season when switching to Evolution tab with "All time"
-  // Auto-select "All time" when switching to Records tab
   useEffect(() => {
     if (statsCategory === 'trends' && statsSeason === 'all' && availableSeasons.length > 0) {
       setStatsSeason(String(availableSeasons[availableSeasons.length - 1]));
-    }
-    if (statsCategory === 'records' && statsSeason !== 'all') {
-      setStatsSeason('all');
     }
   }, [statsCategory, availableSeasons]);
 
@@ -4338,22 +4230,6 @@ export default function HyeneScores() {
                 {/* === RECORDS === */}
                 {statsCategory === 'records' && statsResult.records && (
                   <>
-                    {/* Trophy Wins - All time only */}
-                    {statsResult.records.trophyRanking.length > 0 ? (
-                      <div className="ios26-card rounded-xl px-4 py-3">
-                        <h3 className="text-yellow-400 text-sm font-extrabold mb-2">🏆 Palmarès des Trophées</h3>
-                        {statsResult.records.trophyRanking.map((t, i) => (
-                          <div key={i} className={`flex items-center py-2 ${i > 0 ? 'border-t border-white/5' : ''}`}>
-                            <span className="text-lg w-8 flex-shrink-0 text-center">{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
-                            <span className={`flex-1 font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-300'}`}>{t.name}</span>
-                            <span className={`font-extrabold text-lg w-10 text-right flex-shrink-0 font-mono ${i === 0 ? 'text-yellow-400' : 'text-cyan-400'}`}>{t.titles}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-6 text-gray-500 text-xs">Aucun trophée enregistré</div>
-                    )}
-
                     {/* Biggest Wins */}
                     <div className="ios26-card rounded-xl px-4 py-3">
                       <h3 className="text-cyan-400 text-sm font-extrabold mb-1">🥊 Plus Larges Victoires</h3>
