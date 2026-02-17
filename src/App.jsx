@@ -3035,14 +3035,14 @@ export default function HyeneScores() {
                     )}
                   </div>
 
-                  <div className="w-32 relative">
+                  <div className="w-36 relative">
                     <button
                       onClick={() => setIsSeasonOpen(!isSeasonOpen)}
                       className={`w-full h-12 ios26-btn rounded-xl px-4 text-white text-base font-semibold cursor-pointer flex items-center justify-between ${
                         isSeasonOpen ? 'border-cyan-500/50' : ''
                       }`}
                     >
-                      <span>Saison {selectedSeason}</span>
+                      <span className="whitespace-nowrap truncate">Saison {selectedSeason}</span>
                       <svg className={`w-5 h-5 text-cyan-400 flex-shrink-0 ${isSeasonOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
@@ -3051,12 +3051,12 @@ export default function HyeneScores() {
                     {isSeasonOpen && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setIsSeasonOpen(false)}></div>
-                        <div className="absolute right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 w-36 max-h-72 overflow-y-auto">
+                        <div className="absolute right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 w-40 max-h-72 overflow-y-auto">
                           {[...seasons].reverse().map(season => (
                             <button
                               key={season}
                               onClick={() => handleSeasonSelect(season)}
-                              className={`w-full px-4 py-3 text-base font-semibold text-left ${
+                              className={`w-full px-4 py-3 text-base font-semibold text-left whitespace-nowrap ${
                                 selectedSeason === season
                                   ? 'bg-cyan-500/20 text-cyan-400'
                                   : 'text-white hover:bg-white/10'
@@ -3107,8 +3107,8 @@ export default function HyeneScores() {
                     <div className="col-span-1 flex items-center justify-center font-mono font-bold text-base text-cyan-400 glow-cyan">
                       {team.displayRank < 10 ? `0${team.displayRank}` : team.displayRank}
                     </div>
-                    <div className="col-span-4 flex items-center">
-                      <span className="text-white font-bold text-base">{team.name}</span>
+                    <div className="col-span-4 flex items-center min-w-0">
+                      <span className="text-white font-bold text-base truncate">{team.name}</span>
                     </div>
                     <div className="col-span-2 text-center relative font-mono">
                       <span className="text-green-400 font-bold text-lg glow-green">{team.effectivePts}</span>
@@ -3141,8 +3141,8 @@ export default function HyeneScores() {
                             key={teamName}
                             className="flex items-center gap-2 bg-orange-500/15 border border-orange-500/30 rounded-lg px-3 py-1"
                           >
-                            <span className="text-white text-sm font-medium">{teamName}</span>
-                            <span className="text-orange-400 text-sm font-bold">-{points}</span>
+                            <span className="text-white text-sm font-medium whitespace-nowrap">{teamName}</span>
+                            <span className="text-orange-400 text-sm font-bold whitespace-nowrap">-{points}</span>
                             {isAdmin && (
                               <button
                                 onClick={() => handleRemovePenalty(teamName)}
@@ -3320,14 +3320,14 @@ export default function HyeneScores() {
                   </div>
 
                   {/* Season Dropdown */}
-                  <div className="w-32 relative">
+                  <div className="w-36 relative">
                     <button
                       onClick={() => setIsSeasonOpen(!isSeasonOpen)}
                       className={`w-full h-12 ios26-btn rounded-xl px-4 text-white text-base font-semibold cursor-pointer flex items-center justify-between ${
                         isSeasonOpen ? 'border-cyan-500/50' : ''
                       }`}
                     >
-                      <span>Saison {selectedSeason}</span>
+                      <span className="whitespace-nowrap truncate">Saison {selectedSeason}</span>
                       <svg className={`w-5 h-5 text-cyan-400 flex-shrink-0 ${isSeasonOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
@@ -3336,7 +3336,7 @@ export default function HyeneScores() {
                     {isSeasonOpen && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setIsSeasonOpen(false)}></div>
-                        <div className="absolute right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 w-36 max-h-72 overflow-y-auto">
+                        <div className="absolute right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 w-40 max-h-72 overflow-y-auto">
                           {[...seasons].reverse().map(season => (
                             <button
                               key={season}
@@ -3344,7 +3344,7 @@ export default function HyeneScores() {
                                 setSelectedSeason(season);
                                 setIsSeasonOpen(false);
                               }}
-                              className={`w-full px-4 py-3 text-base font-semibold text-left ${
+                              className={`w-full px-4 py-3 text-base font-semibold text-left whitespace-nowrap ${
                                 selectedSeason === season
                                   ? 'bg-cyan-500/20 text-cyan-400'
                                   : 'text-white hover:bg-white/10'
@@ -3678,8 +3678,8 @@ export default function HyeneScores() {
                     <div className="col-span-3 flex justify-center font-mono">
                       <span className="text-cyan-400 text-lg font-bold glow-cyan">{champion.season}</span>
                     </div>
-                    <div className="col-span-6 text-center">
-                      <span className="text-white text-base font-bold tracking-wide">{champion.team}</span>
+                    <div className="col-span-6 text-center min-w-0">
+                      <span className="text-white text-base font-bold tracking-wide truncate block">{champion.team}</span>
                     </div>
                     <div className="col-span-3 text-center font-mono">
                       <span className="text-green-400 text-base font-bold glow-green">{champion.points}</span>
@@ -3739,8 +3739,8 @@ export default function HyeneScores() {
                       <div className="col-span-1 flex items-center justify-center font-mono font-bold text-base text-cyan-400 glow-cyan">
                         {team.rank < 10 ? `0${team.rank}` : team.rank}
                       </div>
-                      <div className="col-span-4 flex items-center text-left pl-1">
-                        <span className="text-white text-base font-bold tracking-tight">{team.name}</span>
+                      <div className="col-span-4 flex items-center text-left pl-1 min-w-0">
+                        <span className="text-white text-base font-bold tracking-tight truncate">{team.name}</span>
                       </div>
                       <div className="col-span-1 flex items-center justify-center font-mono">
                         <span className={`text-base font-bold ${team.trophies > 0 ? 'text-yellow-500 glow-gold' : 'text-gray-500'}`}>{team.trophies}</span>
@@ -4281,12 +4281,12 @@ export default function HyeneScores() {
                 </div>
 
                 {/* Season dropdown */}
-                <div className="w-32 relative">
+                <div className="w-36 relative">
                   <button
                     onClick={() => { setIsStatsSeasonOpen(!isStatsSeasonOpen); setIsStatsChampOpen(false); }}
                     className={`w-full h-12 ios26-btn rounded-xl px-4 text-white text-base font-semibold cursor-pointer flex items-center justify-between ${isStatsSeasonOpen ? 'border-cyan-500/50' : ''}`}
                   >
-                    <span>{statsSeason === 'all' ? 'All time' : `Saison ${statsSeason}`}</span>
+                    <span className="whitespace-nowrap truncate">{statsSeason === 'all' ? 'All time' : `Saison ${statsSeason}`}</span>
                     <svg className={`w-5 h-5 text-cyan-400 flex-shrink-0 transition-transform ${isStatsSeasonOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
@@ -4295,11 +4295,11 @@ export default function HyeneScores() {
                   {isStatsSeasonOpen && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setIsStatsSeasonOpen(false)}></div>
-                      <div className="absolute right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 w-36 max-h-72 overflow-y-auto">
+                      <div className="absolute right-0 top-full mt-2 ios26-dropdown rounded-2xl z-50 w-40 max-h-72 overflow-y-auto">
                         {statsCategory !== 'trends' && (
                           <button
                             onClick={() => { setStatsSeason('all'); setIsStatsSeasonOpen(false); }}
-                            className={`w-full px-4 py-3 text-base font-semibold text-left ${statsSeason === 'all' ? 'bg-cyan-500/20 text-cyan-400' : 'text-white hover:bg-white/10'}`}
+                            className={`w-full px-4 py-3 text-base font-semibold text-left whitespace-nowrap ${statsSeason === 'all' ? 'bg-cyan-500/20 text-cyan-400' : 'text-white hover:bg-white/10'}`}
                           >
                             All time
                           </button>
@@ -4308,7 +4308,7 @@ export default function HyeneScores() {
                           <button
                             key={s}
                             onClick={() => { setStatsSeason(String(s)); setIsStatsSeasonOpen(false); }}
-                            className={`w-full px-4 py-3 text-base font-semibold text-left ${statsSeason === String(s) ? 'bg-cyan-500/20 text-cyan-400' : 'text-white hover:bg-white/10'}`}
+                            className={`w-full px-4 py-3 text-base font-semibold text-left whitespace-nowrap ${statsSeason === String(s) ? 'bg-cyan-500/20 text-cyan-400' : 'text-white hover:bg-white/10'}`}
                           >
                             Saison {s}
                           </button>
@@ -4514,7 +4514,7 @@ export default function HyeneScores() {
                                 onClick={() => { setIsH2hDropdownAOpen(!isH2hDropdownAOpen); setIsH2hDropdownBOpen(false); }}
                                 className={`w-full h-10 ios26-btn rounded-xl px-3 text-sm font-bold cursor-pointer flex items-center justify-between ${isH2hDropdownAOpen ? 'border-cyan-500/50' : ''}`}
                               >
-                                <span className={h2hTeamA ? 'text-cyan-400' : 'text-gray-500'}>{h2hTeamA || 'Équipe 1'}</span>
+                                <span className={`truncate ${h2hTeamA ? 'text-cyan-400' : 'text-gray-500'}`}>{h2hTeamA || 'Équipe 1'}</span>
                                 <svg className={`w-4 h-4 text-cyan-400 flex-shrink-0 transition-transform ${isH2hDropdownAOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                 </svg>
@@ -4542,7 +4542,7 @@ export default function HyeneScores() {
                                 onClick={() => { if (h2hTeamA) { setIsH2hDropdownBOpen(!isH2hDropdownBOpen); setIsH2hDropdownAOpen(false); } }}
                                 className={`w-full h-10 ios26-btn rounded-xl px-3 text-sm font-bold cursor-pointer flex items-center justify-between ${!h2hTeamA ? 'opacity-50 cursor-not-allowed' : ''} ${isH2hDropdownBOpen ? 'border-orange-500/50' : ''}`}
                               >
-                                <span className={h2hTeamB ? 'text-orange-400' : 'text-gray-500'}>{h2hTeamB || 'Équipe 2'}</span>
+                                <span className={`truncate ${h2hTeamB ? 'text-orange-400' : 'text-gray-500'}`}>{h2hTeamB || 'Équipe 2'}</span>
                                 <svg className={`w-4 h-4 text-orange-400 flex-shrink-0 transition-transform ${isH2hDropdownBOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                 </svg>
@@ -4584,10 +4584,10 @@ export default function HyeneScores() {
                             <>
                               {/* Summary card */}
                               <div className="ios26-card rounded-xl p-4">
-                                <div className="flex items-center justify-between mb-3">
-                                  <span className="text-cyan-400 font-extrabold text-sm">{h2hTeamA}</span>
-                                  <span className="text-gray-500 text-xs font-bold">vs</span>
-                                  <span className="text-orange-400 font-extrabold text-sm">{h2hTeamB}</span>
+                                <div className="flex items-center justify-between mb-3 gap-2">
+                                  <span className="text-cyan-400 font-extrabold text-sm truncate">{h2hTeamA}</span>
+                                  <span className="text-gray-500 text-xs font-bold flex-shrink-0">vs</span>
+                                  <span className="text-orange-400 font-extrabold text-sm truncate">{h2hTeamB}</span>
                                 </div>
 
                                 {/* Record bar */}
