@@ -4364,7 +4364,11 @@ export default function HyeneScores() {
                           <div className="flex items-center">
                             <span className={`font-extrabold text-sm w-6 flex-shrink-0 text-center font-mono ${i === 0 ? 'text-yellow-400' : 'text-gray-500'}`}>{i + 1}.</span>
                             <span className={`flex-1 min-w-0 text-right font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>{m.homeTeam}</span>
-                            <span className="flex-shrink-0 mx-1.5 font-extrabold text-base text-center w-16 font-mono"><span className={m.homeScore > m.awayScore ? 'text-green-400' : 'text-red-400'}>{m.homeScore}</span> - <span className={m.awayScore > m.homeScore ? 'text-green-400' : 'text-red-400'}>{m.awayScore}</span></span>
+                            <span className="flex-shrink-0 mx-1 flex items-center w-16 font-mono">
+                              <span className={`w-6 text-right font-extrabold text-base ${m.homeScore > m.awayScore ? 'text-green-400' : 'text-red-400'}`}>{m.homeScore}</span>
+                              <span className="w-4 text-center text-gray-500 font-bold">-</span>
+                              <span className={`w-6 text-left font-extrabold text-base ${m.awayScore > m.homeScore ? 'text-green-400' : 'text-red-400'}`}>{m.awayScore}</span>
+                            </span>
                             <span className={`flex-1 min-w-0 text-left font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>{m.awayTeam}</span>
                           </div>
                           <div className="text-gray-500 text-xs text-center mt-0.5">{CHAMP_ICON[m.championship] || ''} Saison {m.season} — Journée {m.matchday}</div>
@@ -4380,7 +4384,11 @@ export default function HyeneScores() {
                           <div className="flex items-center">
                             <span className={`font-extrabold text-sm w-6 flex-shrink-0 text-center font-mono ${i === 0 ? 'text-yellow-400' : 'text-gray-500'}`}>{i + 1}.</span>
                             <span className={`flex-1 min-w-0 text-right font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>{m.homeTeam}</span>
-                            <span className="flex-shrink-0 mx-1.5 font-extrabold text-base text-center w-16 font-mono"><span className="text-cyan-400">{m.homeScore}</span> - <span className="text-cyan-400">{m.awayScore}</span></span>
+                            <span className="flex-shrink-0 mx-1 flex items-center w-16 font-mono">
+                              <span className="w-6 text-right font-extrabold text-base text-cyan-400">{m.homeScore}</span>
+                              <span className="w-4 text-center text-gray-500 font-bold">-</span>
+                              <span className="w-6 text-left font-extrabold text-base text-cyan-400">{m.awayScore}</span>
+                            </span>
                             <span className={`flex-1 min-w-0 text-left font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-200'}`}>{m.awayTeam}</span>
                           </div>
                           <div className="text-gray-500 text-xs text-center mt-0.5">{CHAMP_ICON[m.championship] || ''} Saison {m.season} — <span className="text-cyan-400 font-bold">{m.total} buts</span></div>
