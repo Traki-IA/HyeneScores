@@ -4346,7 +4346,7 @@ export default function HyeneScores() {
                           <div key={i} className={`flex items-center py-2 ${i > 0 ? 'border-t border-white/5' : ''}`}>
                             <span className="text-lg w-8 flex-shrink-0 text-center">{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
                             <span className={`flex-1 font-bold text-sm truncate ${i === 0 ? 'text-yellow-400' : 'text-gray-300'}`}>{t.name}</span>
-                            <span className={`font-extrabold text-lg w-8 text-right flex-shrink-0 font-mono ${i === 0 ? 'text-yellow-400' : 'text-cyan-400'}`}>{t.titles}</span>
+                            <span className={`font-extrabold text-lg w-10 text-right flex-shrink-0 font-mono ${i === 0 ? 'text-yellow-400' : 'text-cyan-400'}`}>{t.titles}</span>
                           </div>
                         ))}
                       </div>
@@ -4869,7 +4869,7 @@ export default function HyeneScores() {
                           <div className="flex-1 h-5 rounded-full overflow-hidden bg-white/5">
                             <div className="h-full rounded-full" style={{ width: `${Math.min(100, s.j > 0 ? (s.cleanSheets / s.j) * 100 : 0)}%`, background: 'linear-gradient(90deg, rgba(34,197,94,0.4), rgba(34,197,94,0.7))' }} />
                           </div>
-                          <span className="text-green-400 font-bold w-8 text-right flex-shrink-0 font-mono">{cleanSheetMode === 'ratio' ? (s.j > 0 ? (s.cleanSheets / s.j * 100).toFixed(0) + '%' : '0%') : s.cleanSheets}</span>
+                          <span className="text-green-400 font-bold w-10 text-right flex-shrink-0 font-mono">{cleanSheetMode === 'ratio' ? (s.j > 0 ? (s.cleanSheets / s.j * 100).toFixed(0) + '%' : '0%') : s.cleanSheets}</span>
                           <span className="text-gray-500 text-[10px] w-16 text-right flex-shrink-0 whitespace-nowrap">{s.j} match{s.j > 1 ? 's' : ''}</span>
                         </div>
                       ))}
@@ -4895,7 +4895,7 @@ export default function HyeneScores() {
                           <div className="flex-1 h-5 rounded-full overflow-hidden bg-white/5">
                             <div className="h-full rounded-full" style={{ width: `${Math.min(100, s.j > 0 ? (s.failedToScore / s.j) * 100 : 0)}%`, background: 'linear-gradient(90deg, rgba(248,113,113,0.4), rgba(248,113,113,0.7))' }} />
                           </div>
-                          <span className="text-red-400 font-bold w-8 text-right flex-shrink-0 font-mono">{failedToScoreMode === 'ratio' ? (s.j > 0 ? (s.failedToScore / s.j * 100).toFixed(0) + '%' : '0%') : s.failedToScore}</span>
+                          <span className="text-red-400 font-bold w-10 text-right flex-shrink-0 font-mono">{failedToScoreMode === 'ratio' ? (s.j > 0 ? (s.failedToScore / s.j * 100).toFixed(0) + '%' : '0%') : s.failedToScore}</span>
                           <span className="text-gray-500 text-[10px] w-16 text-right flex-shrink-0 whitespace-nowrap">{s.j} match{s.j > 1 ? 's' : ''}</span>
                         </div>
                       ))}
