@@ -4761,7 +4761,7 @@ export default function HyeneScores() {
                         <h3 className="text-green-400 text-sm font-bold">🧤 Clean Sheets</h3>
                         <div className="flex rounded-xl overflow-hidden flex-shrink-0">
                           <button onClick={() => setCleanSheetMode('count')} className={`px-3 py-1.5 text-[10px] font-bold transition-all ${cleanSheetMode === 'count' ? 'bg-green-500/20 text-green-400 border border-green-500/40' : 'ios26-btn text-gray-400'}`} style={{ borderRadius: '12px 0 0 12px' }}>
-                            Décroissant
+                            Total
                           </button>
                           <button onClick={() => setCleanSheetMode('ratio')} className={`px-3 py-1.5 text-[10px] font-bold transition-all ${cleanSheetMode === 'ratio' ? 'bg-green-500/20 text-green-400 border border-green-500/40' : 'ios26-btn text-gray-400'}`} style={{ borderRadius: '0 12px 12px 0' }}>
                             Ratio
@@ -4787,7 +4787,7 @@ export default function HyeneScores() {
                         <h3 className="text-red-400 text-sm font-bold">❌ Matchs Sans Marquer</h3>
                         <div className="flex rounded-xl overflow-hidden flex-shrink-0">
                           <button onClick={() => setFailedToScoreMode('count')} className={`px-3 py-1.5 text-[10px] font-bold transition-all ${failedToScoreMode === 'count' ? 'bg-red-500/20 text-red-400 border border-red-500/40' : 'ios26-btn text-gray-400'}`} style={{ borderRadius: '12px 0 0 12px' }}>
-                            Décroissant
+                            Total
                           </button>
                           <button onClick={() => setFailedToScoreMode('ratio')} className={`px-3 py-1.5 text-[10px] font-bold transition-all ${failedToScoreMode === 'ratio' ? 'bg-red-500/20 text-red-400 border border-red-500/40' : 'ios26-btn text-gray-400'}`} style={{ borderRadius: '0 12px 12px 0' }}>
                             Ratio
