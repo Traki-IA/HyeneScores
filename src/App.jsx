@@ -4674,12 +4674,12 @@ export default function HyeneScores() {
                           </div>
                         </div>
 
-                        <div className="h-64">
+                        <div className="h-80">
                           <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={statsResult.trends.timeline} margin={{ top: 15, right: 10, left: -30, bottom: 5 }}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" horizontal={true} vertical={true} />
+                            <LineChart data={statsResult.trends.timeline} margin={{ top: 15, right: 10, left: -30, bottom: 10 }}>
+                              <CartesianGrid strokeDasharray="none" stroke="rgba(255,255,255,0.2)" horizontal={true} vertical={true} />
                               <XAxis dataKey="matchday" tick={{ fill: '#9ca3af', fontSize: 9 }} tickFormatter={v => `J${v}`} interval={statsResult.trends.timeline.length > 20 ? 3 : 0} />
-                              <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} reversed={timelineMode === 'position'} domain={timelineMode === 'position' ? [1, 10] : [0, 'auto']} tickCount={timelineMode === 'position' ? 10 : 9} allowDecimals={false} />
+                              <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} reversed={timelineMode === 'position'} domain={timelineMode === 'position' ? [1, 10] : [0, 80]} ticks={timelineMode === 'position' ? undefined : [0, 10, 20, 30, 40, 50, 60, 70, 80]} tickCount={timelineMode === 'position' ? 10 : undefined} allowDecimals={false} />
                               <Tooltip contentStyle={{ background: 'rgba(20,20,30,0.95)', border: '1px solid rgba(34,211,238,0.3)', borderRadius: '8px', fontSize: '11px', color: '#e5e7eb' }} />
                               {appData?.entities?.managers && Object.values(appData.entities.managers).map((m, idx) => {
                                 if (!m.name || !visibleManagers.has(m.name)) return null;
