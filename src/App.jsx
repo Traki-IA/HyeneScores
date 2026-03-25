@@ -50,8 +50,9 @@ const STATS_CATEGORIES = [
 ];
 
 const MANAGER_COLORS = [
-  '#22d3ee', '#22c55e', '#eab308', '#f87171', '#a78bfa',
-  '#fb923c', '#ec4899', '#14b8a6', '#6366f1', '#84cc16'
+  '#06b6d4', '#22c55e', '#eab308', '#ef4444', '#8b5cf6',
+  '#f97316', '#ec4899', '#3b82f6', '#d4d4d8', '#a3e635',
+  '#f0abfc'
 ];
 
 const EURO_CHAMPIONSHIPS = ['france', 'espagne', 'italie', 'angleterre'];
@@ -341,12 +342,11 @@ function computeTrends(appData, managers, champFilter, seasonFilter) {
       return champMatch && Number(block.season) === Number(seasonFilter);
     });
 
-    const maxMatchday = Math.max(0, ...filtered.map(b => b.matchday || 0));
-    for (let md = 1; md <= maxMatchday; md++) {
-      const blocksUpToMd = filtered.filter(b => b.matchday <= md);
+    // Helper to process a list of blocks cumulatively and push timeline points
+    const processBlocks = (orderedBlocks) => {
       const teamStats = {};
       managers.forEach(m => { teamStats[m] = { pts: 0, j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0, diff: 0 }; });
-      blocksUpToMd.forEach(block => {
+      orderedBlocks.forEach((block, idx) => {
         block.games.forEach(match => {
           const { homeTeam, awayTeam, homeScore, awayScore } = normalizeMatch(match);
           if (homeScore === null || awayScore === null) return;
@@ -363,17 +363,52 @@ function computeTrends(appData, managers, champFilter, seasonFilter) {
           teamStats[homeTeam].diff = teamStats[homeTeam].bp - teamStats[homeTeam].bc;
           teamStats[awayTeam].diff = teamStats[awayTeam].bp - teamStats[awayTeam].bc;
         });
+        // Calculate positions after each block
+        const sorted = Object.entries(teamStats)
+          .filter(([, s]) => s.j > 0)
+          .sort(([, a], [, b]) => b.pts !== a.pts ? b.pts - a.pts : b.diff !== a.diff ? b.diff - a.diff : b.bp - a.bp);
+        const point = { matchday: idx + 1 };
+        sorted.forEach(([name, s], pos) => {
+          point[`pts_${name}`] = s.pts;
+          point[`pos_${name}`] = pos + 1;
+        });
+        timeline.push(point);
       });
-      // Calculate positions
-      const sorted = Object.entries(teamStats)
-        .filter(([, s]) => s.j > 0)
-        .sort(([, a], [, b]) => b.pts !== a.pts ? b.pts - a.pts : b.diff !== a.diff ? b.diff - a.diff : b.bp - a.bp);
-      const point = { matchday: md };
-      sorted.forEach(([name, s], idx) => {
-        point[`pts_${name}`] = s.pts;
-        point[`pos_${name}`] = idx + 1;
+    };
+
+    if (champFilter === 'hyenes') {
+      // Ligue des Hyènes: sequence journées across 4 championships
+      // Order: France J1, Espagne J1, Italie J1, Angleterre J1, France J2, ...
+      const blocksByChamp = {};
+      EURO_CHAMPIONSHIPS.forEach(c => { blocksByChamp[c] = {}; });
+      filtered.forEach(block => {
+        const champ = block.championship?.toLowerCase();
+        if (blocksByChamp[champ]) {
+          blocksByChamp[champ][block.matchday] = block;
+        }
       });
-      timeline.push(point);
+      const maxMd = Math.max(0, ...filtered.map(b => b.matchday || 0));
+      const orderedBlocks = [];
+      for (let md = 1; md <= maxMd; md++) {
+        EURO_CHAMPIONSHIPS.forEach(champ => {
+          if (blocksByChamp[champ][md]) {
+            orderedBlocks.push(blocksByChamp[champ][md]);
+          }
+        });
+      }
+      processBlocks(orderedBlocks);
+    } else {
+      // Single championship: one point per matchday
+      const maxMatchday = Math.max(0, ...filtered.map(b => b.matchday || 0));
+      const orderedBlocks = [];
+      for (let md = 1; md <= maxMatchday; md++) {
+        const blocksForMd = filtered.filter(b => b.matchday === md);
+        if (blocksForMd.length > 0) {
+          // Merge all blocks of same matchday into one virtual block
+          orderedBlocks.push({ games: blocksForMd.flatMap(b => b.games) });
+        }
+      }
+      processBlocks(orderedBlocks);
     }
   }
 
@@ -4643,7 +4678,7 @@ export default function HyeneScores() {
                           <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={statsResult.trends.timeline} margin={{ top: 15, right: 10, left: -30, bottom: 5 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" horizontal={true} vertical={true} />
-                              <XAxis dataKey="matchday" tick={{ fill: '#9ca3af', fontSize: 9 }} tickFormatter={v => `J${v}`} interval={0} />
+                              <XAxis dataKey="matchday" tick={{ fill: '#9ca3af', fontSize: 9 }} tickFormatter={v => `J${v}`} interval={statsResult.trends.timeline.length > 20 ? 3 : 0} />
                               <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} reversed={timelineMode === 'position'} domain={timelineMode === 'position' ? [1, 10] : ['auto', 'auto']} tickCount={timelineMode === 'position' ? 10 : undefined} allowDecimals={false} />
                               <Tooltip contentStyle={{ background: 'rgba(20,20,30,0.95)', border: '1px solid rgba(34,211,238,0.3)', borderRadius: '8px', fontSize: '11px', color: '#e5e7eb' }} />
                               {appData?.entities?.managers && Object.values(appData.entities.managers).map((m, idx) => {
@@ -4683,36 +4718,6 @@ export default function HyeneScores() {
                 {/* === HOME / AWAY === */}
                 {statsCategory === 'homeaway' && statsResult.homeAway && (
                   <>
-                    {/* Comparison */}
-                    <div className="ios26-card rounded-xl p-3">
-                      <h3 className="text-cyan-400 text-sm font-bold mb-3">🏟️ Taux de Victoire Dom/Ext</h3>
-                      <div className="flex items-center justify-end gap-6 mb-2 text-[10px] font-bold">
-                        <span className="text-cyan-400">🏠 Domicile</span>
-                        <span className="text-orange-400">✈️ Extérieur</span>
-                      </div>
-                      {statsResult.homeAway.comparison.map((s, i) => (
-                        <div key={i} className={`py-2.5 ${i > 0 ? 'border-t border-white/5' : ''}`}>
-                          <div className="text-gray-200 font-bold text-xs mb-2">{s.name}</div>
-                          <div className="space-y-1.5">
-                            <div className="flex items-center gap-2">
-                              <span className="text-cyan-400 font-extrabold text-sm w-12 text-right flex-shrink-0 font-mono">{s.homeRate}%</span>
-                              <div className="flex-1 h-4 rounded-full overflow-hidden bg-white/5">
-                                <div className="h-full rounded-full" style={{ width: `${Math.min(100, parseFloat(s.homeRate))}%`, background: 'linear-gradient(90deg, rgba(34,211,238,0.4), rgba(34,211,238,0.7))' }} />
-                              </div>
-                              <span className="text-gray-500 text-[10px] w-14 text-right flex-shrink-0">{s.homeJ} match{s.homeJ > 1 ? 's' : ''}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-orange-400 font-extrabold text-sm w-12 text-right flex-shrink-0 font-mono">{s.awayRate}%</span>
-                              <div className="flex-1 h-4 rounded-full overflow-hidden bg-white/5">
-                                <div className="h-full rounded-full" style={{ width: `${Math.min(100, parseFloat(s.awayRate))}%`, background: 'linear-gradient(90deg, rgba(251,146,60,0.4), rgba(251,146,60,0.7))' }} />
-                              </div>
-                              <span className="text-gray-500 text-[10px] w-14 text-right flex-shrink-0">{s.awayJ} match{s.awayJ > 1 ? 's' : ''}</span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
                     {/* Fortress */}
                     <div className="ios26-card rounded-xl p-3">
                       <h3 className="text-cyan-400 text-sm font-bold mb-2">🏰 Forteresses <span className="text-gray-500 font-normal">(meilleur taux domicile)</span></h3>
